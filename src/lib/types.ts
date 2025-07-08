@@ -34,6 +34,7 @@ export type Applicant = {
   source?: 'walk-in' | 'college' | 'email';
   wpm?: number;
   accuracy?: number;
+  collegeId?: string;
 };
 
 export type Interview = {
@@ -85,4 +86,13 @@ export type ChatMessage = {
   role: 'user' | 'assistant';
   content: string;
   timestamp: number;
+};
+
+export type College = {
+  id: string;
+  name: string;
+  status: 'Invited' | 'Confirmed' | 'Attended' | 'Declined';
+  resumesReceived: number;
+  contactEmail: string;
+  lastContacted: string;
 };

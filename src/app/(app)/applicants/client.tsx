@@ -28,7 +28,7 @@ import type { Applicant } from '@/lib/types';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal } from 'lucide-react';
+import { Mail, MoreHorizontal } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -38,6 +38,8 @@ import {
 } from '@/components/ui/select';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 type ApplicantListProps = {
   initialApplicants: Applicant[];
@@ -57,6 +59,7 @@ export default function ApplicantList({ initialApplicants }: ApplicantListProps)
   const [searchTerm, setSearchTerm] = React.useState('');
   const [stageFilter, setStageFilter] = React.useState('all');
   const [sourceFilter, setSourceFilter] = React.useState('all');
+  const [isEmailScannerActive, setIsEmailScannerActive] = React.useState(true);
   const supabase = createClient();
   const { toast } = useToast();
 
@@ -102,7 +105,7 @@ export default function ApplicantList({ initialApplicants }: ApplicantListProps)
         <CardDescription>
           Search, filter, and manage all job applicants. Now with live updates.
         </CardDescription>
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+        <div className="mt-4 flex flex-wrap items-center gap-4">
           <Input
             placeholder="Search by name..."
             value={searchTerm}
@@ -133,6 +136,17 @@ export default function ApplicantList({ initialApplicants }: ApplicantListProps)
               <SelectItem value="email">Email</SelectItem>
             </SelectContent>
           </Select>
+           <div className="flex items-center space-x-2 rounded-lg border p-2">
+            <Mail className="h-5 w-5 text-muted-foreground" />
+            <Label htmlFor="email-scanner" className="font-normal text-sm">
+              Email Auto-Scanner
+            </Label>
+            <Switch
+              id="email-scanner"
+              checked={isEmailScannerActive}
+              onCheckedChange={setIsEmailScannerActive}
+            />
+          </div>
         </div>
       </CardHeader>
       <CardContent>

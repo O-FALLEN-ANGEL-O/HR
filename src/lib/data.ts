@@ -7,6 +7,7 @@ import type {
   PerformanceReview,
   TimeOffRequest,
   User,
+  College,
 } from './types';
 
 export const currentUser: User = {
@@ -121,6 +122,7 @@ export const applicants: Applicant[] = [
     appliedDate: '2024-07-14',
     avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026702d',
     source: 'college',
+    collegeId: 'col-2',
   },
   {
     id: 'app-3',
@@ -143,6 +145,7 @@ export const applicants: Applicant[] = [
     appliedDate: '2024-07-18',
     avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704d',
     source: 'college',
+    collegeId: 'col-1',
   },
   {
     id: 'app-5',
@@ -275,5 +278,40 @@ export const timeOffRequests: TimeOffRequest[] = [
     startDate: '2024-07-26',
     endDate: '2024-07-26',
     status: 'Pending',
+  },
+];
+
+export const colleges: College[] = [
+  {
+    id: 'col-1',
+    name: 'Greenwood University',
+    status: 'Confirmed',
+    resumesReceived: 125,
+    contactEmail: 'career@greenwood.edu',
+    lastContacted: '2024-07-10',
+  },
+  {
+    id: 'col-2',
+    name: 'Northwood Institute of Technology',
+    status: 'Attended',
+    resumesReceived: 88,
+    contactEmail: 'placements@nit.ac.in',
+    lastContacted: '2024-06-25',
+  },
+  {
+    id: 'col-3',
+    name: 'Riverside College of Arts & Science',
+    status: 'Invited',
+    resumesReceived: 0,
+    contactEmail: 'info@riverside.edu',
+    lastContacted: '2024-07-18',
+  },
+  {
+    id: 'col-4',
+    name: 'Bayview Business School',
+    status: 'Declined',
+    resumesReceived: 0,
+    contactEmail: 'dean@bayviewbs.com',
+    lastContacted: '2024-07-05',
   },
 ];

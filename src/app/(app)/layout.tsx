@@ -14,6 +14,7 @@ import {
   Calendar,
   ClipboardCheck,
   Clock,
+  GraduationCap,
   LayoutDashboard,
   PenSquare,
   ScanSearch,
@@ -97,6 +98,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <Link href="/interviews">
                   <Calendar />
                   Interviews
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={isActive('/college-drive')}>
+                <Link href="/college-drive">
+                  <GraduationCap />
+                  College Drives
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
