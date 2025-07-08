@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { faker } from '@faker-js/faker';
 import dotenv from 'dotenv';
@@ -44,7 +45,8 @@ async function clearData() {
 
       if (error) {
           // This specific error can be ignored if the table is already empty.
-          if (error.code !== '22P02') { // 22P02 is invalid text representation
+          // P0001 is a plpgsql error, which can happen with empty tables.
+          if (error.code !== 'P0001') { 
               console.error(`Error clearing table ${table}:`, error.message);
           }
       }
@@ -76,7 +78,7 @@ async function seedData() {
         applicants: faker.number.int({ min: 5, max: 100 }),
         posted_date: faker.date.past().toISOString(),
     }));
-    const { data: seededJobs, error: jobError } = await supabase.from('jobs').insert(jobs).select('id');
+    const { data: seededJobs, error: jobError } = await supabase.from('jobs').insert(jobs).select('id, title');
     if (jobError) console.error("Error seeding jobs:", jobError.message);
     else console.log('  - Seeded jobs');
 
@@ -85,11 +87,12 @@ async function seedData() {
         const applicants = Array.from({ length: 20 }, () => {
             const applicantName = faker.person.fullName();
             const applicantEmail = faker.internet.email().toLowerCase();
+            const selectedJob = faker.helpers.arrayElement(seededJobs);
             return {
                 name: applicantName,
                 email: applicantEmail,
                 phone: faker.phone.number(),
-                job_id: faker.helpers.arrayElement(seededJobs).id,
+                job_id: selectedJob.id,
                 stage: faker.helpers.arrayElement(['Sourced', 'Applied', 'Phone Screen', 'Interview', 'Offer', 'Hired']),
                 applied_date: faker.date.past().toISOString(),
                 avatar: faker.image.avatar(),
@@ -103,7 +106,7 @@ async function seedData() {
                     fullName: applicantName,
                     email: applicantEmail,
                     phone: faker.phone.number(),
-                    skills: Array.from({ length: faker.number.int({min: 4, max: 8}) }, () => faker.person.jobSkill()),
+                    skills: Array.from({ length: faker.number.int({min: 4, max: 8}) }, () => faker.word.noun()),
                     experience: Array.from({ length: faker.number.int({min: 1, max: 3}) }, () => ({
                         jobTitle: faker.person.jobTitle(),
                         company: faker.company.name(),
@@ -135,23 +138,30 @@ async function seedData() {
             if (notesError) console.error("Error seeding applicant_notes:", notesError.message);
             else console.log('  - Seeded applicant_notes');
         }
+
+        // Seed Interviews
+        if (seededApplicants) {
+            const interviews = Array.from({ length: 12 }, () => {
+                const applicant = faker.helpers.arrayElement(seededApplicants);
+                const job = seededJobs.find(j => j.id === applicant.job_id);
+                return {
+                    candidate_name: applicant.name,
+                    candidate_avatar: applicant.avatar,
+                    job_title: job?.title || faker.person.jobTitle(),
+                    interviewer_name: faker.person.fullName(),
+                    interviewer_avatar: faker.image.avatar(),
+                    date: faker.date.future().toISOString(),
+                    time: '10:00 AM',
+                    type: faker.helpers.arrayElement(['Video', 'Phone', 'In-person']),
+                    status: faker.helpers.arrayElement(['Scheduled', 'Completed', 'Canceled'])
+                }
+            });
+            const { error: interviewsError } = await supabase.from('interviews').insert(interviews);
+            if (interviewsError) console.error("Error seeding interviews:", interviewsError.message);
+            else console.log('  - Seeded interviews');
+        }
     }
 
-    // Seed Interviews
-    const interviews = Array.from({ length: 12 }, () => ({
-        candidate_name: faker.person.fullName(),
-        candidate_avatar: faker.image.avatar(),
-        job_title: faker.person.jobTitle(),
-        interviewer_name: faker.person.fullName(),
-        interviewer_avatar: faker.image.avatar(),
-        date: faker.date.future().toISOString(),
-        time: '10:00 AM',
-        type: faker.helpers.arrayElement(['Video', 'Phone', 'In-person']),
-        status: faker.helpers.arrayElement(['Scheduled', 'Completed', 'Canceled'])
-    }));
-    const { error: interviewsError } = await supabase.from('interviews').insert(interviews);
-    if (interviewsError) console.error("Error seeding interviews:", interviewsError.message);
-    else console.log('  - Seeded interviews');
 
     // Seed Colleges
     const colleges = Array.from({ length: 8 }, () => ({
@@ -214,5 +224,5 @@ async function run() {
 }
 
 run().catch(error => {
-    console.error('🔴 Seeding failed:', error.message);
+    console.error('🔴 Seeding failed:', error);
 });
