@@ -17,7 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { metrics, recentJobs } from '@/lib/data';
 import { format } from 'date-fns';
-import { ArrowUp, ArrowDown, PlusCircle, Upload, PlayCircle } from 'lucide-react';
+import { ArrowUp, ArrowDown, PlusCircle, Upload, PlayCircle, Users, Calendar } from 'lucide-react';
 import Link from 'next/link';
 
 export default function DashboardPage() {
