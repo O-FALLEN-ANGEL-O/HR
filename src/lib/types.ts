@@ -93,23 +93,28 @@ export type Onboarding = {
 };
 
 export type PerformanceReview = {
-    id: string;
-    employee_name: string;
-    employee_avatar: string;
-    job_title: string;
-    review_date: string;
-    status: 'Pending' | 'In Progress' | 'Completed';
+  id: string;
+  user_id: string;
+  job_title: string | null;
+  review_date: string;
+  status: 'Pending' | 'In Progress' | 'Completed';
+  users: {
+    full_name: string | null;
+    avatar_url: string | null;
+  } | null;
 };
 
 export type TimeOffRequest = {
   id: string;
   user_id: string;
-  employee_name: string;
-  employee_avatar: string;
   type: 'Vacation' | 'Sick Leave' | 'Personal';
   start_date: string;
   end_date: string;
   status: 'Pending' | 'Approved' | 'Rejected';
+  users: {
+    full_name: string | null;
+    avatar_url: string | null;
+  } | null;
 };
 
 export type ChatMessage = {

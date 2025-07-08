@@ -1,5 +1,3 @@
-
-
 import { createClient, type User } from '@supabase/supabase-js';
 import { faker } from '@faker-js/faker';
 import dotenv from 'dotenv';
@@ -228,9 +226,11 @@ async function seedData() {
         if (seededApplicants) {
             const interviews = Array.from({ length: 12 }, () => {
                 const applicant = faker.helpers.arrayElement(seededApplicants);
-                const interviewer = faker.helpers.arrayElement(seededUsers);
+                const interviewer = faker.helpers.arrayElement(seededUsers.filter(u => u.user_metadata?.role === 'interviewer' || u.user_metadata?.role === 'hr_manager'));
                 const job = seededJobs.find(j => j.id === applicant.job_id);
                 return {
+                    applicant_id: applicant.id,
+                    interviewer_id: interviewer.id,
                     candidate_name: applicant.name,
                     candidate_avatar: applicant.avatar,
                     job_title: job?.title || faker.person.jobTitle(),
@@ -250,10 +250,13 @@ async function seedData() {
 
     // Seed Onboarding
     const onboardingWorkflows = Array.from({ length: 5 }, () => {
-        const employee = faker.helpers.arrayElement(seededUsers);
-        const manager = faker.helpers.arrayElement(seededUsers);
-        const buddy = faker.helpers.arrayElement(seededUsers);
+        const employee = faker.helpers.arrayElement(seededUsers.filter(u => u.user_metadata?.role === 'employee'));
+        const manager = faker.helpers.arrayElement(seededUsers.filter(u => u.user_metadata?.role === 'hr_manager'));
+        const buddy = faker.helpers.arrayElement(seededUsers.filter(u => u.user_metadata?.role === 'employee'));
         return {
+            user_id: employee.id,
+            manager_id: manager.id,
+            buddy_id: buddy.id,
             employee_name: employee.user_metadata.full_name,
             employee_avatar: employee.user_metadata.avatar_url,
             job_title: faker.person.jobTitle(),
@@ -270,11 +273,11 @@ async function seedData() {
 
     // Seed Performance Reviews
     const performanceReviews = Array.from({ length: 10 }, () => {
-        const employee = faker.helpers.arrayElement(seededUsers);
+        const employee = faker.helpers.arrayElement(seededUsers.filter(u => u.user_metadata?.role === 'employee'));
         return {
             user_id: employee.id,
             job_title: faker.person.jobTitle(),
-            review_date: faker.date.future().toLocaleDateString('en-US'),
+            review_date: faker.date.future().toISOString().split('T')[0], // format as YYYY-MM-DD
             status: faker.helpers.arrayElement(['Pending', 'In Progress', 'Completed'])
         }
     });
@@ -287,13 +290,13 @@ async function seedData() {
         const startDate = faker.date.between({ from: new Date(new Date().setMonth(new Date().getMonth() - 3)), to: new Date(new Date().setMonth(new Date().getMonth() + 1)) });
         const endDate = new Date(startDate);
         endDate.setDate(startDate.getDate() + faker.number.int({min: 0, max: 5}));
-        const user = faker.helpers.arrayElement(seededUsers);
+        const user = faker.helpers.arrayElement(seededUsers.filter(u => u.user_metadata?.role === 'employee'));
         
         return {
             user_id: user.id,
             type: faker.helpers.arrayElement(['Vacation', 'Sick Leave', 'Personal']),
-            start_date: startDate.toISOString(),
-            end_date: endDate.toISOString(),
+            start_date: startDate.toISOString().split('T')[0],
+            end_date: endDate.toISOString().split('T')[0],
             status: faker.helpers.arrayElement(['Pending', 'Approved', 'Rejected'])
         };
     });

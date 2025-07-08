@@ -30,6 +30,7 @@ import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
 
 const statusColors: { [key: string]: string } = {
   Pending: 'bg-yellow-100 text-yellow-800',
@@ -44,6 +45,11 @@ type PerformanceClientProps = {
 export default function PerformanceClient({ initialReviews }: PerformanceClientProps) {
   const [reviews, setReviews] = React.useState(initialReviews);
   const { toast } = useToast();
+  const [isClient, setIsClient] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   React.useEffect(() => {
     setReviews(initialReviews);
@@ -56,21 +62,21 @@ export default function PerformanceClient({ initialReviews }: PerformanceClientP
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'performance_reviews' },
-        (payload) => {
+        async (payload) => {
           toast({
             title: 'Performance Reviews Updated',
             description: 'The list of performance reviews has been updated.',
           });
-          if (payload.eventType === 'INSERT') {
-            setReviews((prev) => [payload.new as PerformanceReview, ...prev].sort((a,b) => new Date(b.review_date).getTime() - new Date(a.review_date).getTime()));
-          } else if (payload.eventType === 'UPDATE') {
-            setReviews((prev) =>
-              prev.map((review) =>
-                review.id === payload.new.id ? { ...review, ...(payload.new as PerformanceReview) } : review
-              )
-            );
-          } else if (payload.eventType === 'DELETE') {
-            setReviews((prev) => prev.filter((review) => review.id !== (payload.old as PerformanceReview).id));
+          
+          const { data, error } = await supabase
+            .from('performance_reviews')
+            .select('*, users(full_name, avatar_url)')
+            .order('review_date', { ascending: false });
+
+          if (error) {
+            console.error("Error re-fetching performance reviews", error);
+          } else {
+             setReviews(data || []);
           }
         }
       )
@@ -113,20 +119,22 @@ export default function PerformanceClient({ initialReviews }: PerformanceClientP
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar>
-                        <AvatarImage src={review.employee_avatar} />
+                        <AvatarImage src={review.users?.avatar_url || undefined} />
                         <AvatarFallback>
-                          {review.employee_name.charAt(0)}
+                          {review.users?.full_name?.charAt(0) || 'U'}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <div className="font-medium">{review.employee_name}</div>
+                        <div className="font-medium">{review.users?.full_name}</div>
                         <div className="text-sm text-muted-foreground">
                           {review.job_title}
                         </div>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>{review.review_date}</TableCell>
+                  <TableCell>
+                    {isClient && review.review_date ? format(new Date(review.review_date), 'PPP') : ''}
+                  </TableCell>
                   <TableCell>
                     <Badge variant="secondary" className={statusColors[review.status]}>
                       {review.status}

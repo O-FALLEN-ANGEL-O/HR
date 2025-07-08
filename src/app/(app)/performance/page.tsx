@@ -9,7 +9,7 @@ export default async function PerformancePage() {
 
   const { data, error } = await supabase
     .from('performance_reviews')
-    .select('*')
+    .select('*, users(full_name, avatar_url)')
     .order('review_date', { ascending: false });
 
   if (error) {
