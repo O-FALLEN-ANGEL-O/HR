@@ -1,4 +1,5 @@
 
+
 import { createClient } from '@supabase/supabase-js';
 import { faker } from '@faker-js/faker';
 import dotenv from 'dotenv';
@@ -46,7 +47,7 @@ async function clearData() {
       if (error) {
           // This specific error can be ignored if the table is already empty.
           // P0001 is a plpgsql error, which can happen with empty tables.
-          if (error.code !== 'P0001') { 
+          if (error.code !== 'P0001' && error.code !== '42P01') { 
               console.error(`Error clearing table ${table}:`, error.message);
           }
       }

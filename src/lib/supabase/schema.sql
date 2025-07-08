@@ -1,99 +1,150 @@
--- Drop existing tables with CASCADE to remove dependent objects
-DROP TABLE IF EXISTS public.applicant_notes CASCADE;
-DROP TABLE IF EXISTS public.time_off_requests CASCADE;
-DROP TABLE IF EXISTS public.performance_reviews CASCADE;
-DROP TABLE IF EXISTS public.onboarding_workflows CASCADE;
-DROP TABLE IF EXISTS public.interviews CASCADE;
-DROP TABLE IF EXISTS public.applicants CASCADE;
-DROP TABLE IF EXISTS public.colleges CASCADE;
-DROP TABLE IF EXISTS public.jobs CASCADE;
-DROP TABLE IF EXISTS public.metrics CASCADE;
+-- Drop existing tables and policies to start fresh
+drop policy if exists "Allow public insert access for applicants" on public.applicants;
+drop policy if exists "Allow public read access" on public.time_off_requests;
+drop policy if exists "Allow public read access" on public.performance_reviews;
+drop policy if exists "Allow public read access" on public.onboarding_workflows;
+drop policy if exists "Allow public read access" on public.interviews;
+drop policy if exists "Allow public read access" on public.applicant_notes;
+drop policy if exists "Allow public read access" on public.applicants;
+drop policy if exists "Allow public read access" on public.colleges;
+drop policy if exists "Allow public read access" on public.jobs;
+drop policy if exists "Allow public read access" on public.metrics;
 
+drop table if exists public.applicant_notes;
+drop table if exists public.time_off_requests;
+drop table if exists public.performance_reviews;
+drop table if exists public.onboarding_workflows;
+drop table if exists public.interviews;
+drop table if exists public.applicants;
+drop table if exists public.colleges;
+drop table if exists public.jobs;
+drop table if exists public.metrics;
 
--- Create metrics table
-CREATE TABLE public.metrics (id SERIAL PRIMARY KEY, title TEXT, value TEXT, change TEXT, change_type TEXT);
--- Enable RLS and define policies
-ALTER TABLE public.metrics ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public access for metrics" ON public.metrics FOR ALL USING (true) WITH CHECK (true);
-
--- Create jobs table
-CREATE TABLE public.jobs (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY, 
-    title TEXT, 
-    department TEXT,
-    description TEXT,
-    status TEXT, 
-    applicants INT, 
-    posted_date TIMESTAMPTZ
+-- Create tables
+create table metrics (
+  id serial primary key,
+  title text not null,
+  value text not null,
+  change text,
+  change_type text
 );
--- Enable RLS and define policies
-ALTER TABLE public.jobs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public access for jobs" ON public.jobs FOR ALL USING (true) WITH CHECK (true);
 
--- Create applicants table
-CREATE TABLE public.applicants (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY, 
-    name TEXT, 
-    email TEXT, 
-    phone TEXT, 
-    job_id UUID REFERENCES public.jobs(id) ON DELETE SET NULL,
-    stage TEXT, 
-    applied_date TIMESTAMPTZ, 
-    avatar TEXT, 
-    source TEXT, 
-    wpm INT, 
-    accuracy INT, 
-    college_id TEXT,
-    aptitude_score INT,
-    resume_data JSONB,
-    ai_match_score INT,
-    ai_justification TEXT
+create table jobs (
+  id uuid default gen_random_uuid() primary key,
+  title text not null,
+  department text not null,
+  description text,
+  status text not null,
+  applicants integer not null,
+  posted_date timestamptz not null
 );
--- Enable RLS and define policies
-ALTER TABLE public.applicants ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public access for applicants" ON public.applicants FOR ALL USING (true) WITH CHECK (true);
 
-
--- Create interviews table
-CREATE TABLE public.interviews (id UUID DEFAULT gen_random_uuid() PRIMARY KEY, candidate_name TEXT, candidate_avatar TEXT, job_title TEXT, interviewer_name TEXT, interviewer_avatar TEXT, date TIMESTAMPTZ, time TEXT, type TEXT, status TEXT);
--- Enable RLS and define policies
-ALTER TABLE public.interviews ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public access for interviews" ON public.interviews FOR ALL USING (true) WITH CHECK (true);
-
--- Create applicant_notes table
-CREATE TABLE public.applicant_notes (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    applicant_id UUID REFERENCES public.applicants(id) ON DELETE CASCADE,
-    author_name TEXT,
-    author_avatar TEXT,
-    note TEXT,
-    created_at TIMESTAMPTZ DEFAULT now()
+create table colleges (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  status text not null,
+  resumes_received integer not null,
+  contact_email text not null,
+  last_contacted timestamptz not null
 );
--- Enable RLS and define policies
-ALTER TABLE public.applicant_notes ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public access for applicant notes" ON public.applicant_notes FOR ALL USING (true) WITH CHECK (true);
 
+create table applicants (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  email text not null unique,
+  phone text,
+  job_id uuid references jobs(id),
+  stage text not null,
+  applied_date timestamptz not null,
+  avatar text,
+  source text,
+  wpm integer,
+  accuracy integer,
+  aptitude_score integer,
+  college_id uuid references colleges(id),
+  resume_data jsonb,
+  ai_match_score integer,
+  ai_justification text
+);
 
--- Create colleges table
-CREATE TABLE public.colleges (id UUID DEFAULT gen_random_uuid() PRIMARY KEY, name TEXT, status TEXT, resumes_received INT, contact_email TEXT, last_contacted TIMESTAMPTZ);
--- Enable RLS and define policies
-ALTER TABLE public.colleges ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public access for colleges" ON public.colleges FOR ALL USING (true) WITH CHECK (true);
+create table interviews (
+  id uuid default gen_random_uuid() primary key,
+  candidate_name text not null,
+  candidate_avatar text,
+  job_title text not null,
+  interviewer_name text not null,
+  interviewer_avatar text,
+  date timestamptz not null,
+  time text not null,
+  type text not null,
+  status text not null
+);
 
--- Create onboarding_workflows table
-CREATE TABLE public.onboarding_workflows (id UUID DEFAULT gen_random_uuid() PRIMARY KEY, employee_name TEXT, employee_avatar TEXT, job_title TEXT, manager_name TEXT, buddy_name TEXT, progress INT, current_step TEXT, start_date TIMESTAMPTZ);
--- Enable RLS and define policies
-ALTER TABLE public.onboarding_workflows ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public access for onboarding" ON public.onboarding_workflows FOR ALL USING (true) WITH CHECK (true);
+create table onboarding_workflows (
+  id uuid default gen_random_uuid() primary key,
+  employee_name text not null,
+  employee_avatar text,
+  job_title text not null,
+  manager_name text not null,
+  buddy_name text not null,
+  progress integer not null,
+  current_step text not null,
+  start_date timestamptz not null
+);
 
--- Create performance_reviews table
-CREATE TABLE public.performance_reviews (id UUID DEFAULT gen_random_uuid() PRIMARY KEY, employee_name TEXT, employee_avatar TEXT, job_title TEXT, review_date TEXT, status TEXT);
--- Enable RLS and define policies
-ALTER TABLE public.performance_reviews ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public access for performance" ON public.performance_reviews FOR ALL USING (true) WITH CHECK (true);
+create table performance_reviews (
+  id uuid default gen_random_uuid() primary key,
+  employee_name text not null,
+  employee_avatar text,
+  job_title text not null,
+  review_date text not null,
+  status text not null
+);
 
--- Create time_off_requests table
-CREATE TABLE public.time_off_requests (id UUID DEFAULT gen_random_uuid() PRIMARY KEY, employee_name TEXT, employee_avatar TEXT, type TEXT, start_date TIMESTAMPTZ, end_date TIMESTAMPTZ, status TEXT);
--- Enable RLS and define policies
-ALTER TABLE public.time_off_requests ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public access for timeoff" ON public.time_off_requests FOR ALL USING (true) WITH CHECK (true);
+create table time_off_requests (
+  id uuid default gen_random_uuid() primary key,
+  employee_name text not null,
+  employee_avatar text,
+  type text not null,
+  start_date timestamptz not null,
+  end_date timestamptz not null,
+  status text not null
+);
+
+create table applicant_notes (
+  id uuid default gen_random_uuid() primary key,
+  applicant_id uuid references applicants(id) on delete cascade,
+  author_name text not null,
+  author_avatar text,
+  note text not null,
+  created_at timestamptz default now() not null
+);
+
+-- Enable Row Level Security (RLS)
+alter table metrics enable row level security;
+alter table jobs enable row level security;
+alter table colleges enable row level security;
+alter table applicants enable row level security;
+alter table interviews enable row level security;
+alter table onboarding_workflows enable row level security;
+alter table performance_reviews enable row level security;
+alter table time_off_requests enable row level security;
+alter table applicant_notes enable row level security;
+
+-- Create RLS Policies
+create policy "Allow public read access" on metrics for select using (true);
+create policy "Allow public read access" on jobs for select using (true);
+create policy "Allow public read access" on colleges for select using (true);
+create policy "Allow public read access" on applicants for select using (true);
+create policy "Allow public read access" on interviews for select using (true);
+create policy "Allow public read access" on onboarding_workflows for select using (true);
+create policy "Allow public read access" on performance_reviews for select using (true);
+create policy "Allow public read access" on time_off_requests for select using (true);
+create policy "Allow public read access" on applicant_notes for select using (true);
+
+-- THIS IS THE FIX: Allow anyone to insert a new applicant record
+create policy "Allow public insert for applicants" on applicants for insert with check (true);
+
+-- Policies for Storage
+create policy "Avatar images are publicly accessible." on storage.objects for select using ( bucket_id = 'avatars' );
+create policy "Anyone can upload an avatar." on storage.objects for insert with check ( bucket_id = 'avatars' );

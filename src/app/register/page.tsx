@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -225,11 +226,11 @@ export default function RegisterPage() {
 
       toast({ title: 'Registration Successful!', description: 'Your profile has been created.' });
       router.push(`/portal/${newApplicant.id}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating applicant:', error);
       toast({
         title: 'Submission Failed',
-        description: 'Could not create your profile. Please try again.',
+        description: error.message || 'Could not create your profile. Please try again.',
         variant: 'destructive',
       });
     } finally {
