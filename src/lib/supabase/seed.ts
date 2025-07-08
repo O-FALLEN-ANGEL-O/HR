@@ -23,10 +23,20 @@ async function clearData() {
   ];
 
   for (const table of tables) {
-    const id_column = table === 'metrics' ? 'id' : 'id';
-    const { error } = await supabase.from(table).delete().neq(id_column, table === 'metrics' ? -1 : '00000000-0000-0000-0000-000000000000');
+    // The metrics table has an integer ID, others have UUIDs. This handles both.
+    const isMetrics = table === 'metrics';
+    const id_column = 'id';
+    const neq_value = isMetrics ? -1 : '00000000-0000-0000-0000-000000000000';
+    
+    const { error } = await supabase.from(table).delete().neq(id_column, neq_value);
+    
     if (error) {
-        console.error(`Error clearing table ${table}:`, error.message);
+        // This specific error is expected for the metrics table if it's empty, so we can ignore it.
+        if (error.code === '22P02' && isMetrics) {
+           // Invalid input syntax for type integer, safe to ignore for metrics on first run
+        } else {
+            console.error(`Error clearing table ${table}:`, error.message);
+        }
     }
   }
   console.log('✅ Data cleared.');

@@ -43,7 +43,7 @@ const FormSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters.'),
   email: z.string().email('Please enter a valid email address.'),
   phone: z.string().min(10, 'Phone number seems too short.'),
-  jobId: z.string().min(1, 'Please select a position.'),
+  job_id: z.string().min(1, 'Please select a position.'),
   resumeFile: z.any().optional(),
   profilePic: z.any().optional(),
 });
@@ -73,7 +73,7 @@ export default function RegisterPage() {
       fullName: '',
       email: '',
       phone: '',
-      jobId: '',
+      job_id: '',
     },
   });
 
@@ -211,7 +211,7 @@ export default function RegisterPage() {
           name: data.fullName,
           email: data.email,
           phone: data.phone,
-          job_id: data.jobId,
+          job_id: data.job_id,
           stage: 'Applied',
           source: 'walk-in',
           applied_date: new Date().toISOString(),
@@ -385,7 +385,7 @@ export default function RegisterPage() {
                 />
                  <FormField
                   control={form.control}
-                  name="jobId"
+                  name="job_id"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Position Applying For</FormLabel>
