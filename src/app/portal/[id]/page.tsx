@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useParams } from 'next/navigation';
 import {
     Card,
     CardContent,
@@ -16,7 +17,10 @@ import type { Applicant } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 
-export default function ApplicantPortalPage({ params }: { params: { id: string } }) {
+export default function ApplicantPortalPage() {
+    const params = useParams<{ id: string }>();
+    const id = params.id;
+
     const [applicant, setApplicant] = React.useState<Applicant | null>(null);
     const [loading, setLoading] = React.useState(true);
     const { toast } = useToast();
@@ -26,13 +30,15 @@ export default function ApplicantPortalPage({ params }: { params: { id: string }
     const [assessment, setAssessment] = React.useState<{id: string, type: string} | null>(null);
 
     React.useEffect(() => {
+        if (!id) return;
+        
         const supabase = createClient();
         
         async function fetchApplicant() {
             const { data, error } = await supabase
                 .from('applicants')
                 .select('*')
-                .eq('id', params.id)
+                .eq('id', id)
                 .single();
 
             if (error) {
@@ -58,7 +64,7 @@ export default function ApplicantPortalPage({ params }: { params: { id: string }
 
         return () => clearTimeout(timer);
 
-    }, [params.id, toast]);
+    }, [id, toast]);
     
     if (loading) {
         return (
@@ -97,7 +103,7 @@ export default function ApplicantPortalPage({ params }: { params: { id: string }
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="text-center">
-                        <p className="text-sm text-muted-foreground">Your Applicant ID is: <span className="font-mono">{params.id}</span></p>
+                        <p className="text-sm text-muted-foreground">Your Applicant ID is: <span className="font-mono">{id}</span></p>
                     </div>
 
                     <div className="border-t pt-4">
