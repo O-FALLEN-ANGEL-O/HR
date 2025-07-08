@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Applicant } from '@/lib/types';
+import type { Applicant } from '@/lib/types';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { createClient } from '@/lib/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 type ApplicantListProps = {
   initialApplicants: Applicant[];
@@ -54,6 +56,31 @@ export default function ApplicantList({ initialApplicants }: ApplicantListProps)
   const [applicants, setApplicants] = React.useState(initialApplicants);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [stageFilter, setStageFilter] = React.useState('all');
+  const [sourceFilter, setSourceFilter] = React.useState('all');
+  const supabase = createClient();
+  const { toast } = useToast();
+
+  React.useEffect(() => {
+    const channel = supabase
+      .channel('realtime-applicants')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'applicants' },
+        (payload) => {
+          setApplicants((prev) => [payload.new as Applicant, ...prev]);
+          toast({
+            title: 'New Applicant',
+            description: `${(payload.new as Applicant).name} just applied via ${payload.new.source}.`,
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, toast]);
+
 
   const filteredApplicants = React.useMemo(() => {
     return applicants
@@ -62,17 +89,20 @@ export default function ApplicantList({ initialApplicants }: ApplicantListProps)
       )
       .filter((applicant) =>
         stageFilter === 'all' ? true : applicant.stage === stageFilter
+      )
+      .filter((applicant) =>
+        sourceFilter === 'all' ? true : applicant.source === sourceFilter
       );
-  }, [applicants, searchTerm, stageFilter]);
+  }, [applicants, searchTerm, stageFilter, sourceFilter]);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Applicant Management</CardTitle>
         <CardDescription>
-          Search, filter, and manage all job applicants.
+          Search, filter, and manage all job applicants. Now with live updates.
         </CardDescription>
-        <div className="mt-4 flex items-center gap-2">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           <Input
             placeholder="Search by name..."
             value={searchTerm}
@@ -92,6 +122,17 @@ export default function ApplicantList({ initialApplicants }: ApplicantListProps)
               ))}
             </SelectContent>
           </Select>
+          <Select value={sourceFilter} onValueChange={setSourceFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by source" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sources</SelectItem>
+              <SelectItem value="walk-in">Walk-in</SelectItem>
+              <SelectItem value="college">College</SelectItem>
+              <SelectItem value="email">Email</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </CardHeader>
       <CardContent>
@@ -102,6 +143,7 @@ export default function ApplicantList({ initialApplicants }: ApplicantListProps)
               <TableHead>Applied For</TableHead>
               <TableHead>Applied Date</TableHead>
               <TableHead>Stage</TableHead>
+              <TableHead>Source</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -124,7 +166,7 @@ export default function ApplicantList({ initialApplicants }: ApplicantListProps)
                     </div>
                   </div>
                 </TableCell>
-                <TableCell>{applicant.jobTitle}</TableCell>
+                <TableCell>{applicant.jobTitle || 'Walk-in'}</TableCell>
                 <TableCell>
                   {format(new Date(applicant.appliedDate), 'PPP')}
                 </TableCell>
@@ -132,6 +174,9 @@ export default function ApplicantList({ initialApplicants }: ApplicantListProps)
                   <Badge variant="secondary" className={stageColors[applicant.stage]}>
                     {applicant.stage}
                   </Badge>
+                </TableCell>
+                <TableCell>
+                   <Badge variant="outline" className="capitalize">{applicant.source || 'N/A'}</Badge>
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>

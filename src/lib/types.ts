@@ -27,10 +27,11 @@ export type Applicant = {
   name: string;
   email: string;
   phone: string;
-  jobTitle: string;
+  jobTitle?: string;
   stage: 'Sourced' | 'Applied' | 'Phone Screen' | 'Interview' | 'Offer' | 'Hired';
   appliedDate: string;
-  avatar: string;
+  avatar?: string;
+  source?: 'walk-in' | 'college' | 'email';
 };
 
 export type Interview = {

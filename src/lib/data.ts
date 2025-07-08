@@ -109,6 +109,7 @@ export const applicants: Applicant[] = [
     stage: 'Interview',
     appliedDate: '2024-07-16',
     avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026701d',
+    source: 'email',
   },
   {
     id: 'app-2',
@@ -119,6 +120,7 @@ export const applicants: Applicant[] = [
     stage: 'Phone Screen',
     appliedDate: '2024-07-14',
     avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026702d',
+    source: 'college',
   },
   {
     id: 'app-3',
@@ -129,6 +131,7 @@ export const applicants: Applicant[] = [
     stage: 'Hired',
     appliedDate: '2024-07-01',
     avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026703d',
+    source: 'email',
   },
   {
     id: 'app-4',
@@ -139,6 +142,7 @@ export const applicants: Applicant[] = [
     stage: 'Applied',
     appliedDate: '2024-07-18',
     avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704d',
+    source: 'college',
   },
   {
     id: 'app-5',
@@ -149,6 +153,7 @@ export const applicants: Applicant[] = [
     stage: 'Offer',
     appliedDate: '2024-07-13',
     avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026705d',
+    source: 'email',
   },
 ];
 
