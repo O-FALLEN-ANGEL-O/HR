@@ -32,6 +32,8 @@ export type Applicant = {
   appliedDate: string;
   avatar?: string;
   source?: 'walk-in' | 'college' | 'email';
+  wpm?: number;
+  accuracy?: number;
 };
 
 export type Interview = {
