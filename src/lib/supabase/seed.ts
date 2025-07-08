@@ -99,6 +99,8 @@ async function seedData() {
                 avatar: faker.image.avatar(),
                 source: faker.helpers.arrayElement(['walk-in', 'college', 'email', 'manual']),
                 aptitude_score: faker.helpers.arrayElement([null, faker.number.int({ min: 40, max: 100 })]),
+                comprehensive_score: faker.helpers.arrayElement([null, faker.number.int({ min: 40, max: 100 })]),
+                english_grammar_score: faker.helpers.arrayElement([null, faker.number.int({ min: 40, max: 100 })]),
                 wpm: faker.helpers.arrayElement([null, faker.number.int({ min: 30, max: 90 })]),
                 accuracy: faker.helpers.arrayElement([null, faker.number.int({ min: 85, max: 99 })]),
                 ai_match_score: faker.helpers.arrayElement([null, faker.number.int({ min: 50, max: 95 })]),

@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, CheckCircle, BrainCircuit, Keyboard, FileText, ArrowRight } from 'lucide-react';
+import { Loader2, CheckCircle, BrainCircuit, Keyboard, FileText, ArrowRight, Library, SpellCheck } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { Applicant } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
@@ -27,30 +27,51 @@ export default function ApplicantPortalPage() {
     const [loading, setLoading] = React.useState(true);
     const { toast } = useToast();
     
+    const fetchApplicant = React.useCallback(async (showLoading = true) => {
+        if (showLoading) setLoading(true);
+        const supabase = createClient();
+        const { data, error } = await supabase
+            .from('applicants')
+            .select('*, jobs(title)')
+            .eq('id', id)
+            .single();
+
+        if (error) {
+            console.error('Error fetching applicant:', error);
+            toast({ title: 'Error', description: 'Could not load applicant data.', variant: 'destructive' });
+        } else {
+            setApplicant(data);
+        }
+        if (showLoading) setLoading(false);
+    }, [id, toast]);
+
     React.useEffect(() => {
         if (!id) return;
         
-        const supabase = createClient();
-        
-        async function fetchApplicant() {
-            setLoading(true);
-            const { data, error } = await supabase
-                .from('applicants')
-                .select('*, jobs(title)')
-                .eq('id', id)
-                .single();
-
-            if (error) {
-                console.error('Error fetching applicant:', error);
-                toast({ title: 'Error', description: 'Could not load applicant data.', variant: 'destructive' });
-            } else {
-                setApplicant(data);
-            }
-            setLoading(false);
-        }
-
         fetchApplicant();
-    }, [id, toast]);
+
+        const supabase = createClient();
+        const channel = supabase
+            .channel(`applicant-portal-${id}`)
+            .on<Applicant>(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'applicants',
+                    filter: `id=eq.${id}`,
+                },
+                (payload) => {
+                    setApplicant(payload.new as Applicant);
+                    toast({ title: 'Profile Updated', description: 'Your assessment results have been saved.' });
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [id, fetchApplicant, toast]);
     
     if (loading) {
         return (
@@ -77,7 +98,17 @@ export default function ApplicantPortalPage() {
 
     const hasCompletedTypingTest = applicant.wpm !== null && applicant.wpm !== undefined;
     const hasCompletedAptitudeTest = applicant.aptitude_score !== null && applicant.aptitude_score !== undefined;
-    const allTestsCompleted = hasCompletedTypingTest && hasCompletedAptitudeTest;
+    const hasCompletedComprehensiveTest = applicant.comprehensive_score !== null && applicant.comprehensive_score !== undefined;
+    const hasCompletedGrammarTest = applicant.english_grammar_score !== null && applicant.english_grammar_score !== undefined;
+
+    const allTestsCompleted = hasCompletedTypingTest && hasCompletedAptitudeTest && hasCompletedComprehensiveTest && hasCompletedGrammarTest;
+
+    const pendingTests = [
+        { completed: hasCompletedTypingTest, name: 'Typing Test', icon: Keyboard, description: 'Measure your typing speed and accuracy.', path: 'typing-test' },
+        { completed: hasCompletedAptitudeTest, name: 'Aptitude Test', icon: BrainCircuit, description: 'Assess your problem-solving skills.', path: 'aptitude-test' },
+        { completed: hasCompletedComprehensiveTest, name: 'Comprehensive Test', icon: Library, description: 'Test your reading and comprehension.', path: 'comprehensive-test' },
+        { completed: hasCompletedGrammarTest, name: 'English Grammar Test', icon: SpellCheck, description: 'Assess your command of English.', path: 'english-grammar-test' },
+    ].filter(test => !test.completed);
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
@@ -128,6 +159,14 @@ export default function ApplicantPortalPage() {
                                     <p className="font-semibold">Aptitude Test</p>
                                     <p className="text-sm text-muted-foreground">Score: <span className="font-bold text-primary">{applicant.aptitude_score}%</span></p>
                                 </div>
+                                 <div className="rounded-lg border p-4">
+                                    <p className="font-semibold">Comprehensive Test</p>
+                                    <p className="text-sm text-muted-foreground">Score: <span className="font-bold text-primary">{applicant.comprehensive_score}%</span></p>
+                                </div>
+                                <div className="rounded-lg border p-4">
+                                    <p className="font-semibold">English Grammar Test</p>
+                                    <p className="text-sm text-muted-foreground">Score: <span className="font-bold text-primary">{applicant.english_grammar_score}%</span></p>
+                                </div>
                             </CardContent>
                         </Card>
                     ) : (
@@ -137,28 +176,17 @@ export default function ApplicantPortalPage() {
                                 <CardDescription>Please complete the following assessments to proceed with your application.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                {!hasCompletedTypingTest && (
-                                     <Alert className="flex items-center justify-between">
+                                {pendingTests.map(test => (
+                                     <Alert key={test.path} className="flex items-center justify-between">
                                         <div>
-                                            <AlertTitle className="flex items-center gap-2"><Keyboard/>Typing Test</AlertTitle>
-                                            <AlertDescription>Measure your typing speed and accuracy.</AlertDescription>
+                                            <AlertTitle className="flex items-center gap-2"><test.icon/>{test.name}</AlertTitle>
+                                            <AlertDescription>{test.description}</AlertDescription>
                                         </div>
                                         <Button asChild>
-                                            <Link href={`/typing-test?id=${id}`}>Start Test <ArrowRight className="ml-2"/></Link>
+                                            <Link href={`/${test.path}?id=${id}`}>Start Test <ArrowRight className="ml-2"/></Link>
                                         </Button>
                                     </Alert>
-                                )}
-                                {!hasCompletedAptitudeTest && (
-                                     <Alert className="flex items-center justify-between">
-                                        <div>
-                                            <AlertTitle className="flex items-center gap-2"><BrainCircuit/>Aptitude Test</AlertTitle>
-                                            <AlertDescription>Assess your problem-solving skills.</AlertDescription>
-                                        </div>
-                                        <Button asChild>
-                                            <Link href={`/aptitude-test?id=${id}`}>Start Test <ArrowRight className="ml-2"/></Link>
-                                        </Button>
-                                    </Alert>
-                                )}
+                                ))}
                             </CardContent>
                         </Card>
                     )}
