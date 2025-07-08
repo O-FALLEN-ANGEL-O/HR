@@ -1,6 +1,26 @@
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import type { UserRole } from '@/lib/types';
+
+function getHomePathForRole(role: UserRole): string {
+  switch (role) {
+    case 'admin':
+      return '/admin/roles';
+    case 'super_hr':
+    case 'hr_manager':
+    case 'recruiter':
+      return '/hr/dashboard';
+    case 'interviewer':
+      return '/interviews';
+    case 'employee':
+      return '/employee/dashboard';
+    case 'intern':
+      return '/intern/dashboard';
+    default:
+      return '/login';
+  }
+}
 
 export default async function Home() {
   const cookieStore = cookies();
@@ -11,7 +31,15 @@ export default async function Home() {
   } = await supabase.auth.getSession();
 
   if (session) {
-    redirect('/dashboard');
+    const { data: userProfile } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+    
+    const homePath = getHomePathForRole(userProfile?.role || 'guest');
+    redirect(homePath);
+
   } else {
     redirect('/login');
   }

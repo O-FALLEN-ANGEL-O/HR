@@ -3,6 +3,26 @@
 import { createClient } from '@/lib/supabase/server';
 import { headers, cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import type { UserRole } from '@/lib/types';
+
+function getHomePathForRole(role: UserRole): string {
+  switch (role) {
+    case 'admin':
+      return '/admin/roles'; // Admin dashboard is the roles page
+    case 'super_hr':
+    case 'hr_manager':
+    case 'recruiter':
+      return '/hr/dashboard';
+    case 'interviewer':
+      return '/interviews';
+    case 'employee':
+      return '/employee/dashboard';
+    case 'intern':
+      return '/intern/dashboard';
+    default:
+      return '/login';
+  }
+}
 
 export async function login(formData: any, isMagicLink: boolean = false) {
   const cookieStore = cookies();
@@ -20,15 +40,22 @@ export async function login(formData: any, isMagicLink: boolean = false) {
         return { error: `Could not authenticate user: ${error.message}` };
     }
     return { data: 'Magic link sent' };
-  } else {
-    const { error } = await supabase.auth.signInWithPassword(formData);
+  } 
+  
+  const { data: authData, error } = await supabase.auth.signInWithPassword(formData);
     
-    if (error) {
-       return { error: `Could not authenticate user: ${error.message}` };
-    }
+  if (error || !authData.user) {
+      return { error: `Could not authenticate user: ${error?.message}` };
   }
 
-  redirect('/dashboard');
+  const { data: userProfile } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', authData.user.id)
+    .single();
+    
+  const homePath = getHomePathForRole(userProfile?.role || 'guest');
+  redirect(homePath);
 }
 
 export async function loginWithGoogle() {

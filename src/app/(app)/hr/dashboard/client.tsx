@@ -59,7 +59,7 @@ type DashboardClientProps = {
     initialRecentJobs: Job[];
 }
 
-export default function DashboardClient({ initialMetrics, initialRecentJobs }: DashboardClientProps) {
+export default function HrDashboardClient({ initialMetrics, initialRecentJobs }: DashboardClientProps) {
     const [metrics, setMetrics] = React.useState(initialMetrics);
     const [recentJobs, setRecentJobs] = React.useState(initialRecentJobs);
     const { toast } = useToast();
@@ -80,18 +80,13 @@ export default function DashboardClient({ initialMetrics, initialRecentJobs }: D
             .on(
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'metrics' },
-                (payload) => {
+                async () => {
                      toast({
                         title: 'Metrics Updated',
                         description: 'Dashboard metrics have been updated.',
                     });
-                    if (payload.eventType === 'UPDATE') {
-                        setMetrics((prev) =>
-                            prev.map((metric) =>
-                                metric.id === payload.new.id ? { ...metric, ...(payload.new as Metric) } : metric
-                            )
-                        );
-                    }
+                     const { data } = await supabase.from('metrics').select('*').order('id', { ascending: true });
+                     setMetrics(data || []);
                 }
             ).subscribe();
         
@@ -125,7 +120,7 @@ export default function DashboardClient({ initialMetrics, initialRecentJobs }: D
 
     return (
         <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-            <Header title="Dashboard">
+            <Header title="HR Dashboard">
                 <Button variant="outline" size="sm">
                 <Upload className="mr-2 h-4 w-4" />
                 Export

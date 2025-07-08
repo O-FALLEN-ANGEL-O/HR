@@ -22,6 +22,9 @@ import {
   Settings,
   Sparkles,
   Users,
+  BarChart3,
+  UserCheck,
+  FileText
 } from 'lucide-react';
 
 import {
@@ -41,7 +44,7 @@ import {
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { logout } from '@/app/auth/actions';
-import type { UserProfile } from '@/lib/types';
+import type { UserProfile, UserRole } from '@/lib/types';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,6 +54,76 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
+
+const getNavLinks = (role: UserRole) => {
+  const commonHrLinks = [
+    { href: '/hr/dashboard', label: 'HR Dashboard', icon: LayoutDashboard },
+    { href: '/applicants', label: 'Applicants', icon: Users },
+    { href: '/jobs', label: 'Job Postings', icon: Briefcase },
+    { href: '/interviews', label: 'Interviews', icon: Calendar },
+    { href: '/college-drive', label: 'College Drives', icon: GraduationCap },
+    { href: '/onboarding', label: 'Onboarding', icon: ClipboardCheck },
+    { href: '/performance', label: 'Performance', icon: BarChart3 },
+    { href: '/ai-tools/applicant-scoring', label: 'Applicant Scoring', icon: ScanSearch, group: 'AI Tools' },
+    { href: '/ai-tools/chatbot', label: 'AI Chatbot', icon: Bot, group: 'AI Tools' },
+    { href: '/ai-tools/review-analyzer', label: 'Review Analyzer', icon: PenSquare, group: 'AI Tools' },
+  ];
+
+  switch (role) {
+    case 'admin':
+      return [
+        { href: '/admin/roles', label: 'Role Management', icon: UserCheck },
+        ...commonHrLinks,
+      ];
+    case 'super_hr':
+    case 'hr_manager':
+      return commonHrLinks;
+    case 'recruiter':
+      return [
+        { href: '/hr/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { href: '/applicants', label: 'Applicants', icon: Users },
+        { href: '/jobs', label: 'Job Postings', icon: Briefcase },
+        { href: '/ai-tools/applicant-scoring', label: 'Applicant Scoring', icon: ScanSearch },
+      ];
+    case 'interviewer':
+      return [
+        { href: '/interviews', label: 'My Interviews', icon: Calendar },
+      ];
+    case 'employee':
+      return [
+        { href: '/employee/dashboard', label: 'My Dashboard', icon: LayoutDashboard },
+        { href: '/time-off', label: 'Time Off', icon: Clock },
+      ];
+    case 'intern':
+        return [
+          { href: '/intern/dashboard', label: 'Welcome', icon: LayoutDashboard },
+          { href: '/onboarding', label: 'Onboarding Tasks', icon: ClipboardCheck },
+        ]
+    default:
+      return [];
+  }
+};
+
+const AiToolsSubMenu = ({ isActive, isSubActive }: { isActive: (p: string) => boolean, isSubActive: (p: string[]) => boolean }) => (
+    <SidebarMenuSub>
+        <SidebarMenuSubItem>
+        <SidebarMenuSubButton asChild isActive={isActive('/ai-tools/applicant-scoring')}>
+            <Link href="/ai-tools/applicant-scoring"><ScanSearch />Applicant Scoring</Link>
+        </SidebarMenuSubButton>
+        </SidebarMenuSubItem>
+        <SidebarMenuSubItem>
+        <SidebarMenuSubButton asChild isActive={isActive('/ai-tools/chatbot')}>
+            <Link href="/ai-tools/chatbot"><Bot />AI Chatbot</Link>
+        </SidebarMenuSubButton>
+        </SidebarMenuSubItem>
+        <SidebarMenuSubItem>
+        <SidebarMenuSubButton asChild isActive={isActive('/ai-tools/review-analyzer')}>
+            <Link href="/ai-tools/review-analyzer"><PenSquare />Review Analyzer</Link>
+        </SidebarMenuSubButton>
+        </SidebarMenuSubItem>
+    </SidebarMenuSub>
+)
+
 export default function AppShell({
   children,
   user,
@@ -59,28 +132,27 @@ export default function AppShell({
   user: UserProfile | null;
 }) {
   const pathname = usePathname();
-  const [open, setOpen] = React.useState(false);
+  const [openAiSubMenu, setOpenAiSubMenu] = React.useState(false);
 
-  const isActive = (path: string) => {
-    return pathname === path;
-  };
+  const isActive = (path: string) => pathname === path;
+  const isSubActive = (paths: string[]) => paths.some((path) => pathname.startsWith(path));
 
-  const isSubActive = (paths: string[]) => {
-    return paths.some((path) => pathname.startsWith(path));
-  };
-  
-  const isAdmin = user?.role === 'admin';
+  const role = user?.role || 'guest';
+  const navLinks = getNavLinks(role);
+  const aiToolsInNav = navLinks.some(link => link.group === 'AI Tools');
+
+  React.useEffect(() => {
+    if (isSubActive(['/ai-tools'])) {
+        setOpenAiSubMenu(true);
+    }
+  }, [pathname, isSubActive])
 
   return (
     <SidebarProvider>
       <Sidebar side="left" variant="sidebar" collapsible="icon">
         <SidebarHeader className="h-14 justify-center">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              className="h-7 w-7 fill-primary"
-            >
+          <Link href="/" className="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-7 w-7 fill-primary">
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5-10-5-10 5z" />
             </svg>
             <span className="text-xl font-semibold text-foreground">HR+</span>
@@ -88,134 +160,21 @@ export default function AppShell({
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={isActive('/dashboard')}>
-                <Link href="/dashboard">
-                  <LayoutDashboard />
-                  Dashboard
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={isActive('/applicants')}>
-                <Link href="/applicants">
-                  <Users />
-                  Applicants
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={isActive('/jobs')}>
-                <Link href="/jobs">
-                  <Briefcase />
-                  Job Postings
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={isActive('/interviews')}>
-                <Link href="/interviews">
-                  <Calendar />
-                  Interviews
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={isActive('/college-drive')}>
-                <Link href="/college-drive">
-                  <GraduationCap />
-                  College Drives
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={isActive('/onboarding')}>
-                <Link href="/onboarding">
-                  <ClipboardCheck />
-                  Onboarding
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={isActive('/performance')}>
-                <Link href="/performance">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="lucide lucide-trending-up"
-                  >
-                    <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
-                    <polyline points="16 7 22 7 22 13" />
-                  </svg>
-                  Performance
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={isActive('/time-off')}>
-                <Link href="/time-off">
-                  <Clock />
-                  Time & Attendance
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-
-            <SidebarMenuItem>
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-2 p-2"
-                onClick={() => setOpen(!open)}
-                aria-expanded={open}
-                data-active={isSubActive(['/ai-tools'])}
-              >
-                <Sparkles />
-                AI Tools
-              </Button>
-              {open && (
-                <SidebarMenuSub>
-                  <SidebarMenuSubItem>
-                    <SidebarMenuSubButton
-                      asChild
-                      isActive={isActive('/ai-tools/applicant-scoring')}
-                    >
-                      <Link href="/ai-tools/applicant-scoring">
-                        <ScanSearch />
-                        Applicant Scoring
-                      </Link>
-                    </SidebarMenuSubButton>
-                  </SidebarMenuSubItem>
-                  <SidebarMenuSubItem>
-                    <SidebarMenuSubButton
-                      asChild
-                      isActive={isActive('/ai-tools/chatbot')}
-                    >
-                      <Link href="/ai-tools/chatbot">
-                        <Bot />
-                        AI Chatbot
-                      </Link>
-                    </SidebarMenuSubButton>
-                  </SidebarMenuSubItem>
-                  <SidebarMenuSubItem>
-                    <SidebarMenuSubButton
-                      asChild
-                      isActive={isActive('/ai-tools/review-analyzer')}
-                    >
-                      <Link href="/ai-tools/review-analyzer">
-                        <PenSquare />
-                        Review Analyzer
-                      </Link>
-                    </SidebarMenuSubButton>
-                  </SidebarMenuSubItem>
-                </SidebarMenuSub>
-              )}
-            </SidebarMenuItem>
+            {navLinks.filter(link => !link.group).map(link => (
+              <SidebarMenuItem key={link.href}>
+                <SidebarMenuButton asChild isActive={isActive(link.href)}>
+                  <Link href={link.href}><link.icon />{link.label}</Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+            {aiToolsInNav && (
+                <SidebarMenuItem>
+                    <Button variant="ghost" className="w-full justify-start gap-2 p-2" onClick={() => setOpenAiSubMenu(!openAiSubMenu)} aria-expanded={openAiSubMenu} data-active={isSubActive(['/ai-tools'])}>
+                        <Sparkles />AI Tools
+                    </Button>
+                    {openAiSubMenu && <AiToolsSubMenu isActive={isActive} isSubActive={isSubActive} />}
+                </SidebarMenuItem>
+            )}
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter className="flex-col items-center gap-4">
@@ -229,14 +188,14 @@ export default function AppShell({
                   </Avatar>
                   <div className="flex flex-col text-sm items-start">
                     <span className="font-semibold">{user?.full_name || 'Guest'}</span>
-                    <span className="text-muted-foreground capitalize">{user?.role || 'user'}</span>
+                    <span className="text-muted-foreground capitalize">{user?.role.replace('_', ' ') || 'user'}</span>
                   </div>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent side="top" align="start" className="w-56">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {isAdmin && (
+                {role === 'admin' && (
                     <DropdownMenuItem asChild>
                         <Link href="/admin/roles"><Settings className="mr-2"/>Admin Settings</Link>
                     </DropdownMenuItem>
@@ -247,7 +206,6 @@ export default function AppShell({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-
             <ThemeToggle />
           </div>
         </SidebarFooter>

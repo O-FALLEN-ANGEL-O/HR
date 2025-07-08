@@ -1,10 +1,10 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import type { Metric, Job } from '@/lib/types';
-import DashboardClient from './client';
+import HrDashboardClient from './client';
 
 
-export default async function DashboardPage() {
+export default async function HRDashboardPage() {
   const cookieStore = cookies();
   const supabase = createClient(cookieStore);
 
@@ -28,7 +28,7 @@ export default async function DashboardPage() {
   }
 
   return (
-    <DashboardClient 
+    <HrDashboardClient
         initialMetrics={metrics} 
         initialRecentJobs={recentJobs} 
     />
