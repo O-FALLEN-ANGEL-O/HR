@@ -1,7 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { faker } from '@faker-js/faker';
-import 'dotenv/config';
+import dotenv from 'dotenv';
 import type { Job, Applicant, Metric, Interview, College, Onboarding, PerformanceReview, TimeOffRequest } from '../types';
+
+dotenv.config();
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -20,8 +22,8 @@ async function clearData() {
   ];
 
   for (const table of tables) {
-    const { error } = await supabase.from(table).delete().not('id', 'is', null);
-    if (error && error.code !== '42P01') {
+    const { error } = await supabase.from(table).delete().gt('id', 0);
+    if (error && error.code !== '42P01' && !error.message.includes("does not exist")) {
       console.error(`Error clearing table ${table}:`, error.message);
     }
   }
@@ -43,26 +45,26 @@ async function seedData() {
     department: faker.commerce.department(),
     status: faker.helpers.arrayElement(['Open', 'Closed', 'On hold']),
     applicants: faker.number.int({ min: 5, max: 100 }),
-    postedDate: faker.date.past().toISOString(),
+    posted_date: faker.date.past().toISOString(),
   }));
 
   const applicants: Omit<Applicant, 'id'>[] = Array.from({ length: 20 }, () => ({
     name: faker.person.fullName(),
     email: faker.internet.email(),
     phone: faker.phone.number(),
-    jobTitle: faker.person.jobTitle(),
+    job_title: faker.person.jobTitle(),
     stage: faker.helpers.arrayElement(['Sourced', 'Applied', 'Phone Screen', 'Interview', 'Offer', 'Hired']),
-    appliedDate: faker.date.past().toISOString(),
+    applied_date: faker.date.past().toISOString(),
     avatar: faker.image.avatar(),
     source: faker.helpers.arrayElement(['walk-in', 'college', 'email']),
   }));
   
   const interviews: Omit<Interview, 'id'>[] = Array.from({ length: 12 }, () => ({
-    candidateName: faker.person.fullName(),
-    candidateAvatar: faker.image.avatar(),
-    jobTitle: faker.person.jobTitle(),
-    interviewerName: faker.person.fullName(),
-    interviewerAvatar: faker.image.avatar(),
+    candidate_name: faker.person.fullName(),
+    candidate_avatar: faker.image.avatar(),
+    job_title: faker.person.jobTitle(),
+    interviewer_name: faker.person.fullName(),
+    interviewer_avatar: faker.image.avatar(),
     date: faker.date.future().toISOString(),
     time: '10:00 AM',
     type: faker.helpers.arrayElement(['Video', 'Phone', 'In-person']),
@@ -72,36 +74,36 @@ async function seedData() {
   const colleges: Omit<College, 'id'>[] = Array.from({ length: 8 }, () => ({
     name: `${faker.location.city()} University`,
     status: faker.helpers.arrayElement(['Invited', 'Confirmed', 'Attended', 'Declined']),
-    resumesReceived: faker.number.int({ min: 0, max: 200 }),
-    contactEmail: faker.internet.email(),
-    lastContacted: faker.date.past().toISOString()
+    resumes_received: faker.number.int({ min: 0, max: 200 }),
+    contact_email: faker.internet.email(),
+    last_contacted: faker.date.past().toISOString()
   }));
 
   const onboardingWorkflows: Omit<Onboarding, 'id'>[] = Array.from({ length: 5 }, () => ({
-    employeeName: faker.person.fullName(),
-    employeeAvatar: faker.image.avatar(),
-    jobTitle: faker.person.jobTitle(),
-    managerName: faker.person.fullName(),
-    buddyName: faker.person.fullName(),
+    employee_name: faker.person.fullName(),
+    employee_avatar: faker.image.avatar(),
+    job_title: faker.person.jobTitle(),
+    manager_name: faker.person.fullName(),
+    buddy_name: faker.person.fullName(),
     progress: faker.number.int({ min: 10, max: 100 }),
-    currentStep: faker.helpers.arrayElement(['IT Setup', 'HR Orientation', 'Department Intro']),
-    startDate: faker.date.past().toISOString()
+    current_step: faker.helpers.arrayElement(['IT Setup', 'HR Orientation', 'Department Intro']),
+    start_date: faker.date.past().toISOString()
   }));
 
   const performanceReviews: Omit<PerformanceReview, 'id'>[] = Array.from({ length: 10 }, () => ({
-    employeeName: faker.person.fullName(),
-    employeeAvatar: faker.image.avatar(),
-    jobTitle: faker.person.jobTitle(),
-    reviewDate: faker.date.future().toLocaleDateString('en-US'),
+    employee_name: faker.person.fullName(),
+    employee_avatar: faker.image.avatar(),
+    job_title: faker.person.jobTitle(),
+    review_date: faker.date.future().toLocaleDateString('en-US'),
     status: faker.helpers.arrayElement(['Pending', 'In Progress', 'Completed'])
   }));
 
   const timeOffRequests: Omit<TimeOffRequest, 'id'>[] = Array.from({ length: 8 }, () => ({
-    employeeName: faker.person.fullName(),
-    employeeAvatar: faker.image.avatar(),
+    employee_name: faker.person.fullName(),
+    employee_avatar: faker.image.avatar(),
     type: faker.helpers.arrayElement(['Vacation', 'Sick Leave', 'Personal']),
-    startDate: faker.date.future().toISOString(),
-    endDate: faker.date.future().toISOString(),
+    start_date: faker.date.future().toISOString(),
+    end_date: faker.date.future().toISOString(),
     status: faker.helpers.arrayElement(['Pending', 'Approved', 'Rejected'])
   }));
 
@@ -116,14 +118,16 @@ async function seedData() {
     { name: 'time_off_requests', data: timeOffRequests },
   ];
 
-  for (const insertion of insertions) {
+  const promises = insertions.map(async (insertion) => {
     const { error } = await supabase.from(insertion.name).insert(insertion.data);
     if (error) {
       console.error(`🔴 Error seeding ${insertion.name}:`, error.message);
     } else {
       console.log(`  - Seeded ${insertion.name}`);
     }
-  }
+  });
+  
+  await Promise.all(promises);
 }
 
 async function run() {
