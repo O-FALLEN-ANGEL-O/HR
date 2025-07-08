@@ -22,7 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning={true}>
-      <body className={cn('font-body antialiased', inter.variable)}>
+      <body className={cn('font-body antialiased', inter.variable)} suppressHydrationWarning={true}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
           <Toaster />
