@@ -295,6 +295,14 @@ function ResumeDetails({ resume }: { resume?: ProcessResumeOutput | null }) {
                         ))}
                     </div>
                 </div>
+                <div>
+                    <h3 className="font-semibold text-lg mb-2">Full Resume Text</h3>
+                    <div className="p-4 border rounded-md bg-muted/50 max-h-96 overflow-y-auto">
+                        <pre className="text-sm whitespace-pre-wrap font-mono">
+                            {resume.fullText || 'No full text extracted.'}
+                        </pre>
+                    </div>
+                </div>
             </CardContent>
         </Card>
     )

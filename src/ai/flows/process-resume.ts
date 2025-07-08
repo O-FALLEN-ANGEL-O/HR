@@ -36,6 +36,7 @@ const ProcessResumeOutputSchema = z.object({
     duration: z.string().describe("The duration of employment (e.g., 'Jan 2020 - Present')."),
   })).describe("A list of work experiences."),
   education: z.array(EducationSchema).describe("A list of the applicant's educational qualifications."),
+  fullText: z.string().describe("The full, unmodified text content extracted from the resume."),
 });
 export type ProcessResumeOutput = z.infer<typeof ProcessResumeOutputSchema>;
 
@@ -51,7 +52,7 @@ const prompt = ai.definePrompt({
 
 Resume: {{media url=resumeDataUri}}
 
-Extract the applicant's full name, email address, phone number, a list of their skills, their work experience, and their educational background.
+Extract the applicant's full name, email address, phone number, a list of their skills, their work experience, and their educational background. Also, extract the full, raw text content of the entire resume.
 `,
 });
 
