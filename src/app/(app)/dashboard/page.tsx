@@ -1,7 +1,14 @@
+import { cookies } from 'next/headers';
+import Link from 'next/link';
+import { createClient } from '@/lib/supabase/server';
+import type { Metric, Job } from '@/lib/types';
+
 import { Header } from '@/components/header';
 import {
   Card,
   CardContent,
+  CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -15,12 +22,92 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { metrics, recentJobs } from '@/lib/data';
-import { format } from 'date-fns';
-import { ArrowUp, ArrowDown, PlusCircle, Upload, PlayCircle, Users, Calendar } from 'lucide-react';
-import Link from 'next/link';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+} from '@/components/ui/chart';
 
-export default function DashboardPage() {
+import { format } from 'date-fns';
+import {
+  ArrowUp,
+  ArrowDown,
+  PlusCircle,
+  Upload,
+  PlayCircle,
+  Users,
+  Calendar,
+} from 'lucide-react';
+import { BarChart, PieChart, Bar, Pie, Cell, XAxis, CartesianGrid } from 'recharts';
+
+export default async function DashboardPage() {
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+
+  // The app is now configured to fetch data from Supabase.
+  // Once your database tables ('metrics', 'jobs', etc.) are created and populated,
+  // you can uncomment the code below to fetch live data.
+  /*
+  const { data: metricsData, error: metricsError } = await supabase
+    .from('metrics')
+    .select('*')
+    .order('id', { ascending: true });
+  const metrics: Metric[] = metricsData || [];
+
+  const { data: recentJobsData, error: jobsError } = await supabase
+    .from('jobs')
+    .select('*')
+    .eq('status', 'Open')
+    .order('postedDate', { ascending: false })
+    .limit(3);
+  const recentJobs: Job[] = recentJobsData || [];
+
+  if (metricsError || jobsError) {
+    console.error(metricsError || jobsError);
+    // You can render an error state here
+  }
+  */
+
+  // For now, we'll continue using the mock data until the database is ready.
+  const { metrics, recentJobs } = await import('@/lib/data');
+
+  const employeeDistributionData = [
+    { role: 'Engineering', count: 450, fill: 'var(--color-engineering)' },
+    { role: 'Product', count: 150, fill: 'var(--color-product)' },
+    { role: 'Design', count: 100, fill: 'var(--color-design)' },
+    { role: 'Sales', count: 250, fill: 'var(--color-sales)' },
+    { role: 'HR', count: 54, fill: 'var(--color-hr)' },
+    { role: 'Other', count: 200, fill: 'var(--color-other)' },
+  ];
+
+  const hiringPipelineData = [
+    { stage: 'Applied', count: 125 },
+    { stage: 'Screening', count: 80 },
+    { stage: 'Interview', count: 45 },
+    { stage: 'Offer', count: 15 },
+  ];
+
+  const pieChartConfig = {
+    count: {
+      label: 'Employees',
+    },
+    engineering: { label: 'Engineering', color: 'hsl(var(--chart-1))' },
+    product: { label: 'Product', color: 'hsl(var(--chart-2))' },
+    design: { label: 'Design', color: 'hsl(var(--chart-3))' },
+    sales: { label: 'Sales', color: 'hsl(var(--chart-4))' },
+    hr: { label: 'HR', color: 'hsl(var(--chart-5))' },
+    other: { label: 'Other', color: 'hsl(var(--muted))' },
+  };
+
+  const barChartConfig = {
+    count: {
+      label: 'Applicants',
+      color: 'hsl(var(--primary))',
+    },
+  };
+
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <Header title="Dashboard">
@@ -38,14 +125,12 @@ export default function DashboardPage() {
         {metrics.map((metric, index) => (
           <Card key={index}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                {metric.title}
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">{metric.title}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{metric.value}</div>
               {metric.change && (
-                <p className="text-xs text-muted-foreground flex items-center">
+                <p className="flex items-center text-xs text-muted-foreground">
                   {metric.changeType === 'increase' ? (
                     <ArrowUp className="h-4 w-4 text-green-500" />
                   ) : (
@@ -57,6 +142,54 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-7">
+        <Card className="lg:col-span-3">
+          <CardHeader>
+            <CardTitle>Employee Distribution</CardTitle>
+            <CardDescription>By role</CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            <ChartContainer
+              config={pieChartConfig}
+              className="mx-auto aspect-square h-[250px]"
+            >
+              <PieChart>
+                <ChartTooltip content={<ChartTooltipContent nameKey="role" hideLabel />} />
+                <Pie data={employeeDistributionData} dataKey="count" nameKey="role" innerRadius={50} paddingAngle={2}>
+                  {employeeDistributionData.map((entry) => (
+                    <Cell key={entry.role} fill={entry.fill} />
+                  ))}
+                </Pie>
+                <ChartLegend
+                  content={<ChartLegendContent nameKey="role" />}
+                  className="-mt-4"
+                />
+              </PieChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+        <Card className="lg:col-span-4">
+          <CardHeader>
+            <CardTitle>Hiring Pipeline Overview</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={barChartConfig} className="h-[280px] w-full">
+              <BarChart data={hiringPipelineData} accessibilityLayer margin={{ top: 20 }}>
+                <CartesianGrid vertical={false} />
+                <XAxis
+                  dataKey="stage"
+                  tickLine={false}
+                  tickMargin={10}
+                  axisLine={false}
+                />
+                <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+                <Bar dataKey="count" fill="hsl(var(--primary))" radius={8} />
+              </BarChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
@@ -88,7 +221,11 @@ export default function DashboardPage() {
                     <TableCell>
                       <Badge
                         variant={job.status === 'Open' ? 'default' : 'secondary'}
-                        className={job.status === 'Open' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : ''}
+                        className={
+                          job.status === 'Open'
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                            : ''
+                        }
                       >
                         {job.status}
                       </Badge>
@@ -106,16 +243,16 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="grid grid-cols-2 gap-4">
-                <Button asChild variant="outline">
-                    <Link href="/jobs">
-                        <PlusCircle className="mr-2 h-4 w-4"/> Post Job
-                    </Link>
-                </Button>
-                <Button asChild variant="outline">
-                    <Link href="#">
-                        <PlayCircle className="mr-2 h-4 w-4"/> Run Compliance
-                    </Link>
-                </Button>
+              <Button asChild variant="outline">
+                <Link href="/jobs">
+                  <PlusCircle className="mr-2 h-4 w-4" /> Post Job
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="#">
+                  <PlayCircle className="mr-2 h-4 w-4" /> Run Compliance
+                </Link>
+              </Button>
             </div>
             <div className="flex flex-col gap-3">
               <div className="flex items-start gap-3 rounded-lg border p-3">
