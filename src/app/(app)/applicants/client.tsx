@@ -98,14 +98,33 @@ export default function ApplicantList({
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'applicants' },
-        async (payload) => {
+        (payload) => {
           toast({
             title: 'Applicant Data Updated',
             description: 'The list of applicants has been refreshed.',
           });
-          
-          const { data } = await supabase.from('applicants').select('*, jobs(title)').order('applied_date', { ascending: false });
-          setApplicants(data || []);
+
+          if (payload.eventType === 'INSERT') {
+            // The new record from the payload won't have the joined `jobs` data.
+            // The UI will fallback to "Walk-in" which is acceptable for a live update.
+            // A full refresh by the user will fetch the correct job title.
+            setApplicants((prev) => [payload.new as Applicant, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            // For updates, we can merge the new data with existing data to preserve the `jobs` info
+            setApplicants((prev) =>
+              prev.map((applicant) =>
+                applicant.id === payload.new.id
+                  ? { ...applicant, ...(payload.new as Applicant) }
+                  : applicant
+              )
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setApplicants((prev) =>
+              prev.filter(
+                (applicant) => applicant.id !== (payload.old as { id: string }).id
+              )
+            );
+          }
         }
       )
       .subscribe();

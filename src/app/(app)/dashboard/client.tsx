@@ -74,6 +74,7 @@ export default function DashboardClient({ initialMetrics, initialRecentJobs }: D
 
     React.useEffect(() => {
         const supabase = createClient();
+        
         const metricsChannel = supabase
             .channel('realtime-metrics')
             .on(
@@ -84,9 +85,7 @@ export default function DashboardClient({ initialMetrics, initialRecentJobs }: D
                         title: 'Metrics Updated',
                         description: 'Dashboard metrics have been updated.',
                     });
-                    if (payload.eventType === 'INSERT') {
-                        setMetrics((prev) => [...prev, payload.new as Metric].sort((a,b) => a.id - b.id));
-                    } else if (payload.eventType === 'UPDATE') {
+                    if (payload.eventType === 'UPDATE') {
                         setMetrics((prev) =>
                             prev.map((metric) =>
                                 metric.id === payload.new.id ? { ...metric, ...(payload.new as Metric) } : metric
@@ -101,25 +100,18 @@ export default function DashboardClient({ initialMetrics, initialRecentJobs }: D
             .on(
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'jobs' },
-                (payload) => {
+                async () => {
                     toast({
                         title: 'Job Postings Updated',
                         description: 'Recent job postings have been updated.',
                     });
-                     if (payload.eventType === 'INSERT') {
-                        setRecentJobs((prev) => [payload.new as Job, ...prev].sort((a,b) => new Date(b.posted_date).getTime() - new Date(a.posted_date).getTime()).slice(0,3));
-                    } else if (payload.eventType === 'UPDATE') {
-                       // Check if the job is already in the list
-                        const jobExists = recentJobs.some(job => job.id === payload.new.id);
-                        if (jobExists) {
-                             setRecentJobs((prev) => prev.map((job) => job.id === payload.new.id ? { ...job, ...(payload.new as Job) } : job));
-                        } else {
-                            // If not, it might be a new "Open" job, add it and resort
-                             setRecentJobs((prev) => [payload.new as Job, ...prev].sort((a,b) => new Date(b.posted_date).getTime() - new Date(a.posted_date).getTime()).slice(0,3));
-                        }
-                    } else if (payload.eventType === 'DELETE') {
-                        setRecentJobs((prev) => prev.filter((job) => job.id !== (payload.old as Job).id));
-                    }
+                     const { data: recentJobsData } = await supabase
+                        .from('jobs')
+                        .select('*')
+                        .eq('status', 'Open')
+                        .order('posted_date', { ascending: false })
+                        .limit(3);
+                    setRecentJobs(recentJobsData || []);
                 }
             ).subscribe();
 
@@ -128,7 +120,7 @@ export default function DashboardClient({ initialMetrics, initialRecentJobs }: D
             supabase.removeChannel(jobsChannel);
         }
 
-    }, [toast, recentJobs]);
+    }, [toast]);
 
 
     return (
