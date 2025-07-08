@@ -74,8 +74,11 @@ export default function LoginPage() {
         description: result.error,
         variant: 'destructive',
       });
-      setIsSubmittingLogin(false); // Reset loading state only on error
     }
+    
+    // This will only be reached if the server action returns a value,
+    // which indicates the redirect did not happen.
+    setIsSubmittingLogin(false);
   };
   
   const handleMagicLinkSubmit = async (values: MagicLinkSchema) => {
