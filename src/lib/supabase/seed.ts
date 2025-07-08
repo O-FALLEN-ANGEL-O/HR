@@ -17,30 +17,41 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function clearData() {
   console.log('🗑️  Clearing existing data...');
-  const tables = [
-    'applicant_notes', 'time_off_requests', 'performance_reviews', 'onboarding_workflows',
-    'interviews', 'applicants', 'colleges', 'jobs', 'metrics'
+  // The order is important due to foreign key constraints. Start with tables that have dependencies.
+  const tablesToDelete = [
+    'applicant_notes',
+    'time_off_requests',
+    'performance_reviews',
+    'onboarding_workflows',
+    'interviews',
+    'applicants',
+    'colleges',
+    'jobs',
+    'metrics'
   ];
 
-  for (const table of tables) {
-    // The metrics table has an integer ID, others have UUIDs. This handles both.
-    const isMetrics = table === 'metrics';
-    const id_column = 'id';
-    const neq_value = isMetrics ? -1 : '00000000-0000-0000-0000-000000000000';
-    
-    const { error } = await supabase.from(table).delete().neq(id_column, neq_value);
-    
-    if (error) {
-        // This specific error is expected for the metrics table if it's empty, so we can ignore it.
-        if (error.code === '22P02' && isMetrics) {
-           // Invalid input syntax for type integer, safe to ignore for metrics on first run
-        } else {
-            console.error(`Error clearing table ${table}:`, error.message);
-        }
-    }
+  for (const table of tablesToDelete) {
+      let query = supabase.from(table).delete();
+      // Use a filter that will always be true to delete all rows.
+      // Supabase requires a filter for delete operations unless row-level security is off.
+      if (table === 'metrics') {
+          query = query.gte('id', 0); // For serial integer IDs
+      } else {
+          query = query.neq('id', '00000000-0000-0000-0000-000000000000'); // For UUIDs
+      }
+      
+      const { error } = await query;
+
+      if (error) {
+          // This specific error can be ignored if the table is already empty.
+          if (error.code !== '22P02') { // 22P02 is invalid text representation
+              console.error(`Error clearing table ${table}:`, error.message);
+          }
+      }
   }
   console.log('✅ Data cleared.');
 }
+
 
 async function seedData() {
     console.log('🌱 Seeding data...');
@@ -52,8 +63,9 @@ async function seedData() {
         { title: 'Compliance Score', value: `${faker.number.int({ min: 90, max: 100 })}%`, change: `+${faker.number.int({ min: 1, max: 5 })}%`, change_type: 'increase' },
         { title: 'Open Positions', value: faker.number.int({ min: 5, max: 50 }).toString(), change: `-${faker.number.int({ min: 1, max: 5 })}%`, change_type: 'decrease' }
     ];
-    await supabase.from('metrics').insert(metrics);
-    console.log('  - Seeded metrics');
+    const { error: metricsError } = await supabase.from('metrics').insert(metrics);
+    if (metricsError) console.error("Error seeding metrics:", metricsError.message);
+    else console.log('  - Seeded metrics');
 
     // Seed Jobs
     const jobs = Array.from({ length: 15 }, () => ({
@@ -119,8 +131,9 @@ async function seedData() {
                 note: faker.lorem.sentence(),
                 created_at: faker.date.recent().toISOString()
             }));
-            await supabase.from('applicant_notes').insert(applicantNotes);
-            console.log('  - Seeded applicant_notes');
+            const { error: notesError } = await supabase.from('applicant_notes').insert(applicantNotes);
+            if (notesError) console.error("Error seeding applicant_notes:", notesError.message);
+            else console.log('  - Seeded applicant_notes');
         }
     }
 
@@ -136,8 +149,9 @@ async function seedData() {
         type: faker.helpers.arrayElement(['Video', 'Phone', 'In-person']),
         status: faker.helpers.arrayElement(['Scheduled', 'Completed', 'Canceled'])
     }));
-    await supabase.from('interviews').insert(interviews);
-    console.log('  - Seeded interviews');
+    const { error: interviewsError } = await supabase.from('interviews').insert(interviews);
+    if (interviewsError) console.error("Error seeding interviews:", interviewsError.message);
+    else console.log('  - Seeded interviews');
 
     // Seed Colleges
     const colleges = Array.from({ length: 8 }, () => ({
@@ -147,8 +161,9 @@ async function seedData() {
         contact_email: faker.internet.email(),
         last_contacted: faker.date.past().toISOString()
     }));
-    await supabase.from('colleges').insert(colleges);
-    console.log('  - Seeded colleges');
+    const { error: collegesError } = await supabase.from('colleges').insert(colleges);
+    if (collegesError) console.error("Error seeding colleges:", collegesError.message);
+    else console.log('  - Seeded colleges');
 
     // Seed Onboarding
     const onboardingWorkflows = Array.from({ length: 5 }, () => ({
@@ -161,8 +176,9 @@ async function seedData() {
         current_step: faker.helpers.arrayElement(['IT Setup', 'HR Orientation', 'Department Intro']),
         start_date: faker.date.past().toISOString()
     }));
-    await supabase.from('onboarding_workflows').insert(onboardingWorkflows);
-    console.log('  - Seeded onboarding_workflows');
+    const { error: onboardingError } = await supabase.from('onboarding_workflows').insert(onboardingWorkflows);
+    if (onboardingError) console.error("Error seeding onboarding_workflows:", onboardingError.message);
+    else console.log('  - Seeded onboarding_workflows');
 
     // Seed Performance Reviews
     const performanceReviews = Array.from({ length: 10 }, () => ({
@@ -172,8 +188,9 @@ async function seedData() {
         review_date: faker.date.future().toLocaleDateString('en-US'),
         status: faker.helpers.arrayElement(['Pending', 'In Progress', 'Completed'])
     }));
-    await supabase.from('performance_reviews').insert(performanceReviews);
-    console.log('  - Seeded performance_reviews');
+    const { error: perfError } = await supabase.from('performance_reviews').insert(performanceReviews);
+    if (perfError) console.error("Error seeding performance_reviews:", perfError.message);
+    else console.log('  - Seeded performance_reviews');
 
     // Seed Time Off Requests
     const timeOffRequests = Array.from({ length: 8 }, () => ({
@@ -184,8 +201,9 @@ async function seedData() {
         end_date: faker.date.future().toISOString(),
         status: faker.helpers.arrayElement(['Pending', 'Approved', 'Rejected'])
     }));
-    await supabase.from('time_off_requests').insert(timeOffRequests);
-    console.log('  - Seeded time_off_requests');
+    const { error: timeoffError } = await supabase.from('time_off_requests').insert(timeOffRequests);
+    if (timeoffError) console.error("Error seeding time_off_requests:", timeoffError.message);
+    else console.log('  - Seeded time_off_requests');
 }
 
 
