@@ -21,6 +21,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
@@ -38,6 +39,7 @@ import {
   ClipboardCopy,
   User,
   CalendarPlus,
+  BrainCircuit,
 } from 'lucide-react';
 import {
   Select,
@@ -163,6 +165,15 @@ export default function ApplicantList({
       description: 'The link has been copied to your clipboard.',
     });
   };
+  
+  const handleAssignAptitudeTest = (applicantId: string) => {
+    const url = `${window.location.origin}/aptitude-test?id=${applicantId}`;
+    navigator.clipboard.writeText(url);
+    toast({
+      title: 'Aptitude Test Link Copied!',
+      description: 'The link has been copied to your clipboard.',
+    });
+  };
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
@@ -268,7 +279,7 @@ export default function ApplicantList({
                   </TableCell>
                   <TableCell>{applicant.job_title || 'Walk-in'}</TableCell>
                   <TableCell>
-                    {isClient ? format(new Date(applicant.applied_date), 'PPP') : null}
+                    {isClient ? format(new Date(applicant.applied_date), 'PPP') : ''}
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -300,15 +311,22 @@ export default function ApplicantList({
                            <CalendarPlus className="mr-2 h-4 w-4" />
                            Schedule Interview
                         </DropdownMenuItem>
+                         <DropdownMenuItem onClick={() => window.location.href = `mailto:${applicant.email}`}>
+                          <Mail className="mr-2 h-4 w-4" />
+                          Send Email
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={() => handleAssignTypingTest(applicant.id)}
                         >
                           <ClipboardCheck className="mr-2 h-4 w-4" />
                           Assign Typing Test
                         </DropdownMenuItem>
-                         <DropdownMenuItem onClick={() => window.location.href = `mailto:${applicant.email}`}>
-                          <Mail className="mr-2 h-4 w-4" />
-                          Send Email
+                         <DropdownMenuItem
+                          onClick={() => handleAssignAptitudeTest(applicant.id)}
+                        >
+                          <BrainCircuit className="mr-2 h-4 w-4" />
+                          Assign Aptitude Test
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

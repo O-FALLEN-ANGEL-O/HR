@@ -7,6 +7,7 @@ export type User = {
 };
 
 export type Metric = {
+  id: number;
   title: string;
   value: string;
   change?: string;
@@ -35,6 +36,7 @@ export type Applicant = {
   wpm?: number;
   accuracy?: number;
   college_id?: string;
+  aptitude_score?: number;
 };
 
 export type Interview = {

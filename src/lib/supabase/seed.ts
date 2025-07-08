@@ -10,7 +10,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error('Supabase URL or service key is missing in .env file.');
+  throw new Error('Supabase URL or service key is missing in .env file. Make sure to create a .env file with your project credentials.');
 }
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -23,15 +23,11 @@ async function clearData() {
   ];
 
   for (const table of tables) {
-    // A .delete() without a filter will remove all rows, but RLS must be bypassed.
-    // Using .not('id', 'is', null) is a safe way to delete all rows in tables
-    // with both UUID and SERIAL primary keys, as primary keys can't be null.
-    const { error } = await supabase.from(table).delete().not('id', 'is', null);
-
+    const { error } = await supabase.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000');
     if (error) {
-      // We only log the error if it's not a "table does not exist" error,
-      // which can happen on the first run.
-      if (error.code !== '42P01' && !error.message.includes("does not exist")) {
+       // A .delete() on a table with a SERIAL primary key can cause a non-fatal error
+       // if the UUID is invalid. We can safely ignore it for the 'metrics' table.
+      if (table !== 'metrics' || !error.message.includes('invalid input syntax for type uuid')) {
         console.error(`Error clearing table ${table}:`, error.message);
       }
     }
@@ -70,6 +66,9 @@ async function seedData() {
     applied_date: faker.date.past().toISOString(),
     avatar: faker.image.avatar(),
     source: faker.helpers.arrayElement(['walk-in', 'college', 'email']),
+    aptitude_score: faker.helpers.arrayElement([null, faker.number.int({ min: 40, max: 100 })]),
+    wpm: faker.helpers.arrayElement([null, faker.number.int({ min: 30, max: 90 })]),
+    accuracy: faker.helpers.arrayElement([null, faker.number.int({ min: 85, max: 99 })]),
   }));
   
   const interviews = Array.from({ length: 12 }, () => ({
