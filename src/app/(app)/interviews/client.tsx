@@ -56,6 +56,11 @@ const typeIcons: { [key: string]: React.ReactNode } = {
 export default function InterviewList({ initialInterviews }: InterviewListProps) {
   const [interviews, setInterviews] = React.useState(initialInterviews);
   const [filter, setFilter] = React.useState('all');
+  const [isClient, setIsClient] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const filteredInterviews = React.useMemo(() => {
     if (filter === 'all') return interviews;
@@ -72,19 +77,19 @@ export default function InterviewList({ initialInterviews }: InterviewListProps)
         </TabsList>
       </div>
       <TabsContent value="upcoming">
-        <InterviewTable interviews={interviews.filter(i => i.status === 'Scheduled')} />
+        <InterviewTable interviews={interviews.filter(i => i.status === 'Scheduled')} isClient={isClient} />
       </TabsContent>
       <TabsContent value="completed">
-        <InterviewTable interviews={interviews.filter(i => i.status === 'Completed')} />
+        <InterviewTable interviews={interviews.filter(i => i.status === 'Completed')} isClient={isClient} />
       </TabsContent>
       <TabsContent value="all">
-        <InterviewTable interviews={interviews} />
+        <InterviewTable interviews={interviews} isClient={isClient} />
       </TabsContent>
     </Tabs>
   );
 }
 
-function InterviewTable({ interviews }: { interviews: Interview[] }) {
+function InterviewTable({ interviews, isClient }: { interviews: Interview[], isClient: boolean }) {
     if (interviews.length === 0) {
         return <div className="text-center text-muted-foreground p-8">No interviews to display.</div>
     }
@@ -136,7 +141,7 @@ function InterviewTable({ interviews }: { interviews: Interview[] }) {
                     <TableCell>
                         <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span>{format(new Date(interview.date), 'PPP')}</span>
+                            <span>{isClient ? format(new Date(interview.date), 'PPP') : null}</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                              <Clock className="h-4 w-4 ml-0.5" />

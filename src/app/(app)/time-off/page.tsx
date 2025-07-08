@@ -41,8 +41,13 @@ type TimeOffPageProps = {
 
 function TimeOffClient({ initialRequests }: TimeOffPageProps) {
   const [requests, setRequests] = React.useState(initialRequests);
+  const [isClient, setIsClient] = React.useState(false);
   const router = useRouter();
   const { toast } = useToast();
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   React.useEffect(() => {
     setRequests(initialRequests);
@@ -113,8 +118,12 @@ function TimeOffClient({ initialRequests }: TimeOffPageProps) {
                   </TableCell>
                   <TableCell>{request.type}</TableCell>
                   <TableCell>
-                    {format(new Date(request.start_date), 'PPP')} -{' '}
-                    {format(new Date(request.end_date), 'PPP')}
+                    {isClient
+                      ? `${format(new Date(request.start_date), 'PPP')} - ${format(
+                          new Date(request.end_date),
+                          'PPP'
+                        )}`
+                      : null}
                   </TableCell>
                   <TableCell>
                     <Badge

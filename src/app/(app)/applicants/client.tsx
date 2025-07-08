@@ -74,9 +74,14 @@ export default function ApplicantList({
   const [stageFilter, setStageFilter] = React.useState('all');
   const [sourceFilter, setSourceFilter] = React.useState('all');
   const [isEmailScannerActive, setIsEmailScannerActive] = React.useState(true);
+  const [isClient, setIsClient] = React.useState(false);
   const supabase = createClient();
   const { toast } = useToast();
   const router = useRouter();
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   React.useEffect(() => {
     setApplicants(initialApplicants);
@@ -263,7 +268,7 @@ export default function ApplicantList({
                   </TableCell>
                   <TableCell>{applicant.job_title || 'Walk-in'}</TableCell>
                   <TableCell>
-                    {format(new Date(applicant.applied_date), 'PPP')}
+                    {isClient ? format(new Date(applicant.applied_date), 'PPP') : null}
                   </TableCell>
                   <TableCell>
                     <Badge

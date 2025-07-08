@@ -62,8 +62,13 @@ export default function JobsClient({ initialJobs }: JobsClientProps) {
   const [jobs, setJobs] = React.useState<Job[]>(initialJobs);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState('all');
+  const [isClient, setIsClient] = React.useState(false);
   const router = useRouter();
   const { toast } = useToast();
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   React.useEffect(() => {
     setJobs(initialJobs);
@@ -184,7 +189,7 @@ export default function JobsClient({ initialJobs }: JobsClientProps) {
                   <span>{job.applicants} Applicants</span>
                 </div>
                 <span>
-                  Posted {format(new Date(job.posted_date), 'PPP')}
+                  Posted {isClient ? format(new Date(job.posted_date), 'PPP') : null}
                 </span>
               </div>
             </CardContent>
