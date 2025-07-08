@@ -143,3 +143,32 @@ export type ApplicantNote = {
     note: string;
     created_at: string;
 };
+
+export type Payslip = {
+  id: string;
+  month: string;
+  year: number;
+  grossSalary: number;
+  netSalary: number;
+  downloadUrl: string;
+};
+
+export type CompanyDocument = {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  lastUpdated: string;
+  downloadUrl: string;
+};
+
+export type Kudo = {
+  id: string;
+  fromName: string;
+  fromAvatar: string;
+  toName: string;
+  toAvatar: string;
+  message: string;
+  value: 'Team Player' | 'Innovation' | 'Customer First' | 'Ownership';
+  timestamp: string;
+};

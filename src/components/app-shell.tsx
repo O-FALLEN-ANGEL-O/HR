@@ -9,11 +9,13 @@ import {
   AvatarImage,
 } from '@/components/ui/avatar';
 import {
+  Award,
   Bot,
   Briefcase,
   Calendar,
   ClipboardCheck,
   Clock,
+  FolderKanban,
   GraduationCap,
   LayoutDashboard,
   LogOut,
@@ -26,7 +28,8 @@ import {
   UserCheck,
   FileText,
   ShieldCheck,
-  UserCog
+  UserCog,
+  WalletCards,
 } from 'lucide-react';
 
 import {
@@ -104,7 +107,11 @@ const getNavLinks = (role: UserRole) => {
     case 'employee':
       return [
         { href: '/employee/dashboard', label: 'My Dashboard', icon: LayoutDashboard },
+        { href: '/employee/directory', label: 'Directory', icon: Users },
+        { href: '/employee/payslips', label: 'Payslips', icon: WalletCards },
         { href: '/time-off', label: 'Time Off', icon: Clock },
+        { href: '/employee/kudos', label: 'Kudos', icon: Award },
+        { href: '/employee/documents', label: 'Policies', icon: FolderKanban },
       ];
     case 'intern':
         return [
