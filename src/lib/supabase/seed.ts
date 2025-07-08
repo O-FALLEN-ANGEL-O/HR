@@ -7,83 +7,25 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error('Supabase URL or service key is missing.');
+  throw new Error('Supabase URL or service key is missing in .env file.');
 }
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-async function clearDatabase() {
-  console.log('🗑️ Clearing existing data...');
-  const { data: tables, error } = await supabase
-    .from('pg_catalog.pg_tables')
-    .select('tablename')
-    .ilike('schemaname', 'public');
-
-  if (error) {
-    console.error('Error fetching tables:', error);
-    return;
-  }
-
-  const tableNames = (tables ?? []).map(t => t.tablename).filter(t => !t.startsWith('pg_') && !t.startsWith('sql_'));
-
-  for (const tableName of tableNames) {
-    console.log(`  - Dropping table: ${tableName}`);
-    const { error: dropError } = await supabase.rpc('execute_sql', {
-      sql: `DROP TABLE IF EXISTS public."${tableName}" CASCADE;`,
-    });
-    if (dropError) console.error(`Error dropping table ${tableName}:`, dropError);
-  }
-}
-
-async function createTables() {
-  console.log('🏗️ Creating tables...');
-  const tableSchemas = [
-    `CREATE TABLE public.metrics (id SERIAL PRIMARY KEY, title TEXT, value TEXT, change TEXT, change_type TEXT);`,
-    `CREATE TABLE public.jobs (id UUID DEFAULT gen_random_uuid() PRIMARY KEY, title TEXT, department TEXT, status TEXT, applicants INT, posted_date TIMESTAMPTZ);`,
-    `CREATE TABLE public.applicants (id UUID DEFAULT gen_random_uuid() PRIMARY KEY, name TEXT, email TEXT, phone TEXT, job_title TEXT, stage TEXT, applied_date TIMESTAMPTZ, avatar TEXT, source TEXT, wpm INT, accuracy INT, college_id TEXT);`,
-    `CREATE TABLE public.interviews (id UUID DEFAULT gen_random_uuid() PRIMARY KEY, candidate_name TEXT, candidate_avatar TEXT, job_title TEXT, interviewer_name TEXT, interviewer_avatar TEXT, date TIMESTAMPTZ, time TEXT, type TEXT, status TEXT);`,
-    `CREATE TABLE public.colleges (id UUID DEFAULT gen_random_uuid() PRIMARY KEY, name TEXT, status TEXT, resumes_received INT, contact_email TEXT, last_contacted TIMESTAMPTZ);`,
-    `CREATE TABLE public.onboarding_workflows (id UUID DEFAULT gen_random_uuid() PRIMARY KEY, employee_name TEXT, employee_avatar TEXT, job_title TEXT, manager_name TEXT, buddy_name TEXT, progress INT, current_step TEXT, start_date TIMESTAMPTZ);`,
-    `CREATE TABLE public.performance_reviews (id UUID DEFAULT gen_random_uuid() PRIMARY KEY, employee_name TEXT, employee_avatar TEXT, job_title TEXT, review_date TEXT, status TEXT);`,
-    `CREATE TABLE public.time_off_requests (id UUID DEFAULT gen_random_uuid() PRIMARY KEY, employee_name TEXT, employee_avatar TEXT, type TEXT, start_date TIMESTAMPTZ, end_date TIMESTAMPTZ, status TEXT);`
+async function clearData() {
+  console.log('🗑️  Clearing existing data...');
+  const tables = [
+    'time_off_requests', 'performance_reviews', 'onboarding_workflows',
+    'interviews', 'applicants', 'colleges', 'jobs', 'metrics'
   ];
 
-  for (const sql of tableSchemas) {
-    const { error } = await supabase.rpc('execute_sql', { sql });
-    if (error) {
-        console.error(`Error creating table with SQL: ${sql}`, error);
-        throw error;
+  for (const table of tables) {
+    const { error } = await supabase.from(table).delete().not('id', 'is', null);
+    if (error && error.code !== '42P01') {
+      console.error(`Error clearing table ${table}:`, error.message);
     }
   }
-
-  const policies = [
-    `ALTER TABLE public.metrics ENABLE ROW LEVEL SECURITY;`,
-    `CREATE POLICY "Public access for metrics" ON public.metrics FOR ALL USING (true) WITH CHECK (true);`,
-    `ALTER TABLE public.jobs ENABLE ROW LEVEL SECURITY;`,
-    `CREATE POLICY "Public access for jobs" ON public.jobs FOR ALL USING (true) WITH CHECK (true);`,
-    `ALTER TABLE public.applicants ENABLE ROW LEVEL SECURITY;`,
-    `CREATE POLICY "Public access for applicants" ON public.applicants FOR ALL USING (true) WITH CHECK (true);`,
-    `ALTER TABLE public.interviews ENABLE ROW LEVEL SECURITY;`,
-    `CREATE POLICY "Public access for interviews" ON public.interviews FOR ALL USING (true) WITH CHECK (true);`,
-    `ALTER TABLE public.colleges ENABLE ROW LEVEL SECURITY;`,
-    `CREATE POLICY "Public access for colleges" ON public.colleges FOR ALL USING (true) WITH CHECK (true);`,
-    `ALTER TABLE public.onboarding_workflows ENABLE ROW LEVEL SECURITY;`,
-    `CREATE POLICY "Public access for onboarding" ON public.onboarding_workflows FOR ALL USING (true) WITH CHECK (true);`,
-    `ALTER TABLE public.performance_reviews ENABLE ROW LEVEL SECURITY;`,
-    `CREATE POLICY "Public access for performance" ON public.performance_reviews FOR ALL USING (true) WITH CHECK (true);`,
-    `ALTER TABLE public.time_off_requests ENABLE ROW LEVEL SECURITY;`,
-    `CREATE POLICY "Public access for timeoff" ON public.time_off_requests FOR ALL USING (true) WITH CHECK (true);`,
-  ]
-
-  for (const sql of policies) {
-     const { error } = await supabase.rpc('execute_sql', { sql });
-     if (error) {
-         console.error(`Error applying policy with SQL: ${sql}`, error);
-         throw error;
-     }
-  }
-
-  console.log('✅ Tables and policies created.');
+  console.log('✅ Data cleared.');
 }
 
 async function seedData() {
@@ -163,31 +105,31 @@ async function seedData() {
     status: faker.helpers.arrayElement(['Pending', 'Approved', 'Rejected'])
   }));
 
-  const { error } = await Promise.all([
-    supabase.from('metrics').insert(metrics),
-    supabase.from('jobs').insert(jobs),
-    supabase.from('applicants').insert(applicants),
-    supabase.from('interviews').insert(interviews),
-    supabase.from('colleges').insert(colleges),
-    supabase.from('onboarding_workflows').insert(onboardingWorkflows),
-    supabase.from('performance_reviews').insert(performanceReviews),
-    supabase.from('time_off_requests').insert(timeOffRequests),
-  ]);
+  const insertions = [
+    { name: 'metrics', data: metrics },
+    { name: 'jobs', data: jobs },
+    { name: 'applicants', data: applicants },
+    { name: 'interviews', data: interviews },
+    { name: 'colleges', data: colleges },
+    { name: 'onboarding_workflows', data: onboardingWorkflows },
+    { name: 'performance_reviews', data: performanceReviews },
+    { name: 'time_off_requests', data: timeOffRequests },
+  ];
 
-  if (error) {
-    console.error('Error seeding data:', error);
-  } else {
-    console.log('✅ Data seeded successfully.');
+  for (const insertion of insertions) {
+    const { error } = await supabase.from(insertion.name).insert(insertion.data);
+    if (error) {
+      console.error(`🔴 Error seeding ${insertion.name}:`, error.message);
+    } else {
+      console.log(`  - Seeded ${insertion.name}`);
+    }
   }
 }
 
 async function run() {
-  await clearDatabase();
-  await createTables();
+  await clearData();
   await seedData();
-  console.log('🎉 Database setup complete!');
+  console.log('🎉 Database seeding complete!');
 }
 
 run().catch(console.error);
-
-    
