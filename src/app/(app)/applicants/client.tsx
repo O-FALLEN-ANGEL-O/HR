@@ -28,7 +28,7 @@ import type { Applicant } from '@/lib/types';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Mail, MoreHorizontal } from 'lucide-react';
+import { Mail, MoreHorizontal, ClipboardCheck } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -97,6 +97,15 @@ export default function ApplicantList({ initialApplicants }: ApplicantListProps)
         sourceFilter === 'all' ? true : applicant.source === sourceFilter
       );
   }, [applicants, searchTerm, stageFilter, sourceFilter]);
+
+  const handleAssignTypingTest = (applicantId: string) => {
+    const url = `${window.location.origin}/typing-test?id=${applicantId}`;
+    navigator.clipboard.writeText(url);
+    toast({
+      title: 'Typing Test Link Copied!',
+      description: 'The link has been copied to your clipboard.',
+    });
+  };
 
   return (
     <Card>
@@ -203,6 +212,10 @@ export default function ApplicantList({ initialApplicants }: ApplicantListProps)
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem>View Profile</DropdownMenuItem>
                       <DropdownMenuItem>Schedule Interview</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleAssignTypingTest(applicant.id)}>
+                        <ClipboardCheck className="mr-2 h-4 w-4" />
+                        Assign Typing Test
+                      </DropdownMenuItem>
                       <DropdownMenuItem>Send Email</DropdownMenuItem>
                       <DropdownMenuItem>Download Resume</DropdownMenuItem>
                     </DropdownMenuContent>

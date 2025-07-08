@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, CheckCircle, BrainCircuit } from 'lucide-react';
+import { Loader2, CheckCircle, BrainCircuit, Hourglass } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { Applicant } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
@@ -98,7 +98,6 @@ export default function ApplicantPortalPage({ params }: { params: { id: string }
                 <CardContent className="space-y-4">
                     <div className="text-center">
                         <p className="text-sm text-muted-foreground">Your Applicant ID is: <span className="font-mono">{params.id}</span></p>
-                        <p className="text-sm text-muted-foreground mt-1">Please wait for further instructions from our HR team.</p>
                     </div>
 
                     <div className="border-t pt-4">
@@ -112,6 +111,16 @@ export default function ApplicantPortalPage({ params }: { params: { id: string }
                             <span className="font-medium">{applicant.jobTitle}</span>
                         </div>
                     </div>
+
+                    {!assessment && (
+                        <Alert>
+                           <Hourglass className="h-4 w-4" />
+                           <AlertTitle>Your Profile is Under Review</AlertTitle>
+                           <AlertDescription>
+                             An assessment may be assigned to you shortly. Please keep this window open and wait for instructions from our HR team.
+                           </AlertDescription>
+                       </Alert>
+                    )}
 
                     {assessment && (
                          <Alert className="border-primary/50 bg-primary/5">
