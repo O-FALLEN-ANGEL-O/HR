@@ -24,13 +24,14 @@ async function clearDatabase() {
     return;
   }
 
-  for (const { tablename } of tables ?? []) {
-    if (tablename.startsWith('pg_') || tablename.startsWith('sql_')) continue;
-    console.log(`  - Dropping table: ${tablename}`);
+  const tableNames = (tables ?? []).map(t => t.tablename).filter(t => !t.startsWith('pg_') && !t.startsWith('sql_'));
+
+  for (const tableName of tableNames) {
+    console.log(`  - Dropping table: ${tableName}`);
     const { error: dropError } = await supabase.rpc('execute_sql', {
-      sql: `DROP TABLE IF EXISTS public."${tablename}" CASCADE;`,
+      sql: `DROP TABLE IF EXISTS public."${tableName}" CASCADE;`,
     });
-    if (dropError) console.error(`Error dropping table ${tablename}:`, dropError);
+    if (dropError) console.error(`Error dropping table ${tableName}:`, dropError);
   }
 }
 
@@ -88,63 +89,96 @@ async function createTables() {
 async function seedData() {
   console.log('🌱 Seeding data...');
 
-  // Metrics
   const metrics: Omit<Metric, 'id'>[] = [
     { title: 'Total Employees', value: faker.number.int({ min: 1000, max: 1500 }).toString(), change: `+${faker.number.int({ min: 5, max: 15 })}%`, changeType: 'increase' },
     { title: 'Attrition Rate', value: `${faker.number.float({ min: 1, max: 5, precision: 0.1 })}%`, change: `-${faker.number.float({ min: 0.1, max: 1, precision: 0.1 })}%`, changeType: 'decrease' },
     { title: 'Compliance Score', value: `${faker.number.float({ min: 95, max: 99, precision: 0.1 })}%`, change: `+${faker.number.float({ min: 0.1, max: 1, precision: 0.1 })}%`, changeType: 'increase' },
     { title: 'Open Positions', value: faker.number.int({ min: 10, max: 30 }).toString(), change: `+${faker.number.int({ min: 1, max: 5 })}`, changeType: 'increase' },
   ];
-  await supabase.from('metrics').insert(metrics);
 
-  // Jobs
-  const jobs: Omit<Job, 'id'>[] = Array.from({ length: 10 }, () => ({
+  const jobs: Omit<Job, 'id'>[] = Array.from({ length: 15 }, () => ({
     title: faker.person.jobTitle(),
     department: faker.commerce.department(),
     status: faker.helpers.arrayElement(['Open', 'Closed', 'On hold']),
     applicants: faker.number.int({ min: 5, max: 100 }),
-    posted_date: faker.date.past().toISOString(),
+    postedDate: faker.date.past().toISOString(),
   }));
-  await supabase.from('jobs').insert(jobs);
 
-  // Applicants
   const applicants: Omit<Applicant, 'id'>[] = Array.from({ length: 20 }, () => ({
     name: faker.person.fullName(),
     email: faker.internet.email(),
     phone: faker.phone.number(),
-    job_title: faker.person.jobTitle(),
+    jobTitle: faker.person.jobTitle(),
     stage: faker.helpers.arrayElement(['Sourced', 'Applied', 'Phone Screen', 'Interview', 'Offer', 'Hired']),
-    applied_date: faker.date.past().toISOString(),
+    appliedDate: faker.date.past().toISOString(),
     avatar: faker.image.avatar(),
     source: faker.helpers.arrayElement(['walk-in', 'college', 'email']),
   }));
-  await supabase.from('applicants').insert(applicants);
   
-  // A few more for the other tables to make the UI look good
-  const interviews = Array.from({ length: 5 }, () => ({
-    candidate_name: faker.person.fullName(),
-    candidate_avatar: faker.image.avatar(),
-    job_title: faker.person.jobTitle(),
-    interviewer_name: faker.person.fullName(),
-    interviewer_avatar: faker.image.avatar(),
+  const interviews: Omit<Interview, 'id'>[] = Array.from({ length: 12 }, () => ({
+    candidateName: faker.person.fullName(),
+    candidateAvatar: faker.image.avatar(),
+    jobTitle: faker.person.jobTitle(),
+    interviewerName: faker.person.fullName(),
+    interviewerAvatar: faker.image.avatar(),
     date: faker.date.future().toISOString(),
     time: '10:00 AM',
     type: faker.helpers.arrayElement(['Video', 'Phone', 'In-person']),
     status: faker.helpers.arrayElement(['Scheduled', 'Completed', 'Canceled'])
   }));
-  await supabase.from('interviews').insert(interviews);
 
-  const colleges = Array.from({ length: 4 }, () => ({
+  const colleges: Omit<College, 'id'>[] = Array.from({ length: 8 }, () => ({
     name: `${faker.location.city()} University`,
     status: faker.helpers.arrayElement(['Invited', 'Confirmed', 'Attended', 'Declined']),
-    resumes_received: faker.number.int({ min: 0, max: 200 }),
-    contact_email: faker.internet.email(),
-    last_contacted: faker.date.past().toISOString()
+    resumesReceived: faker.number.int({ min: 0, max: 200 }),
+    contactEmail: faker.internet.email(),
+    lastContacted: faker.date.past().toISOString()
   }));
-  await supabase.from('colleges').insert(colleges);
 
+  const onboardingWorkflows: Omit<Onboarding, 'id'>[] = Array.from({ length: 5 }, () => ({
+    employeeName: faker.person.fullName(),
+    employeeAvatar: faker.image.avatar(),
+    jobTitle: faker.person.jobTitle(),
+    managerName: faker.person.fullName(),
+    buddyName: faker.person.fullName(),
+    progress: faker.number.int({ min: 10, max: 100 }),
+    currentStep: faker.helpers.arrayElement(['IT Setup', 'HR Orientation', 'Department Intro']),
+    startDate: faker.date.past().toISOString()
+  }));
 
-  console.log('✅ Data seeded.');
+  const performanceReviews: Omit<PerformanceReview, 'id'>[] = Array.from({ length: 10 }, () => ({
+    employeeName: faker.person.fullName(),
+    employeeAvatar: faker.image.avatar(),
+    jobTitle: faker.person.jobTitle(),
+    reviewDate: faker.date.future().toLocaleDateString('en-US'),
+    status: faker.helpers.arrayElement(['Pending', 'In Progress', 'Completed'])
+  }));
+
+  const timeOffRequests: Omit<TimeOffRequest, 'id'>[] = Array.from({ length: 8 }, () => ({
+    employeeName: faker.person.fullName(),
+    employeeAvatar: faker.image.avatar(),
+    type: faker.helpers.arrayElement(['Vacation', 'Sick Leave', 'Personal']),
+    startDate: faker.date.future().toISOString(),
+    endDate: faker.date.future().toISOString(),
+    status: faker.helpers.arrayElement(['Pending', 'Approved', 'Rejected'])
+  }));
+
+  const { error } = await Promise.all([
+    supabase.from('metrics').insert(metrics),
+    supabase.from('jobs').insert(jobs),
+    supabase.from('applicants').insert(applicants),
+    supabase.from('interviews').insert(interviews),
+    supabase.from('colleges').insert(colleges),
+    supabase.from('onboarding_workflows').insert(onboardingWorkflows),
+    supabase.from('performance_reviews').insert(performanceReviews),
+    supabase.from('time_off_requests').insert(timeOffRequests),
+  ]);
+
+  if (error) {
+    console.error('Error seeding data:', error);
+  } else {
+    console.log('✅ Data seeded successfully.');
+  }
 }
 
 async function run() {
@@ -155,3 +189,5 @@ async function run() {
 }
 
 run().catch(console.error);
+
+    
