@@ -25,16 +25,11 @@ export default async function ApplicantProfilePage({ params }: ApplicantProfileP
     notFound();
   }
   
-  const { data: notesData, error: notesError } = await supabase
+  const { data: notesData } = await supabase
     .from('applicant_notes')
     .select('*')
     .eq('applicant_id', params.id)
     .order('created_at', { ascending: false });
-
-  if (notesError) {
-      console.error("Error fetching notes", notesError);
-      // We can still render the page without notes
-  }
 
   const applicant: Applicant = applicantData;
   const notes: ApplicantNote[] = notesData || [];
