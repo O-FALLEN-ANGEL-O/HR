@@ -27,7 +27,7 @@ const EducationSchema = z.object({
 
 const ProcessResumeOutputSchema = z.object({
   fullName: z.string().describe("The full name of the applicant."),
-  email: z.string().email().describe("The email address of the applicant."),
+  email: z.string().describe("The email address of the applicant."),
   phone: z.string().describe("The phone number of the applicant."),
   skills: z.array(z.string()).describe("A list of key skills extracted from the resume."),
   experience: z.array(z.object({
