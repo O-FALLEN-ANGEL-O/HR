@@ -42,6 +42,7 @@ export type Applicant = {
   aptitude_score?: number;
   comprehensive_score?: number;
   english_grammar_score?: number;
+  customer_service_score?: number;
   college_id?: string;
   resume_data?: ProcessResumeOutput;
   ai_match_score?: number;

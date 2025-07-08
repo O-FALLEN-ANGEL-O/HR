@@ -3,14 +3,17 @@
 import * as React from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import {
+  BookText,
   BrainCircuit,
   FileText,
   HeartHandshake,
   Keyboard,
+  Library,
   Lightbulb,
   Link,
   Loader2,
   MessageSquare,
+  SpellCheck,
   Sparkles,
   User,
   Workflow,
@@ -180,18 +183,30 @@ export default function ApplicantProfileClient({
             <CardHeader>
               <CardTitle className="text-lg">Assessments</CardTitle>
             </CardHeader>
-             <CardContent className="grid grid-cols-3 gap-4 text-center">
-                 <div>
-                    <div className="flex justify-center items-center gap-1 text-muted-foreground"><Keyboard className="h-4 w-4" /> WPM</div>
-                    <p className="text-2xl font-bold">{applicant.wpm || 'N/A'}</p>
+             <CardContent className="space-y-3">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-muted-foreground"><Keyboard className="h-4 w-4" /> Typing (WPM)</div>
+                    <p className="font-bold text-lg">{applicant.wpm || 'N/A'}</p>
                  </div>
-                 <div>
-                    <div className="flex justify-center items-center gap-1 text-muted-foreground"><HeartHandshake className="h-4 w-4" /> Acc.</div>
-                    <p className="text-2xl font-bold">{applicant.accuracy ? `${applicant.accuracy}%` : 'N/A'}</p>
+                 <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-muted-foreground"><HeartHandshake className="h-4 w-4" /> Typing (Accuracy)</div>
+                    <p className="font-bold text-lg">{applicant.accuracy ? `${applicant.accuracy}%` : 'N/A'}</p>
                  </div>
-                 <div>
-                    <div className="flex justify-center items-center gap-1 text-muted-foreground"><BrainCircuit className="h-4 w-4" /> Aptitude</div>
-                    <p className="text-2xl font-bold">{applicant.aptitude_score ? `${applicant.aptitude_score}%` : 'N/A'}</p>
+                 <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-muted-foreground"><BrainCircuit className="h-4 w-4" /> Aptitude</div>
+                    <p className="font-bold text-lg">{applicant.aptitude_score ? `${applicant.aptitude_score}%` : 'N/A'}</p>
+                 </div>
+                 <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-muted-foreground"><Library className="h-4 w-4" /> Comprehensive</div>
+                    <p className="font-bold text-lg">{applicant.comprehensive_score ? `${applicant.comprehensive_score}%` : 'N/A'}</p>
+                 </div>
+                 <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-muted-foreground"><SpellCheck className="h-4 w-4" /> English Grammar</div>
+                    <p className="font-bold text-lg">{applicant.english_grammar_score ? `${applicant.english_grammar_score}%` : 'N/A'}</p>
+                 </div>
+                 <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-muted-foreground"><HeartHandshake className="h-4 w-4" /> Customer Service</div>
+                    <p className="font-bold text-lg">{applicant.customer_service_score ? `${applicant.customer_service_score}%` : 'N/A'}</p>
                  </div>
              </CardContent>
           </Card>

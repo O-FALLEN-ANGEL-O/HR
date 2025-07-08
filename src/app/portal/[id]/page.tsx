@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, CheckCircle, BrainCircuit, Keyboard, FileText, ArrowRight, Library, SpellCheck } from 'lucide-react';
+import { Loader2, CheckCircle, BrainCircuit, Keyboard, FileText, ArrowRight, Library, SpellCheck, HeartHandshake } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { Applicant } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
@@ -100,14 +100,17 @@ export default function ApplicantPortalPage() {
     const hasCompletedAptitudeTest = applicant.aptitude_score !== null && applicant.aptitude_score !== undefined;
     const hasCompletedComprehensiveTest = applicant.comprehensive_score !== null && applicant.comprehensive_score !== undefined;
     const hasCompletedGrammarTest = applicant.english_grammar_score !== null && applicant.english_grammar_score !== undefined;
+    const hasCompletedCustomerServiceTest = applicant.customer_service_score !== null && applicant.customer_service_score !== undefined;
 
-    const allTestsCompleted = hasCompletedTypingTest && hasCompletedAptitudeTest && hasCompletedComprehensiveTest && hasCompletedGrammarTest;
+
+    const allTestsCompleted = hasCompletedTypingTest && hasCompletedAptitudeTest && hasCompletedComprehensiveTest && hasCompletedGrammarTest && hasCompletedCustomerServiceTest;
 
     const pendingTests = [
         { completed: hasCompletedTypingTest, name: 'Typing Test', icon: Keyboard, description: 'Measure your typing speed and accuracy.', path: 'typing-test' },
         { completed: hasCompletedAptitudeTest, name: 'Aptitude Test', icon: BrainCircuit, description: 'Assess your problem-solving skills.', path: 'aptitude-test' },
         { completed: hasCompletedComprehensiveTest, name: 'Comprehensive Test', icon: Library, description: 'Test your reading and comprehension.', path: 'comprehensive-test' },
         { completed: hasCompletedGrammarTest, name: 'English Grammar Test', icon: SpellCheck, description: 'Assess your command of English.', path: 'english-grammar-test' },
+        { completed: hasCompletedCustomerServiceTest, name: 'Customer Service Test', icon: HeartHandshake, description: 'Evaluate your customer-facing skills.', path: 'customer-service-test' },
     ].filter(test => !test.completed);
 
     return (
@@ -166,6 +169,10 @@ export default function ApplicantPortalPage() {
                                 <div className="rounded-lg border p-4">
                                     <p className="font-semibold">English Grammar Test</p>
                                     <p className="text-sm text-muted-foreground">Score: <span className="font-bold text-primary">{applicant.english_grammar_score}%</span></p>
+                                </div>
+                                <div className="rounded-lg border p-4">
+                                    <p className="font-semibold">Customer Service Test</p>
+                                    <p className="text-sm text-muted-foreground">Score: <span className="font-bold text-primary">{applicant.customer_service_score}%</span></p>
                                 </div>
                             </CardContent>
                         </Card>

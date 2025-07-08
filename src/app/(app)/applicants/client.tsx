@@ -40,6 +40,9 @@ import {
   User,
   CalendarPlus,
   BrainCircuit,
+  Library,
+  SpellCheck,
+  HeartHandshake,
 } from 'lucide-react';
 import {
   Select,
@@ -159,20 +162,11 @@ export default function ApplicantList({
     toast({ title: 'Export Complete!', description: 'Applicant data has been downloaded.' });
   };
   
-  const handleAssignTypingTest = (applicantId: string) => {
-    const url = `${window.location.origin}/typing-test?id=${applicantId}`;
+  const handleAssignTest = (applicantId: string, testName: string, testPath: string) => {
+    const url = `${window.location.origin}/${testPath}?id=${applicantId}`;
     navigator.clipboard.writeText(url);
     toast({
-      title: 'Typing Test Link Copied!',
-      description: 'The link has been copied to your clipboard.',
-    });
-  };
-  
-  const handleAssignAptitudeTest = (applicantId: string) => {
-    const url = `${window.location.origin}/aptitude-test?id=${applicantId}`;
-    navigator.clipboard.writeText(url);
-    toast({
-      title: 'Aptitude Test Link Copied!',
+      title: `${testName} Link Copied!`,
       description: 'The link has been copied to your clipboard.',
     });
   };
@@ -319,16 +313,34 @@ export default function ApplicantList({
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                          onClick={() => handleAssignTypingTest(applicant.id)}
+                          onClick={() => handleAssignTest(applicant.id, 'Typing Test', 'typing-test')}
                         >
                           <ClipboardCheck className="mr-2 h-4 w-4" />
                           Assign Typing Test
                         </DropdownMenuItem>
                          <DropdownMenuItem
-                          onClick={() => handleAssignAptitudeTest(applicant.id)}
+                          onClick={() => handleAssignTest(applicant.id, 'Aptitude Test', 'aptitude-test')}
                         >
                           <BrainCircuit className="mr-2 h-4 w-4" />
                           Assign Aptitude Test
+                        </DropdownMenuItem>
+                         <DropdownMenuItem
+                          onClick={() => handleAssignTest(applicant.id, 'Comprehensive Test', 'comprehensive-test')}
+                        >
+                          <Library className="mr-2 h-4 w-4" />
+                          Assign Comprehensive Test
+                        </DropdownMenuItem>
+                         <DropdownMenuItem
+                          onClick={() => handleAssignTest(applicant.id, 'English Grammar Test', 'english-grammar-test')}
+                        >
+                          <SpellCheck className="mr-2 h-4 w-4" />
+                          Assign English Grammar Test
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleAssignTest(applicant.id, 'Customer Service Test', 'customer-service-test')}
+                        >
+                          <HeartHandshake className="mr-2 h-4 w-4" />
+                          Assign Customer Service Test
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
