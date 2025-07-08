@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
+import { cn } from '@/lib/utils';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -20,8 +21,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning={true} className={inter.variable}>
-      <body className="font-body antialiased">
+    <html lang="en" suppressHydrationWarning={true}>
+      <body className={cn('font-body antialiased', inter.variable)}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
           <Toaster />
