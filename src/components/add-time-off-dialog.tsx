@@ -15,7 +15,6 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import {
   Form,
   FormControl,
@@ -42,7 +41,8 @@ import { createClient } from '@/lib/supabase/client';
 import { Loader2, CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { currentUser } from '@/lib/data';
+import type { UserProfile } from '@/lib/types';
+
 
 const FormSchema = z.object({
   type: z.enum(['Vacation', 'Sick Leave', 'Personal']),
@@ -53,9 +53,10 @@ const FormSchema = z.object({
 type AddTimeOffDialogProps = {
   children: React.ReactNode;
   onTimeOffAdded: () => void;
+  user: UserProfile | null;
 };
 
-export function AddTimeOffDialog({ children, onTimeOffAdded }: AddTimeOffDialogProps) {
+export function AddTimeOffDialog({ children, onTimeOffAdded, user }: AddTimeOffDialogProps) {
   const [open, setOpen] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const { toast } = useToast();
@@ -65,17 +66,23 @@ export function AddTimeOffDialog({ children, onTimeOffAdded }: AddTimeOffDialogP
   });
 
   const onSubmit: SubmitHandler<z.infer<typeof FormSchema>> = async (formData) => {
+    if (!user) {
+        toast({ title: 'Error', description: 'You must be logged in to request time off.', variant: 'destructive'});
+        return;
+    }
+
     setIsSubmitting(true);
     const supabase = createClient();
     try {
       const { error } = await supabase.from('time_off_requests').insert([
         { 
-          ...formData, 
-          employee_name: currentUser.name,
-          employee_avatar: currentUser.avatar,
-          status: 'Pending',
+          user_id: user.id,
+          employee_name: user.full_name,
+          employee_avatar: user.avatar_url,
+          type: formData.type,
           start_date: formData.start_date.toISOString(),
           end_date: formData.end_date.toISOString(),
+          status: 'Pending',
         }
     ]);
       

@@ -4,12 +4,17 @@ import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 
 import { applicantMatchScoring } from '@/ai/flows/applicant-match-scoring';
-import { currentUser } from '@/lib/data';
 import { createClient } from '@/lib/supabase/server';
+import { getUser } from '@/lib/supabase/user';
 
 export async function addApplicantNote(formData: FormData) {
   const cookieStore = cookies();
   const supabase = createClient(cookieStore);
+  const user = await getUser(cookieStore);
+
+  if (!user) {
+    throw new Error('You must be logged in to add a note.');
+  }
 
   const note = formData.get('note') as string;
   const applicant_id = formData.get('applicant_id') as string;
@@ -21,13 +26,14 @@ export async function addApplicantNote(formData: FormData) {
   const { error } = await supabase.from('applicant_notes').insert({
     applicant_id,
     note,
-    author_name: currentUser.name,
-    author_avatar: currentUser.avatar,
+    author_name: user.full_name || 'HR Team',
+    author_avatar: user.avatar_url || '',
+    user_id: user.id,
   });
 
   if (error) {
     console.error('Error adding note:', error);
-    throw new Error('Could not add note.');
+    throw new Error('Could not add note. You may not have the required permissions.');
   }
 
   revalidatePath(`/applicants/${applicant_id}`);

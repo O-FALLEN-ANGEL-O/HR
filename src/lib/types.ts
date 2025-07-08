@@ -1,12 +1,24 @@
 import type { ProcessResumeOutput } from "@/ai/flows/process-resume";
 
-export type User = {
+export type UserRole = 
+  | 'admin'
+  | 'super_hr'
+  | 'hr_manager'
+  | 'recruiter'
+  | 'interviewer'
+  | 'employee'
+  | 'intern'
+  | 'guest';
+
+export type UserProfile = {
   id: string;
-  name: string;
-  email: string;
-  avatar: string;
-  role: 'Admin' | 'HR Manager' | 'Recruiter' | 'Employee';
-};
+  full_name: string | null;
+  email: string | null;
+  avatar_url: string | null;
+  role: UserRole;
+  department: string | null;
+  created_at: string;
+}
 
 export type Metric = {
   id: number;
@@ -81,16 +93,17 @@ export type Onboarding = {
 };
 
 export type PerformanceReview = {
-  id: string;
-  employee_name: string;
-  employee_avatar: string;
-  job_title: string;
-  review_date: string;
-  status: 'Pending' | 'In Progress' | 'Completed';
+    id: string;
+    employee_name: string;
+    employee_avatar: string;
+    job_title: string;
+    review_date: string;
+    status: 'Pending' | 'In Progress' | 'Completed';
 };
 
 export type TimeOffRequest = {
   id: string;
+  user_id: string;
   employee_name: string;
   employee_avatar: string;
   type: 'Vacation' | 'Sick Leave' | 'Personal';
@@ -119,6 +132,7 @@ export type College = {
 export type ApplicantNote = {
     id: string;
     applicant_id: string;
+    user_id: string;
     author_name: string;
     author_avatar: string;
     note: string;

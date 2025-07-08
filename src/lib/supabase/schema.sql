@@ -1,152 +1,179 @@
--- Drop tables in reverse order of dependency
-DROP TABLE IF EXISTS "applicant_notes";
-DROP TABLE IF EXISTS "time_off_requests";
-DROP TABLE IF EXISTS "performance_reviews";
-DROP TABLE IF EXISTS "onboarding_workflows";
-DROP TABLE IF EXISTS "interviews";
-DROP TABLE IF EXISTS "applicants";
-DROP TABLE IF EXISTS "colleges";
-DROP TABLE IF EXISTS "jobs";
-DROP TABLE IF EXISTS "metrics";
+-- 1. Create User Roles Enum Type
+-- This type defines the available roles a user can have in the system.
+drop type if exists public.user_role;
+create type public.user_role as enum ('admin', 'super_hr', 'hr_manager', 'recruiter', 'interviewer', 'employee', 'intern', 'guest');
 
--- Create tables
-CREATE TABLE "metrics" (
-    "id" SERIAL PRIMARY KEY,
-    "title" TEXT NOT NULL,
-    "value" TEXT NOT NULL,
-    "change" TEXT,
-    "change_type" TEXT
+-- 2. Create Users Table
+-- This table stores public user information and links to the authentication user.
+create table if not exists public.users (
+    id uuid not null primary key, -- Corresponds to auth.users.id
+    full_name text,
+    email text unique,
+    avatar_url text,
+    role public.user_role not null default 'employee',
+    department text,
+    created_at timestamp with time zone default now(),
+    
+    constraint id foreign key(id) references auth.users(id) on delete cascade
 );
+comment on table public.users is 'Public user profile information.';
 
-CREATE TABLE "jobs" (
-    "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    "title" TEXT NOT NULL,
-    "department" TEXT NOT NULL,
-    "description" TEXT,
-    "status" TEXT NOT NULL,
-    "applicants" INTEGER NOT NULL,
-    "posted_date" TIMESTAMPTZ NOT NULL
-);
+-- 3. Create Function to Handle New User
+-- This trigger function automatically creates a public user profile
+-- when a new user signs up in Supabase Auth.
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  insert into public.users (id, full_name, email, avatar_url, role)
+  values (
+    new.id, 
+    new.raw_user_meta_data->>'full_name', 
+    new.email,
+    new.raw_user_meta_data->>'avatar_url',
+    'employee' -- Default role for new sign-ups
+  );
+  return new;
+end;
+$$;
 
-CREATE TABLE "colleges" (
-    "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    "name" TEXT NOT NULL,
-    "status" TEXT NOT NULL,
-    "resumes_received" INTEGER NOT NULL,
-    "contact_email" TEXT NOT NULL,
-    "last_contacted" TIMESTAMPTZ NOT NULL
-);
+-- 4. Create Trigger for New Users
+-- This trigger calls the handle_new_user function after a new user is created.
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
 
-CREATE TABLE "applicants" (
-    "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    "name" TEXT NOT NULL,
-    "email" TEXT NOT NULL,
-    "phone" TEXT NOT NULL,
-    "job_id" UUID REFERENCES "jobs"("id"),
-    "stage" TEXT NOT NULL,
-    "applied_date" TIMESTAMPTZ NOT NULL,
-    "avatar" TEXT,
-    "source" TEXT,
-    "wpm" INTEGER,
-    "accuracy" INTEGER,
-    "aptitude_score" INTEGER,
-    "comprehensive_score" INTEGER,
-    "english_grammar_score" INTEGER,
-    "customer_service_score" INTEGER,
-    "college_id" UUID REFERENCES "colleges"("id"),
-    "resume_data" JSONB,
-    "ai_match_score" INTEGER,
-    "ai_justification" TEXT
-);
+-- 5. Set up Storage for Avatars
+-- Create a bucket for user avatars with appropriate access policies.
+insert into storage.buckets (id, name, public)
+values ('avatars', 'avatars', true)
+on conflict (id) do nothing;
 
-CREATE TABLE "interviews" (
-    "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    "candidate_name" TEXT NOT NULL,
-    "candidate_avatar" TEXT,
-    "job_title" TEXT NOT NULL,
-    "interviewer_name" TEXT NOT NULL,
-    "interviewer_avatar" TEXT,
-    "date" TIMESTAMPTZ NOT NULL,
-    "time" TEXT NOT NULL,
-    "type" TEXT NOT NULL,
-    "status" TEXT NOT NULL
-);
+drop policy if exists "Avatar images are publicly accessible." on storage.objects;
+create policy "Avatar images are publicly accessible." on storage.objects
+  for select using (bucket_id = 'avatars');
 
-CREATE TABLE "onboarding_workflows" (
-    "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    "employee_name" TEXT NOT NULL,
-    "employee_avatar" TEXT,
-    "job_title" TEXT NOT NULL,
-    "manager_name" TEXT NOT NULL,
-    "buddy_name" TEXT NOT NULL,
-    "progress" INTEGER NOT NULL,
-    "current_step" TEXT NOT NULL,
-    "start_date" TIMESTAMPTZ NOT NULL
-);
+drop policy if exists "Anyone can upload an avatar." on storage.objects;
+create policy "Anyone can upload an avatar." on storage.objects
+  for insert with check (bucket_id = 'avatars');
 
-CREATE TABLE "performance_reviews" (
-    "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    "employee_name" TEXT NOT NULL,
-    "employee_avatar" TEXT,
-    "job_title" TEXT NOT NULL,
-    "review_date" TEXT NOT NULL,
-    "status" TEXT NOT NULL
-);
-
-CREATE TABLE "time_off_requests" (
-    "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    "employee_name" TEXT NOT NULL,
-    "employee_avatar" TEXT,
-    "type" TEXT NOT NULL,
-    "start_date" TIMESTAMPTZ NOT NULL,
-    "end_date" TIMESTAMPTZ NOT NULL,
-    "status" TEXT NOT NULL
-);
-
-CREATE TABLE "applicant_notes" (
-    "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    "applicant_id" UUID REFERENCES "applicants"("id") ON DELETE CASCADE,
-    "author_name" TEXT NOT NULL,
-    "author_avatar" TEXT,
-    "note" TEXT NOT NULL,
-    "created_at" TIMESTAMPTZ DEFAULT NOW() NOT NULL
-);
-
--- RLS Policies
-ALTER TABLE "metrics" ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow public read access to metrics" ON "metrics" FOR SELECT USING (true);
-
-ALTER TABLE "jobs" ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow public read access to jobs" ON "jobs" FOR SELECT USING (true);
-
-ALTER TABLE "colleges" ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow public read access to colleges" ON "colleges" FOR SELECT USING (true);
-
-ALTER TABLE "applicants" ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow public read access to applicants" ON "applicants" FOR SELECT USING (true);
-CREATE POLICY "Allow public insert access to applicants" ON "applicants" FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow public update access to applicants" ON "applicants" FOR UPDATE USING (true) WITH CHECK (true);
-
-ALTER TABLE "interviews" ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow public read access to interviews" ON "interviews" FOR SELECT USING (true);
-
-ALTER TABLE "onboarding_workflows" ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow public read access to onboarding" ON "onboarding_workflows" FOR SELECT USING (true);
-
-ALTER TABLE "performance_reviews" ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow public read access to performance reviews" ON "performance_reviews" FOR SELECT USING (true);
-
-ALTER TABLE "time_off_requests" ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow public read access to time off requests" ON "time_off_requests" FOR SELECT USING (true);
-CREATE POLICY "Allow public insert access to time off requests" ON "time_off_requests" FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow public update access to time off requests" ON "time_off_requests" FOR UPDATE USING (true) WITH CHECK (true);
-
-ALTER TABLE "applicant_notes" ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow public read access to notes" ON "applicant_notes" FOR SELECT USING (true);
-CREATE POLICY "Allow public insert access to notes" ON "applicant_notes" FOR INSERT WITH CHECK (true);
+drop policy if exists "Anyone can update their own avatar." on storage.objects;
+create policy "Anyone can update their own avatar." on storage.objects
+  for update using (auth.uid() = owner) with check (bucket_id = 'avatars');
+  
+-- 6. Enable Row-Level Security (RLS) for all tables
+-- This is a critical security step.
+alter table public.users enable row level security;
+alter table public.metrics enable row level security;
+alter table public.jobs enable row level security;
+alter table public.colleges enable row level security;
+alter table public.applicants enable row level security;
+alter table public.applicant_notes enable row level security;
+alter table public.interviews enable row level security;
+alter table public.onboarding_workflows enable row level security;
+alter table public.performance_reviews enable row level security;
+alter table public.time_off_requests enable row level security;
 
 
--- Storage Policies
--- Assumes a public bucket named 'avatars' has been created
-CREATE POLICY "Allow public read access on avatars" ON storage.objects FOR SELECT USING ( bucket_id = 'avatars' );
-CREATE POLICY "Allow public insert on avatars" ON storage.objects FOR INSERT WITH CHECK ( bucket_id = 'avatars' );
+-- 7. Define RLS Policies
+-- These policies dictate who can access or modify data in each table.
+
+-- Function to check user role
+create or replace function public.get_user_role(user_id uuid)
+returns public.user_role
+language sql
+security definer
+set search_path = public
+as $$
+  select role from public.users where id = user_id;
+$$;
+
+-- Policy: users
+drop policy if exists "Users can view their own profile." on public.users;
+create policy "Users can view their own profile." on public.users
+  for select using (auth.uid() = id);
+
+drop policy if exists "Users can update their own profile." on public.users;
+create policy "Users can update their own profile." on public.users
+  for update using (auth.uid() = id);
+  
+drop policy if exists "Admins can manage all user profiles." on public.users;
+create policy "Admins can manage all user profiles." on public.users
+  for all using (public.get_user_role(auth.uid()) = 'admin');
+
+-- Policies for HR-related tables (jobs, applicants, etc.)
+create or replace function public.is_hr()
+returns boolean
+language sql
+security definer
+set search_path = public
+as $$
+  select public.get_user_role(auth.uid()) in ('admin', 'super_hr', 'hr_manager', 'recruiter');
+$$;
+
+-- Policy: jobs
+drop policy if exists "Authenticated users can view jobs." on public.jobs;
+create policy "Authenticated users can view jobs." on public.jobs
+  for select using (auth.role() = 'authenticated');
+  
+drop policy if exists "HR roles can manage jobs." on public.jobs;
+create policy "HR roles can manage jobs." on public.jobs
+  for all using (public.is_hr());
+
+-- Policy: applicants
+drop policy if exists "HR roles can manage applicants." on public.applicants;
+create policy "HR roles can manage applicants." on public.applicants
+  for all using (public.is_hr());
+
+-- Policy: applicant_notes
+drop policy if exists "HR roles can manage applicant notes." on public.applicant_notes;
+create policy "HR roles can manage applicant notes." on public.applicant_notes
+  for all using (public.is_hr());
+
+-- Policy: colleges
+drop policy if exists "HR roles can manage colleges." on public.colleges;
+create policy "HR roles can manage colleges." on public.colleges
+  for all using (public.is_hr());
+
+-- Policy: interviews
+drop policy if exists "HR roles can manage interviews." on public.interviews;
+create policy "HR roles can manage interviews." on public.interviews
+  for all using (public.is_hr());
+
+-- Policy: onboarding_workflows
+drop policy if exists "HR roles can manage onboarding workflows." on public.onboarding_workflows;
+create policy "HR roles can manage onboarding workflows." on public.onboarding_workflows
+  for all using (public.is_hr());
+
+-- Policy: performance_reviews
+drop policy if exists "HR roles can manage performance reviews." on public.performance_reviews;
+create policy "HR roles can manage performance reviews." on public.performance_reviews
+  for all using (public.is_hr());
+
+-- Policy: time_off_requests
+drop policy if exists "Users can view their own time off requests." on public.time_off_requests;
+create policy "Users can view their own time off requests." on public.time_off_requests
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "Users can create their own time off requests." on public.time_off_requests;
+create policy "Users can create their own time off requests." on public.time_off_requests
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "HR can view all time off requests." on public.time_off_requests;
+create policy "HR can view all time off requests." on public.time_off_requests
+  for select using (public.is_hr());
+  
+drop policy if exists "HR can approve/reject time off requests." on public.time_off_requests;
+create policy "HR can approve/reject time off requests." on public.time_off_requests
+  for update using (public.is_hr()) with check (public.is_hr());
+
+-- Policy: metrics
+drop policy if exists "Authenticated users can view metrics." on public.metrics;
+create policy "Authenticated users can view metrics." on public.metrics
+  for select using (auth.role() = 'authenticated');
+
+-- By default, deny all actions that are not explicitly allowed by a policy.
+-- This is handled by enabling RLS.

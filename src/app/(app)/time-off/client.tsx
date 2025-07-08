@@ -25,8 +25,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Check, UserCheck, Users, X } from 'lucide-react';
-import { format } from 'date-fns';
+import { Check, UserCheck, Users, X, Loader2 } from 'lucide-react';
+import { format, subMonths, startOfDay, endOfDay, getMonth } from 'date-fns';
 import { createClient } from '@/lib/supabase/client';
 import type { TimeOffRequest, TimeOffMetric } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -55,67 +55,85 @@ const chartConfig = {
   },
 };
 
-type TimeOffClientProps = {
-  initialRequests: TimeOffRequest[];
-  initialMetrics: TimeOffMetric[];
-  initialChartData: any[];
-};
 
-export default function TimeOffClient({
-  initialRequests,
-  initialMetrics,
-  initialChartData,
-}: TimeOffClientProps) {
-  const [requests, setRequests] = React.useState<TimeOffRequest[]>(initialRequests);
-  const [metrics, setMetrics] = React.useState<TimeOffMetric[]>(initialMetrics);
+export default function TimeOffClient() {
+  const [requests, setRequests] = React.useState<TimeOffRequest[]>([]);
+  const [metrics, setMetrics] = React.useState<TimeOffMetric[]>([]);
+  const [chartData, setChartData] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
   const [isClient, setIsClient] = React.useState(false);
   const { toast } = useToast();
 
   React.useEffect(() => {
     setIsClient(true);
-  }, []);
+    
+    const fetchData = async () => {
+        setLoading(true);
+        const supabase = createClient();
+        const { data: requestsData, error } = await supabase
+            .from('time_off_requests')
+            .select('*, users (full_name, avatar_url)')
+            .order('start_date', { ascending: false });
 
-  React.useEffect(() => {
-    // This effect ensures that if the server component re-fetches, the client state is updated.
-    setRequests(initialRequests);
-    setMetrics(initialMetrics);
-  }, [initialRequests, initialMetrics]);
+        if (error) {
+            console.error('Error fetching time off requests:', error);
+            setLoading(false);
+            return;
+        }
 
-  React.useEffect(() => {
+        const now = new Date();
+        const todayStart = startOfDay(now);
+        const todayEnd = endOfDay(now);
+
+        const pendingRequests = requestsData.filter(r => r.status === 'Pending').length;
+        const onLeaveToday = requestsData.filter(r => 
+            r.status === 'Approved' && 
+            new Date(r.start_date) <= todayEnd && 
+            new Date(r.end_date) >= todayStart
+        ).length;
+
+        const newMetrics: TimeOffMetric[] = [
+            { title: 'Pending Requests', value: pendingRequests.toString(), change: 'Awaiting your review' },
+            { title: 'On Leave Today', value: onLeaveToday.toString(), change: 'Across all departments' },
+        ];
+        
+        setRequests(requestsData || []);
+        setMetrics(newMetrics);
+
+        // Chart Data
+        const threeMonthsAgo = subMonths(now, 2);
+        const months = [format(threeMonthsAgo, 'MMMM'), format(subMonths(now, 1), 'MMMM'), format(now, 'MMMM')];
+        
+        const newChartData = months.map((monthName, index) => {
+            const monthIndex = getMonth(subMonths(now, 2 - index));
+            const monthRequests = requestsData.filter(r => getMonth(new Date(r.start_date)) === monthIndex);
+            
+            return {
+                month: monthName,
+                vacation: monthRequests.filter(r => r.type === 'Vacation').length,
+                sick: monthRequests.filter(r => r.type === 'Sick Leave').length,
+                personal: monthRequests.filter(r => r.type === 'Personal').length,
+            }
+        });
+        
+        setChartData(newChartData);
+        setLoading(false);
+    };
+    
+    fetchData();
+
     const supabase = createClient();
     const channel = supabase
       .channel('realtime-time-off')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'time_off_requests' },
-        (payload) => {
+        () => {
           toast({
             title: 'Time Off Requests Updated',
             description: 'The list of time off requests has been updated.',
           });
-          if (payload.eventType === 'INSERT') {
-            setRequests((prev) =>
-              [payload.new as TimeOffRequest, ...prev].sort(
-                (a, b) =>
-                  new Date(b.start_date).getTime() -
-                  new Date(a.start_date).getTime()
-              )
-            );
-          } else if (payload.eventType === 'UPDATE') {
-            setRequests((prev) =>
-              prev.map((request) =>
-                request.id === payload.new.id
-                  ? { ...request, ...(payload.new as TimeOffRequest) }
-                  : request
-              )
-            );
-          } else if (payload.eventType === 'DELETE') {
-            setRequests((prev) =>
-              prev.filter(
-                (request) => request.id !== (payload.old as TimeOffRequest).id
-              )
-            );
-          }
+          fetchData();
         }
       )
       .subscribe();
@@ -124,6 +142,7 @@ export default function TimeOffClient({
       supabase.removeChannel(channel);
     };
   }, [toast]);
+  
 
   const handleUpdateRequest = async (
     id: string,
@@ -148,6 +167,14 @@ export default function TimeOffClient({
       });
     }
   };
+  
+  if (loading) {
+    return (
+        <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -190,14 +217,14 @@ export default function TimeOffClient({
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar>
-                          <AvatarImage src={request.employee_avatar} />
+                          <AvatarImage src={(request as any).users?.avatar_url} />
                           <AvatarFallback>
-                            {request.employee_name.charAt(0)}
+                            {(request as any).users?.full_name?.charAt(0) || 'U'}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <div className="font-medium">
-                            {request.employee_name}
+                            {(request as any).users?.full_name || '...'}
                           </div>
                         </div>
                       </div>
@@ -255,7 +282,7 @@ export default function TimeOffClient({
           </CardHeader>
           <CardContent>
             <ChartContainer config={chartConfig} className="h-[300px] w-full">
-              <BarChart data={initialChartData} layout="vertical" margin={{left: 10}}>
+              <BarChart data={chartData} layout="vertical" margin={{left: 10}}>
                 <CartesianGrid horizontal={false} />
                 <YAxis dataKey="month" type="category" tickLine={false} axisLine={false} tickMargin={10}/>
                 <XAxis dataKey="requests" type="number" hide />
