@@ -22,13 +22,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent,
-} from '@/components/ui/chart';
+import { DashboardCharts } from './charts';
 
 import { format } from 'date-fns';
 import {
@@ -40,7 +34,6 @@ import {
   Users,
   Calendar,
 } from 'lucide-react';
-import { BarChart, PieChart, Bar, Pie, Cell, XAxis, CartesianGrid } from 'recharts';
 
 export default async function DashboardPage() {
   const cookieStore = cookies();
@@ -89,25 +82,6 @@ export default async function DashboardPage() {
     { stage: 'Offer', count: 15 },
   ];
 
-  const pieChartConfig = {
-    count: {
-      label: 'Employees',
-    },
-    engineering: { label: 'Engineering', color: 'hsl(var(--chart-1))' },
-    product: { label: 'Product', color: 'hsl(var(--chart-2))' },
-    design: { label: 'Design', color: 'hsl(var(--chart-3))' },
-    sales: { label: 'Sales', color: 'hsl(var(--chart-4))' },
-    hr: { label: 'HR', color: 'hsl(var(--chart-5))' },
-    other: { label: 'Other', color: 'hsl(var(--muted))' },
-  };
-
-  const barChartConfig = {
-    count: {
-      label: 'Applicants',
-      color: 'hsl(var(--primary))',
-    },
-  };
-
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <Header title="Dashboard">
@@ -145,51 +119,10 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-7">
-        <Card className="lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Employee Distribution</CardTitle>
-            <CardDescription>By role</CardDescription>
-          </CardHeader>
-          <CardContent className="flex justify-center">
-            <ChartContainer
-              config={pieChartConfig}
-              className="mx-auto aspect-square h-[250px]"
-            >
-              <PieChart>
-                <ChartTooltip content={<ChartTooltipContent nameKey="role" hideLabel />} />
-                <Pie data={employeeDistributionData} dataKey="count" nameKey="role" innerRadius={50} paddingAngle={2}>
-                  {employeeDistributionData.map((entry) => (
-                    <Cell key={entry.role} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <ChartLegend
-                  content={<ChartLegendContent nameKey="role" />}
-                  className="-mt-4"
-                />
-              </PieChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-        <Card className="lg:col-span-4">
-          <CardHeader>
-            <CardTitle>Hiring Pipeline Overview</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={barChartConfig} className="h-[280px] w-full">
-              <BarChart data={hiringPipelineData} accessibilityLayer margin={{ top: 20 }}>
-                <CartesianGrid vertical={false} />
-                <XAxis
-                  dataKey="stage"
-                  tickLine={false}
-                  tickMargin={10}
-                  axisLine={false}
-                />
-                <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-                <Bar dataKey="count" fill="hsl(var(--primary))" radius={8} />
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
+        <DashboardCharts 
+            employeeDistributionData={employeeDistributionData} 
+            hiringPipelineData={hiringPipelineData}
+        />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
