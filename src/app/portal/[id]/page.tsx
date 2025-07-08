@@ -108,7 +108,7 @@ export default function ApplicantPortalPage({ params }: { params: { id: string }
                         </div>
                          <div className="flex items-center justify-between mt-1">
                             <span className="text-muted-foreground">Applying for:</span>
-                            <span className="font-medium">{applicant.jobTitle}</span>
+                            <span className="font-medium">{applicant.job_title}</span>
                         </div>
                     </div>
 

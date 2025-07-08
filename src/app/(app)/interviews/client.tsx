@@ -109,15 +109,15 @@ function InterviewTable({ interviews }: { interviews: Interview[] }) {
                     <TableCell>
                         <div className="flex items-center gap-3">
                         <Avatar>
-                            <AvatarImage src={interview.candidateAvatar} />
+                            <AvatarImage src={interview.candidate_avatar} />
                             <AvatarFallback>
-                            {interview.candidateName.charAt(0)}
+                            {interview.candidate_name.charAt(0)}
                             </AvatarFallback>
                         </Avatar>
                         <div>
-                            <div className="font-medium">{interview.candidateName}</div>
+                            <div className="font-medium">{interview.candidate_name}</div>
                             <div className="text-sm text-muted-foreground">
-                            for {interview.jobTitle}
+                            for {interview.job_title}
                             </div>
                         </div>
                         </div>
@@ -125,12 +125,12 @@ function InterviewTable({ interviews }: { interviews: Interview[] }) {
                     <TableCell>
                         <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
-                            <AvatarImage src={interview.interviewerAvatar} />
+                            <AvatarImage src={interview.interviewer_avatar} />
                             <AvatarFallback>
-                            {interview.interviewerName.charAt(0)}
+                            {interview.interviewer_name.charAt(0)}
                             </AvatarFallback>
                         </Avatar>
-                        <span>{interview.interviewerName}</span>
+                        <span>{interview.interviewer_name}</span>
                         </div>
                     </TableCell>
                     <TableCell>

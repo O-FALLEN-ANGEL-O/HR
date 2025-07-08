@@ -42,7 +42,7 @@ export default async function CollegeDrivePage() {
   const { data, error } = await supabase
     .from('colleges')
     .select('*')
-    .order('lastContacted', { ascending: false });
+    .order('last_contacted', { ascending: false });
 
   if (error) {
     console.error('Error fetching colleges:', error);
@@ -83,7 +83,7 @@ export default async function CollegeDrivePage() {
                   <TableCell>
                     <div className="font-medium">{college.name}</div>
                     <div className="text-sm text-muted-foreground">
-                      {college.contactEmail}
+                      {college.contact_email}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -92,10 +92,10 @@ export default async function CollegeDrivePage() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="font-medium">{college.resumesReceived}</div>
+                    <div className="font-medium">{college.resumes_received}</div>
                   </TableCell>
                   <TableCell>
-                    {format(new Date(college.lastContacted), 'PPP')}
+                    {format(new Date(college.last_contacted), 'PPP')}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>

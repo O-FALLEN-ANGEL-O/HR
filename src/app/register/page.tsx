@@ -177,10 +177,10 @@ export default function RegisterPage() {
           name: data.fullName,
           email: data.email,
           phone: data.phone,
-          jobTitle: data.jobTitle,
+          job_title: data.jobTitle,
           stage: 'Applied',
           source: 'walk-in',
-          appliedDate: new Date().toISOString(),
+          applied_date: new Date().toISOString(),
         }])
         .select()
         .single();

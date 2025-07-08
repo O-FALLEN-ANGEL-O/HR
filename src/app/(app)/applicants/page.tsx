@@ -12,7 +12,7 @@ export default async function ApplicantsPage() {
   const { data, error } = await supabase
     .from('applicants')
     .select('*')
-    .order('appliedDate', { ascending: false });
+    .order('applied_date', { ascending: false });
 
   if (error) {
     console.error('Error fetching applicants:', error);

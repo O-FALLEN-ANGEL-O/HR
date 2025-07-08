@@ -36,7 +36,7 @@ export default async function TimeOffPage() {
   const { data, error } = await supabase
     .from('time_off_requests')
     .select('*')
-    .order('startDate', { ascending: false });
+    .order('start_date', { ascending: false });
 
   if (error) {
     console.error('Error fetching time off requests:', error);
@@ -77,20 +77,20 @@ export default async function TimeOffPage() {
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar>
-                        <AvatarImage src={request.employeeAvatar} />
+                        <AvatarImage src={request.employee_avatar} />
                         <AvatarFallback>
-                          {request.employeeName.charAt(0)}
+                          {request.employee_name.charAt(0)}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <div className="font-medium">{request.employeeName}</div>
+                        <div className="font-medium">{request.employee_name}</div>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>{request.type}</TableCell>
                   <TableCell>
-                    {format(new Date(request.startDate), 'PPP')} -{' '}
-                    {format(new Date(request.endDate), 'PPP')}
+                    {format(new Date(request.start_date), 'PPP')} -{' '}
+                    {format(new Date(request.end_date), 'PPP')}
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary" className={statusColors[request.status]}>

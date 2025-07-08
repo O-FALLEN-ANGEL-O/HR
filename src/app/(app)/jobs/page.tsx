@@ -14,7 +14,7 @@ export default async function JobsPage() {
   const { data, error } = await supabase
     .from('jobs')
     .select('*')
-    .order('postedDate', { ascending: false });
+    .order('posted_date', { ascending: false });
 
   if (error) {
     console.error('Error fetching jobs:', error);

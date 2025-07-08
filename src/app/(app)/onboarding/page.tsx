@@ -30,7 +30,7 @@ export default async function OnboardingPage() {
   const { data, error } = await supabase
     .from('onboarding_workflows')
     .select('*')
-    .order('startDate', { ascending: false });
+    .order('start_date', { ascending: false });
 
   if (error) {
     console.error('Error fetching onboarding workflows:', error);
@@ -75,31 +75,31 @@ export default async function OnboardingPage() {
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar>
-                        <AvatarImage src={workflow.employeeAvatar} />
+                        <AvatarImage src={workflow.employee_avatar} />
                         <AvatarFallback>
-                          {workflow.employeeName.charAt(0)}
+                          {workflow.employee_name.charAt(0)}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <div className="font-medium">{workflow.employeeName}</div>
+                        <div className="font-medium">{workflow.employee_name}</div>
                         <div className="text-sm text-muted-foreground">
-                          {workflow.jobTitle}
+                          {workflow.job_title}
                         </div>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    {format(new Date(workflow.startDate), 'PPP')}
+                    {format(new Date(workflow.start_date), 'PPP')}
                   </TableCell>
                   <TableCell>
                     <div>
-                      <span className="font-medium">M:</span> {workflow.managerName}
+                      <span className="font-medium">M:</span> {workflow.manager_name}
                     </div>
                     <div>
-                      <span className="font-medium">B:</span> {workflow.buddyName}
+                      <span className="font-medium">B:</span> {workflow.buddy_name}
                     </div>
                   </TableCell>
-                  <TableCell>{workflow.currentStep}</TableCell>
+                  <TableCell>{workflow.current_step}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Progress value={workflow.progress} className="w-32" />

@@ -42,7 +42,7 @@ export default async function PerformancePage() {
     const { data, error } = await supabase
       .from('performance_reviews')
       .select('*')
-      .order('reviewDate', { ascending: false });
+      .order('review_date', { ascending: false });
   
     if (error) {
       console.error('Error fetching performance reviews:', error);
@@ -82,20 +82,20 @@ export default async function PerformancePage() {
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar>
-                        <AvatarImage src={review.employeeAvatar} />
+                        <AvatarImage src={review.employee_avatar} />
                         <AvatarFallback>
-                          {review.employeeName.charAt(0)}
+                          {review.employee_name.charAt(0)}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <div className="font-medium">{review.employeeName}</div>
+                        <div className="font-medium">{review.employee_name}</div>
                         <div className="text-sm text-muted-foreground">
-                          {review.jobTitle}
+                          {review.job_title}
                         </div>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>{review.reviewDate}</TableCell>
+                  <TableCell>{review.review_date}</TableCell>
                   <TableCell>
                     <Badge variant="secondary" className={statusColors[review.status]}>
                       {review.status}

@@ -104,7 +104,7 @@ export default function JobsClient({ initialJobs }: JobsClientProps) {
                   <Users className="mr-1 h-4 w-4" />
                   <span>{job.applicants} Applicants</span>
                 </div>
-                <span>Posted {format(new Date(job.postedDate), 'PPP')}</span>
+                <span>Posted {format(new Date(job.posted_date), 'PPP')}</span>
               </div>
             </CardContent>
             <CardFooter>

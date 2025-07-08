@@ -10,7 +10,7 @@ export type Metric = {
   title: string;
   value: string;
   change?: string;
-  changeType?: 'increase' | 'decrease';
+  change_type?: 'increase' | 'decrease';
 };
 
 export type Job = {
@@ -19,7 +19,7 @@ export type Job = {
   department: string;
   status: 'Open' | 'Closed' | 'On hold';
   applicants: number;
-  postedDate: string;
+  posted_date: string;
 };
 
 export type Applicant = {
@@ -27,23 +27,23 @@ export type Applicant = {
   name: string;
   email: string;
   phone: string;
-  jobTitle?: string;
+  job_title?: string;
   stage: 'Sourced' | 'Applied' | 'Phone Screen' | 'Interview' | 'Offer' | 'Hired';
-  appliedDate: string;
+  applied_date: string;
   avatar?: string;
   source?: 'walk-in' | 'college' | 'email';
   wpm?: number;
   accuracy?: number;
-  collegeId?: string;
+  college_id?: string;
 };
 
 export type Interview = {
   id: string;
-  candidateName: string;
-  candidateAvatar: string;
-  jobTitle: string;
-  interviewerName: string;
-  interviewerAvatar: string;
+  candidate_name: string;
+  candidate_avatar: string;
+  job_title: string;
+  interviewer_name: string;
+  interviewer_avatar: string;
   date: string;
   time: string;
   type: 'Video' | 'Phone' | 'In-person';
@@ -52,32 +52,32 @@ export type Interview = {
 
 export type Onboarding = {
   id: string;
-  employeeName: string;
-  employeeAvatar: string;
-  jobTitle: string;
-  managerName: string;
-  buddyName: string;
+  employee_name: string;
+  employee_avatar: string;
+  job_title: string;
+  manager_name: string;
+  buddy_name: string;
   progress: number;
-  currentStep: string;
-  startDate: string;
+  current_step: string;
+  start_date: string;
 };
 
 export type PerformanceReview = {
   id: string;
-  employeeName: string;
-  employeeAvatar: string;
-  jobTitle: string;
-  reviewDate: string;
+  employee_name: string;
+  employee_avatar: string;
+  job_title: string;
+  review_date: string;
   status: 'Pending' | 'In Progress' | 'Completed';
 };
 
 export type TimeOffRequest = {
   id: string;
-  employeeName: string;
-  employeeAvatar: string;
+  employee_name: string;
+  employee_avatar: string;
   type: 'Vacation' | 'Sick Leave' | 'Personal';
-  startDate: string;
-  endDate: string;
+  start_date: string;
+  end_date: string;
   status: 'Pending' | 'Approved' | 'Rejected';
 };
 
@@ -92,7 +92,7 @@ export type College = {
   id: string;
   name: string;
   status: 'Invited' | 'Confirmed' | 'Attended' | 'Declined';
-  resumesReceived: number;
-  contactEmail: string;
-  lastContacted: string;
+  resumes_received: number;
+  contact_email: string;
+  last_contacted: string;
 };

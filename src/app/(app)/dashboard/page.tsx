@@ -49,7 +49,7 @@ export default async function DashboardPage() {
     .from('jobs')
     .select('*')
     .eq('status', 'Open')
-    .order('postedDate', { ascending: false })
+    .order('posted_date', { ascending: false })
     .limit(3);
   const recentJobs: Job[] = recentJobsData || [];
 
@@ -97,7 +97,7 @@ export default async function DashboardPage() {
               <div className="text-2xl font-bold">{metric.value}</div>
               {metric.change && (
                 <p className="flex items-center text-xs text-muted-foreground">
-                  {metric.changeType === 'increase' ? (
+                  {metric.change_type === 'increase' ? (
                     <ArrowUp className="h-4 w-4 text-green-500" />
                   ) : (
                     <ArrowDown className="h-4 w-4 text-red-500" />
@@ -138,7 +138,7 @@ export default async function DashboardPage() {
                     <TableCell>
                       <div className="font-medium">{job.title}</div>
                       <div className="text-sm text-muted-foreground">
-                        Posted on {format(new Date(job.postedDate), 'PPP')}
+                        Posted on {format(new Date(job.posted_date), 'PPP')}
                       </div>
                     </TableCell>
                     <TableCell>{job.department}</TableCell>

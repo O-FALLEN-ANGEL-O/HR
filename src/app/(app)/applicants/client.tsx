@@ -189,9 +189,9 @@ export default function ApplicantList({ initialApplicants }: ApplicantListProps)
                     </div>
                   </div>
                 </TableCell>
-                <TableCell>{applicant.jobTitle || 'Walk-in'}</TableCell>
+                <TableCell>{applicant.job_title || 'Walk-in'}</TableCell>
                 <TableCell>
-                  {format(new Date(applicant.appliedDate), 'PPP')}
+                  {format(new Date(applicant.applied_date), 'PPP')}
                 </TableCell>
                 <TableCell>
                   <Badge variant="secondary" className={stageColors[applicant.stage]}>
