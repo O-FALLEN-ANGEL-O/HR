@@ -33,8 +33,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, FileUp, UserPlus, Camera, Zap } from 'lucide-react';
+import { Loader2, FileUp, UserPlus, Camera, Zap, ImageUp } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { Job } from '@/lib/types';
 
@@ -44,6 +45,7 @@ const FormSchema = z.object({
   phone: z.string().min(10, 'Phone number seems too short.'),
   jobTitle: z.string().min(1, 'Please select a position.'),
   resumeFile: z.any().optional(),
+  profilePic: z.any().optional(),
 });
 
 type FormValues = z.infer<typeof FormSchema>;
@@ -55,6 +57,8 @@ export default function RegisterPage() {
   const [hasCameraPermission, setHasCameraPermission] = React.useState<boolean | null>(null);
   const [openJobs, setOpenJobs] = React.useState<Pick<Job, 'id' | 'title'>[]>([]);
   const [resumeData, setResumeData] = React.useState<ProcessResumeOutput | null>(null);
+  const [profilePicFile, setProfilePicFile] = React.useState<File | null>(null);
+  const [profilePicPreview, setProfilePicPreview] = React.useState<string | null>(null);
   
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -170,9 +174,37 @@ export default function RegisterPage() {
     }
   };
 
+  const handleProfilePicUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      setProfilePicFile(null);
+      setProfilePicPreview(null);
+      return;
+    }
+    setProfilePicFile(file);
+    setProfilePicPreview(URL.createObjectURL(file));
+  };
+
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
     setIsSubmitting(true);
     try {
+      let avatarUrl: string | undefined = undefined;
+
+      if (profilePicFile) {
+        const fileName = `${Date.now()}-${profilePicFile.name.replace(/\s/g, '-')}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, profilePicFile);
+        
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(uploadData.path);
+        
+        avatarUrl = urlData.publicUrl;
+      }
+      
       const { data: newApplicant, error } = await supabase
         .from('applicants')
         .insert([{
@@ -184,6 +216,7 @@ export default function RegisterPage() {
           source: 'walk-in',
           applied_date: new Date().toISOString(),
           resume_data: resumeData,
+          avatar: avatarUrl,
         }])
         .select()
         .single();
@@ -218,6 +251,44 @@ export default function RegisterPage() {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <CardContent className="space-y-4">
+               <FormField
+                  control={form.control}
+                  name="profilePic"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col items-center">
+                        <Avatar className="w-24 h-24 mb-2">
+                            <AvatarImage src={profilePicPreview || undefined} />
+                            <AvatarFallback><UserPlus className="w-10 h-10 text-muted-foreground" /></AvatarFallback>
+                        </Avatar>
+                        <FormLabel htmlFor="profile-pic-upload" className="sr-only">Upload Profile Picture</FormLabel>
+                        <Button size="sm" asChild variant="outline">
+                            <label htmlFor="profile-pic-upload" className="cursor-pointer">
+                                <ImageUp className="mr-2" /> Upload Picture
+                            </label>
+                        </Button>
+                        <FormControl>
+                          <Input
+                            type="file"
+                            id="profile-pic-upload"
+                            accept="image/*"
+                            className="sr-only"
+                            onChange={(e) => {
+                              field.onChange(e.target.files);
+                              handleProfilePicUpload(e);
+                            }}
+                            disabled={isLoading}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+                <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">Resume (Optional)</span></div>
+              </div>
+
               {showCamera ? (
                 <div className="space-y-2">
                   <video ref={videoRef} className="w-full aspect-video rounded-md bg-black" autoPlay muted />

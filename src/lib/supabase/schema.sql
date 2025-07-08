@@ -11,10 +11,40 @@ ALTER TABLE public.jobs ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public access for jobs" ON public.jobs FOR ALL USING (true) WITH CHECK (true);
 
 -- Create applicants table
-CREATE TABLE public.applicants (id UUID DEFAULT gen_random_uuid() PRIMARY KEY, name TEXT, email TEXT, phone TEXT, job_title TEXT, stage TEXT, applied_date TIMESTAMPTZ, avatar TEXT, source TEXT, wpm INT, accuracy INT, aptitude_score INT, resume_data JSONB, ai_match_score INT, ai_justification TEXT, college_id TEXT);
+CREATE TABLE public.applicants (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    name TEXT,
+    email TEXT,
+    phone TEXT,
+    job_title TEXT,
+    stage TEXT,
+    applied_date TIMESTAMPTZ,
+    avatar TEXT,
+    source TEXT,
+    wpm INT,
+    accuracy INT,
+    aptitude_score INT,
+    college_id TEXT,
+    resume_data JSONB,
+    ai_match_score INT,
+    ai_justification TEXT
+);
 -- Enable RLS and define policies
 ALTER TABLE public.applicants ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public access for applicants" ON public.applicants FOR ALL USING (true) WITH CHECK (true);
+
+-- Create applicant_notes table
+CREATE TABLE public.applicant_notes (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    applicant_id UUID REFERENCES public.applicants(id) ON DELETE CASCADE,
+    author_name TEXT,
+    author_avatar TEXT,
+    note TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+-- Enable RLS and define policies
+ALTER TABLE public.applicant_notes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public access for applicant notes" ON public.applicant_notes FOR ALL USING (true) WITH CHECK (true);
 
 -- Create interviews table
 CREATE TABLE public.interviews (id UUID DEFAULT gen_random_uuid() PRIMARY KEY, candidate_name TEXT, candidate_avatar TEXT, job_title TEXT, interviewer_name TEXT, interviewer_avatar TEXT, date TIMESTAMPTZ, time TEXT, type TEXT, status TEXT);
@@ -45,9 +75,3 @@ CREATE TABLE public.time_off_requests (id UUID DEFAULT gen_random_uuid() PRIMARY
 -- Enable RLS and define policies
 ALTER TABLE public.time_off_requests ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public access for timeoff" ON public.time_off_requests FOR ALL USING (true) WITH CHECK (true);
-
--- Create applicant_notes table
-CREATE TABLE public.applicant_notes (id UUID DEFAULT gen_random_uuid() PRIMARY KEY, applicant_id UUID REFERENCES public.applicants(id) ON DELETE CASCADE, author_name TEXT, author_avatar TEXT, note TEXT, created_at TIMESTAMPTZ DEFAULT now());
--- Enable RLS and define policies
-ALTER TABLE public.applicant_notes ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public access for applicant notes" ON public.applicant_notes FOR ALL USING (true) WITH CHECK (true);
