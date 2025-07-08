@@ -1,8 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 import { faker } from '@faker-js/faker';
 import dotenv from 'dotenv';
+import path from 'path';
 
-dotenv.config({ path: '.env' });
+// Load environment variables from .env file at the root of the project
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -21,11 +23,17 @@ async function clearData() {
   ];
 
   for (const table of tables) {
-    // The 'id' column in metrics is SERIAL, not UUID, so we can't use gt with a number.
-    // A simple delete without condition works fine for all tables.
-    const { error } = await supabase.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000');
-     if (error && error.code !== '42P01' && !error.message.includes("does not exist")) {
-      console.error(`Error clearing table ${table}:`, error.message);
+    // A .delete() without a filter will remove all rows, but RLS must be bypassed.
+    // Using .not('id', 'is', null) is a safe way to delete all rows in tables
+    // with both UUID and SERIAL primary keys, as primary keys can't be null.
+    const { error } = await supabase.from(table).delete().not('id', 'is', null);
+
+    if (error) {
+      // We only log the error if it's not a "table does not exist" error,
+      // which can happen on the first run.
+      if (error.code !== '42P01' && !error.message.includes("does not exist")) {
+        console.error(`Error clearing table ${table}:`, error.message);
+      }
     }
   }
   console.log('✅ Data cleared.');
