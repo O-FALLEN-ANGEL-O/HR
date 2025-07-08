@@ -39,10 +39,6 @@ export default async function DashboardPage() {
   const cookieStore = cookies();
   const supabase = createClient(cookieStore);
 
-  // The app is now configured to fetch data from Supabase.
-  // Once your database tables ('metrics', 'jobs', etc.) are created and populated,
-  // you can uncomment the code below to fetch live data.
-  /*
   const { data: metricsData, error: metricsError } = await supabase
     .from('metrics')
     .select('*')
@@ -61,10 +57,6 @@ export default async function DashboardPage() {
     console.error(metricsError || jobsError);
     // You can render an error state here
   }
-  */
-
-  // For now, we'll continue using the mock data until the database is ready.
-  const { metrics, recentJobs } = await import('@/lib/data');
 
   const employeeDistributionData = [
     { role: 'Engineering', count: 450, fill: 'var(--color-engineering)' },

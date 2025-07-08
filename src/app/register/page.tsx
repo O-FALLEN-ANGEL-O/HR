@@ -34,9 +34,9 @@ import {
 } from '@/components/ui/select';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UploadCloud, UserPlus, Camera, Zap, FileUp } from 'lucide-react';
+import { Loader2, FileUp, UserPlus, Camera, Zap } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { allJobs } from '@/lib/data';
+import type { Job } from '@/lib/types';
 
 const FormSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters.'),
@@ -53,6 +53,7 @@ export default function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [showCamera, setShowCamera] = React.useState(false);
   const [hasCameraPermission, setHasCameraPermission] = React.useState<boolean | null>(null);
+  const [openJobs, setOpenJobs] = React.useState<Pick<Job, 'id' | 'title'>[]>([]);
   
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -70,6 +71,23 @@ export default function RegisterPage() {
       jobTitle: '',
     },
   });
+
+  React.useEffect(() => {
+    const fetchJobs = async () => {
+      const { data, error } = await supabase
+        .from('jobs')
+        .select('id, title')
+        .eq('status', 'Open');
+      
+      if (error) {
+        console.error("Error fetching open jobs", error);
+        toast({ title: 'Error', description: 'Could not load job positions.', variant: 'destructive'});
+      } else {
+        setOpenJobs(data || []);
+      }
+    };
+    fetchJobs();
+  }, [supabase, toast]);
 
   React.useEffect(() => {
     if (showCamera) {
@@ -304,7 +322,7 @@ export default function RegisterPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {allJobs.filter(job => job.status === 'Open').map(job => (
+                          {openJobs.map(job => (
                              <SelectItem key={job.id} value={job.title}>{job.title}</SelectItem>
                           ))}
                         </SelectContent>
