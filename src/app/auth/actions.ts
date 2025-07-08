@@ -8,13 +8,14 @@ import type { UserRole } from '@/lib/types';
 function getHomePathForRole(role: UserRole): string {
   switch (role) {
     case 'admin':
-      return '/admin/roles'; // Admin dashboard is the roles page
+      return '/admin/dashboard';
     case 'super_hr':
     case 'hr_manager':
-    case 'recruiter':
       return '/hr/dashboard';
+    case 'recruiter':
+      return '/recruiter/dashboard';
     case 'interviewer':
-      return '/interviews';
+      return '/interviewer/tasks';
     case 'employee':
       return '/employee/dashboard';
     case 'intern':
@@ -48,13 +49,23 @@ export async function login(formData: any, isMagicLink: boolean = false) {
       return { error: `Could not authenticate user: ${error?.message}` };
   }
 
-  const { data: userProfile } = await supabase
+  const { data: userProfile, error: profileError } = await supabase
     .from('users')
     .select('role')
     .eq('id', authData.user.id)
     .single();
     
-  const homePath = getHomePathForRole(userProfile?.role || 'guest');
+  if (profileError) {
+    await supabase.auth.signOut();
+    return { error: `Login successful, but there was an issue retrieving your user profile. Please contact support. Error: ${profileError.message}` };
+  }
+
+  if (!userProfile) {
+    await supabase.auth.signOut();
+    return { error: `Login successful, but your user profile could not be found. Please contact support.` };
+  }
+    
+  const homePath = getHomePathForRole(userProfile.role || 'guest');
   redirect(homePath);
 }
 
