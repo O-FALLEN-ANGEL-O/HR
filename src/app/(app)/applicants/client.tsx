@@ -33,7 +33,7 @@ import { Button } from '@/components/ui/button';
 import {
   Mail,
   MoreHorizontal,
-  ClipboardCheck,
+  Keyboard,
   PlusCircle,
   Upload,
   ClipboardCopy,
@@ -334,7 +334,7 @@ export default function ApplicantList({
                         <DropdownMenuItem
                           onClick={() => handleAssignTest(applicant.id, 'Typing Test', 'typing-test')}
                         >
-                          <ClipboardCheck className="mr-2 h-4 w-4" />
+                          <Keyboard className="mr-2 h-4 w-4" />
                           Assign Typing Test
                         </DropdownMenuItem>
                          <DropdownMenuItem

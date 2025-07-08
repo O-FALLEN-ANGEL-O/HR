@@ -6,11 +6,13 @@ import type { UserRole } from '@/lib/types';
 function getHomePathForRole(role: UserRole): string {
   switch (role) {
     case 'admin':
-      return '/admin/roles';
+      return '/admin/dashboard';
     case 'super_hr':
+      return '/super_hr/dashboard';
     case 'hr_manager':
-    case 'recruiter':
       return '/hr/dashboard';
+    case 'recruiter':
+      return '/recruiter/dashboard';
     case 'interviewer':
       return '/interviews';
     case 'employee':

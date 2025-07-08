@@ -24,7 +24,9 @@ import {
   Users,
   BarChart3,
   UserCheck,
-  FileText
+  FileText,
+  ShieldCheck,
+  UserCog
 } from 'lucide-react';
 
 import {
@@ -57,7 +59,6 @@ import {
 
 const getNavLinks = (role: UserRole) => {
   const commonHrLinks = [
-    { href: '/hr/dashboard', label: 'HR Dashboard', icon: LayoutDashboard },
     { href: '/applicants', label: 'Applicants', icon: Users },
     { href: '/jobs', label: 'Job Postings', icon: Briefcase },
     { href: '/interviews', label: 'Interviews', icon: Calendar },
@@ -72,15 +73,25 @@ const getNavLinks = (role: UserRole) => {
   switch (role) {
     case 'admin':
       return [
+        { href: '/admin/dashboard', label: 'Admin Dashboard', icon: ShieldCheck },
         { href: '/admin/roles', label: 'Role Management', icon: UserCheck },
+        { href: '/hr/dashboard', label: 'HR Dashboard', icon: LayoutDashboard },
         ...commonHrLinks,
       ];
     case 'super_hr':
+        return [
+            { href: '/super_hr/dashboard', label: 'Super HR Dashboard', icon: UserCog },
+            { href: '/hr/dashboard', label: 'HR Dashboard', icon: LayoutDashboard },
+            ...commonHrLinks,
+        ];
     case 'hr_manager':
-      return commonHrLinks;
+      return [
+        { href: '/hr/dashboard', label: 'HR Dashboard', icon: LayoutDashboard },
+        ...commonHrLinks,
+      ];
     case 'recruiter':
       return [
-        { href: '/hr/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { href: '/recruiter/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { href: '/applicants', label: 'Applicants', icon: Users },
         { href: '/jobs', label: 'Job Postings', icon: Briefcase },
         { href: '/ai-tools/applicant-scoring', label: 'Applicant Scoring', icon: ScanSearch },
@@ -198,6 +209,11 @@ export default function AppShell({
                 {role === 'admin' && (
                     <DropdownMenuItem asChild>
                         <Link href="/admin/roles"><Settings className="mr-2"/>Admin Settings</Link>
+                    </DropdownMenuItem>
+                )}
+                 {role === 'super_hr' && (
+                    <DropdownMenuItem asChild>
+                        <Link href="/admin/roles"><UserCog className="mr-2"/>Assign Roles</Link>
                     </DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={() => logout()}>
