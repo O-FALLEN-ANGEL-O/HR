@@ -8,6 +8,7 @@ import {
   HeartHandshake,
   Keyboard,
   Lightbulb,
+  Link,
   Loader2,
   MessageSquare,
   Sparkles,
@@ -273,6 +274,25 @@ function ResumeDetails({ resume }: { resume?: ProcessResumeOutput | null }) {
                         {resume.skills?.map(skill => <Badge key={skill} variant="secondary">{skill}</Badge>)}
                     </div>
                 </div>
+                 {resume.links && resume.links.length > 0 && (
+                    <div>
+                        <h3 className="font-semibold text-lg mb-2">Portfolio & Links</h3>
+                        <div className="space-y-2">
+                            {resume.links.map((link, i) => (
+                                <a 
+                                    key={i} 
+                                    href={link} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="flex items-center gap-2 text-sm text-primary hover:underline"
+                                >
+                                    <Link className="h-4 w-4" />
+                                    <span>{link}</span>
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                )}
                 <div>
                     <h3 className="font-semibold text-lg mb-2">Work Experience</h3>
                     <div className="space-y-4">

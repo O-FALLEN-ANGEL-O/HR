@@ -29,6 +29,7 @@ const ProcessResumeOutputSchema = z.object({
   fullName: z.string().describe("The full name of the applicant."),
   email: z.string().describe("The email address of the applicant."),
   phone: z.string().describe("The phone number of the applicant."),
+  links: z.array(z.string()).describe("A list of URLs for projects, portfolios, or personal websites found in the resume."),
   skills: z.array(z.string()).describe("A list of key skills extracted from the resume."),
   experience: z.array(z.object({
     jobTitle: z.string().describe("The job title."),
@@ -52,7 +53,7 @@ const prompt = ai.definePrompt({
 
 Resume: {{media url=resumeDataUri}}
 
-Extract the applicant's full name, email address, phone number, a list of their skills, their work experience, and their educational background. Also, extract the full, raw text content of the entire resume.
+Extract the applicant's full name, email address, phone number, a list of their skills, their work experience, and their educational background. Also, extract any links to personal websites, portfolios, or project repositories. Finally, extract the full, raw text content of the entire resume.
 `,
 });
 

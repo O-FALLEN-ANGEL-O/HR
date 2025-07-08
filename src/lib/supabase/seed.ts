@@ -107,6 +107,7 @@ async function seedData() {
                     fullName: applicantName,
                     email: applicantEmail,
                     phone: faker.phone.number(),
+                    links: Array.from({ length: faker.number.int({ min: 0, max: 2 }) }, () => faker.internet.url()),
                     skills: Array.from({ length: faker.number.int({min: 4, max: 8}) }, () => faker.word.noun()),
                     experience: Array.from({ length: faker.number.int({min: 1, max: 3}) }, () => ({
                         jobTitle: faker.person.jobTitle(),
