@@ -28,14 +28,7 @@ const ChatSchema = z.object({
 });
 
 export default function AIChatbotPage() {
-  const [messages, setMessages] = React.useState<ChatMessage[]>([
-    {
-      id: 'init',
-      role: 'assistant',
-      content: "Hello! I'm the HR+ AI Assistant. How can I help you today?",
-      timestamp: Date.now(),
-    },
-  ]);
+  const [messages, setMessages] = React.useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const { toast } = useToast();
   const scrollAreaRef = React.useRef<HTMLDivElement>(null);
@@ -44,6 +37,17 @@ export default function AIChatbotPage() {
     resolver: zodResolver(ChatSchema),
     defaultValues: { query: '' },
   });
+
+  React.useEffect(() => {
+    setMessages([
+      {
+        id: 'init',
+        role: 'assistant',
+        content: "Hello! I'm the HR+ AI Assistant. How can I help you today?",
+        timestamp: Date.now(),
+      },
+    ]);
+  }, []);
 
   React.useEffect(() => {
     if (scrollAreaRef.current) {
