@@ -14,6 +14,7 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
   FormControl,
@@ -37,6 +38,7 @@ import { Loader2 } from 'lucide-react';
 const FormSchema = z.object({
   title: z.string().min(3, 'Job title must be at least 3 characters.'),
   department: z.string().min(2, 'Department must be at least 2 characters.'),
+  description: z.string().min(20, 'Description must be at least 20 characters.'),
   status: z.enum(['Open', 'Closed', 'On hold']),
 });
 
@@ -57,6 +59,7 @@ export function JobDialog({ children, onJobAddedOrUpdated, job }: JobDialogProps
     defaultValues: {
         title: '',
         department: '',
+        description: '',
         status: 'Open',
     },
   });
@@ -66,12 +69,14 @@ export function JobDialog({ children, onJobAddedOrUpdated, job }: JobDialogProps
         form.reset({
             title: job.title,
             department: job.department,
+            description: job.description || '',
             status: job.status,
         });
     } else {
         form.reset({
             title: '',
             department: '',
+            description: '',
             status: 'Open',
         });
     }
@@ -103,7 +108,7 @@ export function JobDialog({ children, onJobAddedOrUpdated, job }: JobDialogProps
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{isEditMode ? 'Edit Job' : 'Create New Job'}</DialogTitle>
           <DialogDescription>
@@ -117,6 +122,9 @@ export function JobDialog({ children, onJobAddedOrUpdated, job }: JobDialogProps
             )}/>
             <FormField control={form.control} name="department" render={({ field }) => (
               <FormItem><FormLabel>Department</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+            )}/>
+            <FormField control={form.control} name="description" render={({ field }) => (
+              <FormItem><FormLabel>Job Description</FormLabel><FormControl><Textarea className="min-h-[120px]" {...field} /></FormControl><FormMessage /></FormItem>
             )}/>
             <FormField control={form.control} name="status" render={({ field }) => (
               <FormItem>

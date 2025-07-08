@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 
-import { processResume } from '@/ai/flows/process-resume';
+import { processResume, type ProcessResumeOutput } from '@/ai/flows/process-resume';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -54,6 +54,7 @@ export default function RegisterPage() {
   const [showCamera, setShowCamera] = React.useState(false);
   const [hasCameraPermission, setHasCameraPermission] = React.useState<boolean | null>(null);
   const [openJobs, setOpenJobs] = React.useState<Pick<Job, 'id' | 'title'>[]>([]);
+  const [resumeData, setResumeData] = React.useState<ProcessResumeOutput | null>(null);
   
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -124,6 +125,7 @@ export default function RegisterPage() {
     toast({ title: 'Processing Resume', description: 'AI is extracting information...' });
     try {
       const result = await processResume({ resumeDataUri: dataUri });
+      setResumeData(result);
       form.setValue('fullName', result.fullName, { shouldValidate: true });
       form.setValue('email', result.email, { shouldValidate: true });
       form.setValue('phone', result.phone, { shouldValidate: true });
@@ -181,6 +183,7 @@ export default function RegisterPage() {
           stage: 'Applied',
           source: 'walk-in',
           applied_date: new Date().toISOString(),
+          resume_data: resumeData,
         }])
         .select()
         .single();

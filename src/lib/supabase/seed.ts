@@ -18,15 +18,14 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 async function clearData() {
   console.log('🗑️  Clearing existing data...');
   const tables = [
-    'time_off_requests', 'performance_reviews', 'onboarding_workflows',
+    'applicant_notes', 'time_off_requests', 'performance_reviews', 'onboarding_workflows',
     'interviews', 'applicants', 'colleges', 'jobs', 'metrics'
   ];
 
   for (const table of tables) {
     const { error } = await supabase.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000');
     if (error) {
-       // A .delete() on a table with a SERIAL primary key can cause a non-fatal error
-       // if the UUID is invalid. We can safely ignore it for the 'metrics' table.
+       // A .delete() on a table with a SERIAL primary key (metrics) can cause this non-fatal error
       if (table !== 'metrics' || !error.message.includes('invalid input syntax for type uuid')) {
         console.error(`Error clearing table ${table}:`, error.message);
       }
@@ -52,6 +51,7 @@ async function seedData() {
   const jobs = Array.from({ length: 15 }, () => ({
     title: faker.person.jobTitle(),
     department: faker.commerce.department(),
+    description: faker.lorem.paragraphs(3),
     status: faker.helpers.arrayElement(['Open', 'Closed', 'On hold']),
     applicants: faker.number.int({ min: 5, max: 100 }),
     posted_date: faker.date.past().toISOString(),
@@ -61,14 +61,32 @@ async function seedData() {
     name: faker.person.fullName(),
     email: faker.internet.email(),
     phone: faker.phone.number(),
-    job_title: faker.person.jobTitle(),
+    job_title: faker.helpers.arrayElement(jobs.filter(j => j.status === 'Open').map(j => j.title)),
     stage: faker.helpers.arrayElement(['Sourced', 'Applied', 'Phone Screen', 'Interview', 'Offer', 'Hired']),
     applied_date: faker.date.past().toISOString(),
     avatar: faker.image.avatar(),
-    source: faker.helpers.arrayElement(['walk-in', 'college', 'email']),
+    source: faker.helpers.arrayElement(['walk-in', 'college', 'email', 'manual']),
     aptitude_score: faker.helpers.arrayElement([null, faker.number.int({ min: 40, max: 100 })]),
     wpm: faker.helpers.arrayElement([null, faker.number.int({ min: 30, max: 90 })]),
     accuracy: faker.helpers.arrayElement([null, faker.number.int({ min: 85, max: 99 })]),
+    ai_match_score: faker.helpers.arrayElement([null, faker.number.int({ min: 50, max: 95 })]),
+    ai_justification: faker.helpers.arrayElement([null, faker.lorem.paragraph()]),
+    resume_data: {
+        fullName: faker.person.fullName(),
+        email: faker.internet.email(),
+        phone: faker.phone.number(),
+        skills: Array.from({length: 5}, () => faker.person.jobSkill()),
+        experience: Array.from({length: 2}, () => ({
+            jobTitle: faker.person.jobTitle(),
+            company: faker.company.name(),
+            duration: '2 years'
+        })),
+        education: [{
+            institution: `${faker.location.city()} University`,
+            degree: 'B.S. in Computer Science',
+            year: '2020'
+        }]
+    }
   }));
   
   const interviews = Array.from({ length: 12 }, () => ({
@@ -118,34 +136,33 @@ async function seedData() {
     end_date: faker.date.future().toISOString(),
     status: faker.helpers.arrayElement(['Pending', 'Approved', 'Rejected'])
   }));
-
-  const insertions = [
-    { name: 'metrics', data: metrics },
-    { name: 'jobs', data: jobs },
-    { name: 'applicants', data: applicants },
-    { name: 'interviews', data: interviews },
-    { name: 'colleges', data: colleges },
-    { name: 'onboarding_workflows', data: onboardingWorkflows },
-    { name: 'performance_reviews', data: performanceReviews },
-    { name: 'time_off_requests', data: timeOffRequests },
-  ];
-
-  const promises = insertions.map(async (insertion) => {
-    const { error } = await supabase.from(insertion.name).insert(insertion.data);
-    if (error) {
-      console.error(`🔴 Error seeding ${insertion.name}:`, error.message);
-    } else {
-      console.log(`  - Seeded ${insertion.name}`);
-    }
-  });
   
-  await Promise.all(promises);
+  await supabase.from('metrics').insert(metrics);
+  await supabase.from('jobs').insert(jobs);
+  const { data: seededApplicants } = await supabase.from('applicants').insert(applicants).select();
+  await supabase.from('interviews').insert(interviews);
+  await supabase.from('colleges').insert(colleges);
+  await supabase.from('onboarding_workflows').insert(onboardingWorkflows);
+  await supabase.from('performance_reviews').insert(performanceReviews);
+  await supabase.from('time_off_requests').insert(timeOffRequests);
+
+  if (seededApplicants) {
+      const applicantNotes = seededApplicants.slice(0, 5).map(applicant => ({
+        applicant_id: applicant.id,
+        author_name: faker.person.fullName(),
+        author_avatar: faker.image.avatar(),
+        note: faker.lorem.sentence(),
+        created_at: faker.date.recent().toISOString()
+      }));
+      await supabase.from('applicant_notes').insert(applicantNotes);
+  }
+  
+  console.log('✅ Seeding complete!');
 }
 
 async function run() {
   await clearData();
   await seedData();
-  console.log('🎉 Database seeding complete!');
 }
 
 run().catch(console.error);

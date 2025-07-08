@@ -313,7 +313,7 @@ export default function ApplicantList({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => router.push(`/portal/${applicant.id}`)}>
+                        <DropdownMenuItem onClick={() => router.push(`/applicants/${applicant.id}`)}>
                           <User className="mr-2 h-4 w-4" />
                           View Profile
                         </DropdownMenuItem>

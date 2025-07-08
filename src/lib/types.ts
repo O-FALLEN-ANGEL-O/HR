@@ -1,3 +1,5 @@
+import type { ProcessResumeOutput } from "@/ai/flows/process-resume";
+
 export type User = {
   id: string;
   name: string;
@@ -18,6 +20,7 @@ export type Job = {
   id: string;
   title: string;
   department: string;
+  description?: string;
   status: 'Open' | 'Closed' | 'On hold';
   applicants: number;
   posted_date: string;
@@ -32,11 +35,14 @@ export type Applicant = {
   stage: 'Sourced' | 'Applied' | 'Phone Screen' | 'Interview' | 'Offer' | 'Hired';
   applied_date: string;
   avatar?: string;
-  source?: 'walk-in' | 'college' | 'email';
+  source?: 'walk-in' | 'college' | 'email' | 'manual';
   wpm?: number;
   accuracy?: number;
-  college_id?: string;
   aptitude_score?: number;
+  college_id?: string;
+  resume_data?: ProcessResumeOutput;
+  ai_match_score?: number;
+  ai_justification?: string;
 };
 
 export type Interview = {
@@ -97,4 +103,13 @@ export type College = {
   resumes_received: number;
   contact_email: string;
   last_contacted: string;
+};
+
+export type ApplicantNote = {
+    id: string;
+    applicant_id: string;
+    author_name: string;
+    author_avatar: string;
+    note: string;
+    created_at: string;
 };

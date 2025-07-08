@@ -13,7 +13,7 @@ import {z} from 'genkit';
 
 const ApplicantMatchScoringInputSchema = z.object({
   jobDescription: z.string().describe('The description of the job.'),
-  applicantProfile: z.string().describe('The profile of the applicant.'),
+  applicantProfile: z.string().describe('The profile of the applicant, which could be plain text or a JSON object with resume data.'),
 });
 export type ApplicantMatchScoringInput = z.infer<typeof ApplicantMatchScoringInputSchema>;
 
@@ -47,7 +47,7 @@ You will analyze the applicant profile and compare it to the job description to 
 
 Job Description: {{{jobDescription}}}
 
-Applicant Profile: {{{applicantProfile}}}
+Applicant Profile (may be plain text or structured JSON): {{{applicantProfile}}}
 
 Provide a match score from 0 to 100 and a brief justification for the score.
 `,
