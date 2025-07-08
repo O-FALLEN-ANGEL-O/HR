@@ -22,7 +22,6 @@ export type Job = {
   department: string;
   description?: string;
   status: 'Open' | 'Closed' | 'On hold';
-  applicants: number;
   posted_date: string;
 };
 

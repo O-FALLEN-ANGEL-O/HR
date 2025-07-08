@@ -23,13 +23,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, PlusCircle, Send } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Send, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import type { College } from '@/lib/types';
 import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 const statusColors: { [key: string]: string } = {
   Invited: 'bg-yellow-100 text-yellow-800',
@@ -46,6 +47,7 @@ export default function CollegeDriveClient({ initialColleges }: CollegeDriveClie
   const [colleges, setColleges] = React.useState(initialColleges);
   const { toast } = useToast();
   const [isClient, setIsClient] = React.useState(false);
+  const router = useRouter();
 
   React.useEffect(() => {
     setIsClient(true);
@@ -62,21 +64,22 @@ export default function CollegeDriveClient({ initialColleges }: CollegeDriveClie
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'colleges' },
-        (payload) => {
+        async () => {
           toast({
             title: 'College Data Updated',
             description: 'The list of colleges has been updated.',
           });
-          if (payload.eventType === 'INSERT') {
-            setColleges((prev) => [payload.new as College, ...prev].sort((a,b) => new Date(b.last_contacted).getTime() - new Date(a.last_contacted).getTime()));
-          } else if (payload.eventType === 'UPDATE') {
-            setColleges((prev) =>
-              prev.map((college) =>
-                college.id === payload.new.id ? { ...college, ...(payload.new as College) } : college
-              )
-            );
-          } else if (payload.eventType === 'DELETE') {
-            setColleges((prev) => prev.filter((college) => college.id !== (payload.old as College).id));
+          const { data } = await supabase
+            .from('colleges')
+            .select('*, applicants(count)')
+            .order('last_contacted', { ascending: false });
+          
+          if(data) {
+             const updatedColleges = data.map(c => ({
+              ...c,
+              resumes_received: c.applicants[0]?.count || 0,
+            }));
+            setColleges(updatedColleges);
           }
         }
       )
@@ -147,7 +150,10 @@ export default function CollegeDriveClient({ initialColleges }: CollegeDriveClie
                           <Send className="mr-2 h-4 w-4" />
                           Send Reminder
                         </DropdownMenuItem>
-                        <DropdownMenuItem>View Applicants</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => router.push('/applicants')}>
+                          <Users className="mr-2 h-4 w-4" />
+                          View Applicants
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

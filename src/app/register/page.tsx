@@ -38,13 +38,14 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, FileUp, UserPlus, Camera, Zap, ImageUp } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import type { Job } from '@/lib/types';
+import type { Job, College } from '@/lib/types';
 
 const FormSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters.'),
   email: z.string().email('Please enter a valid email address.'),
   phone: z.string().min(10, 'Phone number seems too short.'),
   job_id: z.string().min(1, 'Please select a position.'),
+  college_id: z.string().optional(),
   resumeFile: z.any().optional(),
   profilePic: z.any().optional(),
 });
@@ -57,6 +58,7 @@ export default function RegisterPage() {
   const [showCamera, setShowCamera] = React.useState(false);
   const [hasCameraPermission, setHasCameraPermission] = React.useState<boolean | null>(null);
   const [openJobs, setOpenJobs] = React.useState<Pick<Job, 'id' | 'title'>[]>([]);
+  const [colleges, setColleges] = React.useState<Pick<College, 'id' | 'name'>[]>([]);
   const [resumeData, setResumeData] = React.useState<ProcessResumeOutput | null>(null);
   const [profilePicFile, setProfilePicFile] = React.useState<File | null>(null);
   const [profilePicPreview, setProfilePicPreview] = React.useState<string | null>(null);
@@ -75,6 +77,7 @@ export default function RegisterPage() {
       email: '',
       phone: '',
       job_id: '',
+      college_id: '',
     },
   });
 
@@ -92,7 +95,20 @@ export default function RegisterPage() {
         setOpenJobs(data || []);
       }
     };
+    const fetchColleges = async () => {
+      const { data, error } = await supabase
+        .from('colleges')
+        .select('id, name')
+        .order('name');
+      
+      if (error) {
+        console.error("Error fetching colleges", error);
+      } else {
+        setColleges(data || []);
+      }
+    };
     fetchJobs();
+    fetchColleges();
   }, [supabase, toast]);
 
   React.useEffect(() => {
@@ -217,8 +233,9 @@ export default function RegisterPage() {
           email: data.email,
           phone: data.phone,
           job_id: data.job_id,
+          college_id: data.college_id || null,
           stage: 'Applied',
-          source: 'walk-in',
+          source: data.college_id ? 'college' : 'walk-in',
           applied_date: new Date().toISOString(),
           resume_data: resumeData,
           avatar: avatarUrl,
@@ -410,6 +427,28 @@ export default function RegisterPage() {
                         <SelectContent>
                           {openJobs.map(job => (
                              <SelectItem key={job.id} value={job.id}>{job.title}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="college_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>College / University (Optional)</FormLabel>
+                       <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select your college" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {colleges.map(college => (
+                             <SelectItem key={college.id} value={college.id}>{college.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>

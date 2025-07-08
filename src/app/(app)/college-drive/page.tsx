@@ -9,14 +9,17 @@ export default async function CollegeDrivePage() {
 
   const { data, error } = await supabase
     .from('colleges')
-    .select('*')
+    .select('*, applicants(count)')
     .order('last_contacted', { ascending: false });
 
   if (error) {
     console.error('Error fetching colleges:', error);
   }
 
-  const colleges: College[] = data || [];
+  const colleges: College[] = (data || []).map(c => ({
+    ...c,
+    resumes_received: c.applicants[0]?.count || 0,
+  }));
 
   return <CollegeDriveClient initialColleges={colleges} />;
 }

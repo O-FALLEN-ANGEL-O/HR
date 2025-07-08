@@ -76,28 +76,41 @@ async function seedData() {
         department: faker.commerce.department(),
         description: faker.lorem.paragraphs(3),
         status: faker.helpers.arrayElement(['Open', 'Closed', 'On hold']),
-        applicants: faker.number.int({ min: 5, max: 100 }),
         posted_date: faker.date.past().toISOString(),
     }));
     const { data: seededJobs, error: jobError } = await supabase.from('jobs').insert(jobs).select('id, title');
     if (jobError) console.error("Error seeding jobs:", jobError.message);
     else console.log('  - Seeded jobs');
 
+    // Seed Colleges
+    const collegesToSeed = Array.from({ length: 8 }, () => ({
+        name: `${faker.location.city()} University`,
+        status: faker.helpers.arrayElement(['Invited', 'Confirmed', 'Attended', 'Declined']),
+        contact_email: faker.internet.email(),
+        last_contacted: faker.date.past().toISOString()
+    }));
+    const { data: seededColleges, error: collegesError } = await supabase.from('colleges').insert(collegesToSeed).select('id');
+    if (collegesError) console.error("Error seeding colleges:", collegesError.message);
+    else console.log('  - Seeded colleges');
+
+
     // Seed Applicants
-    if (seededJobs) {
-        const applicants = Array.from({ length: 20 }, () => {
+    if (seededJobs && seededColleges) {
+        const applicants = Array.from({ length: 50 }, () => {
             const applicantName = faker.person.fullName();
             const applicantEmail = faker.internet.email().toLowerCase();
             const selectedJob = faker.helpers.arrayElement(seededJobs);
+            const fromCollege = faker.datatype.boolean();
             return {
                 name: applicantName,
                 email: applicantEmail,
                 phone: faker.phone.number(),
                 job_id: selectedJob.id,
+                college_id: fromCollege ? faker.helpers.arrayElement(seededColleges).id : null,
                 stage: faker.helpers.arrayElement(['Sourced', 'Applied', 'Phone Screen', 'Interview', 'Offer', 'Hired']),
                 applied_date: faker.date.past().toISOString(),
                 avatar: faker.image.avatar(),
-                source: faker.helpers.arrayElement(['walk-in', 'college', 'email', 'manual']),
+                source: fromCollege ? 'college' : faker.helpers.arrayElement(['walk-in', 'email', 'manual']),
                 aptitude_score: faker.helpers.arrayElement([null, faker.number.int({ min: 40, max: 100 })]),
                 comprehensive_score: faker.helpers.arrayElement([null, faker.number.int({ min: 40, max: 100 })]),
                 english_grammar_score: faker.helpers.arrayElement([null, faker.number.int({ min: 40, max: 100 })]),
@@ -166,19 +179,6 @@ async function seedData() {
             else console.log('  - Seeded interviews');
         }
     }
-
-
-    // Seed Colleges
-    const colleges = Array.from({ length: 8 }, () => ({
-        name: `${faker.location.city()} University`,
-        status: faker.helpers.arrayElement(['Invited', 'Confirmed', 'Attended', 'Declined']),
-        resumes_received: faker.number.int({ min: 0, max: 200 }),
-        contact_email: faker.internet.email(),
-        last_contacted: faker.date.past().toISOString()
-    }));
-    const { error: collegesError } = await supabase.from('colleges').insert(colleges);
-    if (collegesError) console.error("Error seeding colleges:", collegesError.message);
-    else console.log('  - Seeded colleges');
 
     // Seed Onboarding
     const onboardingWorkflows = Array.from({ length: 5 }, () => ({
