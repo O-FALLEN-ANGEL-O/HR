@@ -42,6 +42,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubItem,
   SidebarMenuSubButton,
+  SidebarClose,
 } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
@@ -161,13 +162,14 @@ export default function AppShell({
   return (
     <SidebarProvider>
       <Sidebar side="left" variant="sidebar" collapsible="icon">
-        <SidebarHeader className="h-14 justify-center">
+        <SidebarHeader className="h-14 flex-row items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-7 w-7 fill-primary">
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5-10-5-10 5z" />
             </svg>
-            <span className="text-xl font-semibold text-foreground">HR+</span>
+            <span className="text-xl font-semibold text-foreground group-data-[collapsible=icon]:hidden">HR+</span>
           </Link>
+          <SidebarClose />
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>

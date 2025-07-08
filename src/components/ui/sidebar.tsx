@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
-import { PanelLeft } from "lucide-react"
+import { PanelLeft, PanelLeftClose } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -284,6 +284,36 @@ const SidebarTrigger = React.forwardRef<
   )
 })
 SidebarTrigger.displayName = "SidebarTrigger"
+
+const SidebarClose = React.forwardRef<
+  React.ElementRef<typeof Button>,
+  React.ComponentProps<typeof Button>
+>(({ className, onClick, ...props }, ref) => {
+  const { toggleSidebar, isMobile, state } = useSidebar()
+
+  if (isMobile || state === "collapsed") {
+    return null
+  }
+
+  return (
+    <Button
+      ref={ref}
+      data-sidebar="close"
+      variant="ghost"
+      size="icon"
+      className={cn("h-8 w-8", className)}
+      onClick={(event) => {
+        onClick?.(event)
+        toggleSidebar()
+      }}
+      {...props}
+    >
+      <PanelLeftClose />
+      <span className="sr-only">Collapse Sidebar</span>
+    </Button>
+  )
+})
+SidebarClose.displayName = "SidebarClose"
 
 const SidebarRail = React.forwardRef<
   HTMLButtonElement,
@@ -759,5 +789,6 @@ export {
   SidebarRail,
   SidebarSeparator,
   SidebarTrigger,
+  SidebarClose,
   useSidebar,
 }
