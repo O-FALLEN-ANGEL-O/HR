@@ -198,15 +198,16 @@ export default function RegisterPage() {
           .upload(fileName, profilePicFile);
         
         if (uploadError) {
-          console.error('Storage Error:', uploadError);
-          throw new Error(`Failed to upload profile picture: ${uploadError.message}`);
+          console.error('Storage Error:', JSON.stringify(uploadError, null, 2));
+          throw new Error(`Failed to upload profile picture. Please ensure storage policies are correct.`);
         }
 
-        const { data: urlData } = supabase.storage
-          .from('avatars')
-          .getPublicUrl(uploadData.path);
-        
-        avatarUrl = urlData.publicUrl;
+        if (uploadData?.path) {
+          const { data: urlData } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(uploadData.path);
+          avatarUrl = urlData.publicUrl;
+        }
       }
       
       const { data: newApplicant, error: insertError } = await supabase
@@ -226,7 +227,7 @@ export default function RegisterPage() {
         .single();
 
       if (insertError) {
-        console.error('Database Insert Error:', insertError);
+        console.error('Database Insert Error:', JSON.stringify(insertError, null, 2));
         throw new Error(`Database error: ${insertError.message}`);
       }
 
