@@ -197,7 +197,10 @@ export default function RegisterPage() {
           .from('avatars')
           .upload(fileName, profilePicFile);
         
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error('Storage Error:', uploadError);
+          throw new Error(`Failed to upload profile picture: ${uploadError.message}`);
+        }
 
         const { data: urlData } = supabase.storage
           .from('avatars')
@@ -206,7 +209,7 @@ export default function RegisterPage() {
         avatarUrl = urlData.publicUrl;
       }
       
-      const { data: newApplicant, error } = await supabase
+      const { data: newApplicant, error: insertError } = await supabase
         .from('applicants')
         .insert([{
           name: data.fullName,
@@ -222,7 +225,14 @@ export default function RegisterPage() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (insertError) {
+        console.error('Database Insert Error:', insertError);
+        throw new Error(`Database error: ${insertError.message}`);
+      }
+
+      if (!newApplicant) {
+        throw new Error('Applicant record was not created successfully.');
+      }
 
       toast({ title: 'Registration Successful!', description: 'Your profile has been created.' });
       router.push(`/portal/${newApplicant.id}`);
