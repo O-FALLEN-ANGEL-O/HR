@@ -16,6 +16,12 @@ export type Metric = {
   change_type?: 'increase' | 'decrease';
 };
 
+export type TimeOffMetric = {
+  title: string;
+  value: string;
+  change?: string;
+}
+
 export type Job = {
   id: string;
   title: string;
@@ -23,6 +29,7 @@ export type Job = {
   description?: string;
   status: 'Open' | 'Closed' | 'On hold';
   posted_date: string;
+  applicants: number;
 };
 
 export type Applicant = {
@@ -106,6 +113,7 @@ export type College = {
   resumes_received: number;
   contact_email: string;
   last_contacted: string;
+  applicants: { count: number }[];
 };
 
 export type ApplicantNote = {

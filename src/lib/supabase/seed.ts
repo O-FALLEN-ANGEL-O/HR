@@ -77,6 +77,7 @@ async function seedData() {
         description: faker.lorem.paragraphs(3),
         status: faker.helpers.arrayElement(['Open', 'Closed', 'On hold']),
         posted_date: faker.date.past().toISOString(),
+        applicants: faker.number.int({ min: 0, max: 100 }),
     }));
     const { data: seededJobs, error: jobError } = await supabase.from('jobs').insert(jobs).select('id, title');
     if (jobError) console.error("Error seeding jobs:", jobError.message);
@@ -208,14 +209,20 @@ async function seedData() {
     else console.log('  - Seeded performance_reviews');
 
     // Seed Time Off Requests
-    const timeOffRequests = Array.from({ length: 8 }, () => ({
-        employee_name: faker.person.fullName(),
-        employee_avatar: faker.image.avatar(),
-        type: faker.helpers.arrayElement(['Vacation', 'Sick Leave', 'Personal']),
-        start_date: faker.date.future().toISOString(),
-        end_date: faker.date.future().toISOString(),
-        status: faker.helpers.arrayElement(['Pending', 'Approved', 'Rejected'])
-    }));
+    const timeOffRequests = Array.from({ length: 25 }, () => {
+        const startDate = faker.date.between({ from: new Date(new Date().setMonth(new Date().getMonth() - 3)), to: new Date(new Date().setMonth(new Date().getMonth() + 1)) });
+        const endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + faker.number.int({min: 0, max: 5}));
+        
+        return {
+            employee_name: faker.person.fullName(),
+            employee_avatar: faker.image.avatar(),
+            type: faker.helpers.arrayElement(['Vacation', 'Sick Leave', 'Personal']),
+            start_date: startDate.toISOString(),
+            end_date: endDate.toISOString(),
+            status: faker.helpers.arrayElement(['Pending', 'Approved', 'Rejected'])
+        };
+    });
     const { error: timeoffError } = await supabase.from('time_off_requests').insert(timeOffRequests);
     if (timeoffError) console.error("Error seeding time_off_requests:", timeoffError.message);
     else console.log('  - Seeded time_off_requests');
