@@ -1,10 +1,8 @@
-
 'use client';
 import * as React from 'react';
-import { cookies } from 'next/headers';
 import { format, subMonths, startOfDay, endOfDay, getMonth } from 'date-fns';
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/client';
 import type { TimeOffRequest, TimeOffMetric } from '@/lib/types';
 import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
@@ -97,12 +95,4 @@ export default function TimeOffPage() {
             )}
         </div>
     );
-}
-
-// NOTE: We had to convert this page to a client component because AddTimeOffDialog
-// is a client component that needs to be stateful (open/closed).
-// The data fetching is now done inside a useEffect hook.
-// Supabase client creation is adapted for client-side usage.
-function createClient() {
-  return import('@/lib/supabase/client').then(m => m.createClient());
 }
