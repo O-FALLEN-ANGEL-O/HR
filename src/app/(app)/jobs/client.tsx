@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Card,
   CardContent,
@@ -14,29 +15,55 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Job } from '@/lib/types';
 import { format } from 'date-fns';
-import { MoreVertical, Users } from 'lucide-react';
+import { MoreVertical, Users, PlusCircle, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { createClient } from '@/lib/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { JobDialog } from '@/components/job-dialog';
+import { Header } from '@/components/header';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+
 
 type JobsClientProps = {
   initialJobs: Job[];
-}
+};
 
 const statusColors: { [key: string]: string } = {
-    Open: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    Closed: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-    'On hold': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-  };
+  Open: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  Closed: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  'On hold':
+    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+};
 
 export default function JobsClient({ initialJobs }: JobsClientProps) {
   const [jobs, setJobs] = React.useState<Job[]>(initialJobs);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState('all');
+  const router = useRouter();
+  const { toast } = useToast();
 
   React.useEffect(() => {
     setJobs(initialJobs);
@@ -44,17 +71,41 @@ export default function JobsClient({ initialJobs }: JobsClientProps) {
 
   const filteredJobs = React.useMemo(() => {
     return jobs
-      .filter(job =>
-        job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        job.department.toLowerCase().includes(searchTerm.toLowerCase())
+      .filter(
+        (job) =>
+          job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          job.department.toLowerCase().includes(searchTerm.toLowerCase())
       )
-      .filter(job =>
+      .filter((job) =>
         statusFilter === 'all' ? true : job.status === statusFilter
       );
   }, [jobs, searchTerm, statusFilter]);
 
+  const handleJobAction = async (jobId: string, status: 'Closed' | 'On hold') => {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('jobs')
+      .update({ status: status })
+      .eq('id', jobId);
+
+    if (error) {
+      toast({ title: 'Error', description: `Failed to update job status. ${error.message}`, variant: 'destructive' });
+    } else {
+      toast({ title: 'Success', description: `Job has been ${status === 'Closed' ? 'closed' : 'put on hold'}.` });
+      router.refresh();
+    }
+  };
+
   return (
     <>
+      <Header title="Job Postings">
+        <JobDialog onJobAddedOrUpdated={() => router.refresh()}>
+          <Button size="sm">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Create Job
+          </Button>
+        </JobDialog>
+      </Header>
       <div className="mb-4 flex items-center gap-2">
         <Input
           placeholder="Search by title or department..."
@@ -76,7 +127,7 @@ export default function JobsClient({ initialJobs }: JobsClientProps) {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {filteredJobs.map(job => (
+        {filteredJobs.map((job) => (
           <Card key={job.id}>
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -91,9 +142,37 @@ export default function JobsClient({ initialJobs }: JobsClientProps) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem>View Details</DropdownMenuItem>
-                    <DropdownMenuItem>Edit Job</DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-500">Close Job</DropdownMenuItem>
+                    <JobDialog job={job} onJobAddedOrUpdated={() => router.refresh()}>
+                       <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                        <Edit className="mr-2 h-4 w-4" /> Edit Job
+                       </DropdownMenuItem>
+                    </JobDialog>
+                    <DropdownMenuItem onClick={() => handleJobAction(job.id, 'On hold')}>
+                      <MoreVertical className="mr-2 h-4 w-4" /> Put on hold
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <DropdownMenuItem className="text-red-500" onSelect={(e) => e.preventDefault()}>
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Close Job
+                        </DropdownMenuItem>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will mark the job as 'Closed'. This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleJobAction(job.id, 'Closed')}>
+                            Confirm
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -104,7 +183,9 @@ export default function JobsClient({ initialJobs }: JobsClientProps) {
                   <Users className="mr-1 h-4 w-4" />
                   <span>{job.applicants} Applicants</span>
                 </div>
-                <span>Posted {format(new Date(job.posted_date), 'PPP')}</span>
+                <span>
+                  Posted {format(new Date(job.posted_date), 'PPP')}
+                </span>
               </div>
             </CardContent>
             <CardFooter>

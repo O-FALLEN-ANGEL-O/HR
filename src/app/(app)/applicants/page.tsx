@@ -3,7 +3,6 @@ import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import type { Applicant } from '@/lib/types';
 import ApplicantList from './client';
-import ApplicantsHeader from './header.client';
 
 export default async function ApplicantsPage() {
   const cookieStore = cookies();
@@ -21,10 +20,5 @@ export default async function ApplicantsPage() {
 
   const applicants: Applicant[] = data || [];
 
-  return (
-    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-      <ApplicantsHeader />
-      <ApplicantList initialApplicants={applicants} />
-    </div>
-  );
+  return <ApplicantList initialApplicants={applicants} />;
 }
