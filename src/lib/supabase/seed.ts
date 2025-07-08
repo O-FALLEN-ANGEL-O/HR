@@ -1,9 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { faker } from '@faker-js/faker';
 import dotenv from 'dotenv';
-import type { Job, Applicant, Metric, Interview, College, Onboarding, PerformanceReview, TimeOffRequest } from '../types';
 
-dotenv.config();
+dotenv.config({ path: '.env' });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -22,8 +21,10 @@ async function clearData() {
   ];
 
   for (const table of tables) {
-    const { error } = await supabase.from(table).delete().gt('id', 0);
-    if (error && error.code !== '42P01' && !error.message.includes("does not exist")) {
+    // The 'id' column in metrics is SERIAL, not UUID, so we can't use gt with a number.
+    // A simple delete without condition works fine for all tables.
+    const { error } = await supabase.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000');
+     if (error && error.code !== '42P01' && !error.message.includes("does not exist")) {
       console.error(`Error clearing table ${table}:`, error.message);
     }
   }
@@ -33,14 +34,18 @@ async function clearData() {
 async function seedData() {
   console.log('🌱 Seeding data...');
 
-  const metrics: Omit<Metric, 'id'>[] = [
-    { title: 'Total Employees', value: faker.number.int({ min: 1000, max: 1500 }).toString(), change: `+${faker.number.int({ min: 5, max: 15 })}%`, changeType: 'increase' },
-    { title: 'Attrition Rate', value: `${faker.number.float({ min: 1, max: 5, precision: 0.1 })}%`, change: `-${faker.number.float({ min: 0.1, max: 1, precision: 0.1 })}%`, changeType: 'decrease' },
-    { title: 'Compliance Score', value: `${faker.number.float({ min: 95, max: 99, precision: 0.1 })}%`, change: `+${faker.number.float({ min: 0.1, max: 1, precision: 0.1 })}%`, changeType: 'increase' },
-    { title: 'Open Positions', value: faker.number.int({ min: 10, max: 30 }).toString(), change: `+${faker.number.int({ min: 1, max: 5 })}`, changeType: 'increase' },
-  ];
+  const metrics = Array.from({ length: 4 }, (_, i) => {
+      const titles = ['Total Employees', 'Attrition Rate', 'Compliance Score', 'Open Positions'];
+      const isIncrease = faker.datatype.boolean();
+      return {
+        title: titles[i],
+        value: i === 1 || i === 2 ? `${faker.number.float({ min: 1, max: 99, multipleOf: 0.1 })}%` : faker.number.int({ min: 10, max: 1500 }).toString(),
+        change: `${isIncrease ? '+' : '-'}${faker.number.int({ min: 1, max: 15 })}%`,
+        change_type: isIncrease ? 'increase' : 'decrease'
+      }
+  });
 
-  const jobs: Omit<Job, 'id'>[] = Array.from({ length: 15 }, () => ({
+  const jobs = Array.from({ length: 15 }, () => ({
     title: faker.person.jobTitle(),
     department: faker.commerce.department(),
     status: faker.helpers.arrayElement(['Open', 'Closed', 'On hold']),
@@ -48,7 +53,7 @@ async function seedData() {
     posted_date: faker.date.past().toISOString(),
   }));
 
-  const applicants: Omit<Applicant, 'id'>[] = Array.from({ length: 20 }, () => ({
+  const applicants = Array.from({ length: 20 }, () => ({
     name: faker.person.fullName(),
     email: faker.internet.email(),
     phone: faker.phone.number(),
@@ -59,7 +64,7 @@ async function seedData() {
     source: faker.helpers.arrayElement(['walk-in', 'college', 'email']),
   }));
   
-  const interviews: Omit<Interview, 'id'>[] = Array.from({ length: 12 }, () => ({
+  const interviews = Array.from({ length: 12 }, () => ({
     candidate_name: faker.person.fullName(),
     candidate_avatar: faker.image.avatar(),
     job_title: faker.person.jobTitle(),
@@ -71,7 +76,7 @@ async function seedData() {
     status: faker.helpers.arrayElement(['Scheduled', 'Completed', 'Canceled'])
   }));
 
-  const colleges: Omit<College, 'id'>[] = Array.from({ length: 8 }, () => ({
+  const colleges = Array.from({ length: 8 }, () => ({
     name: `${faker.location.city()} University`,
     status: faker.helpers.arrayElement(['Invited', 'Confirmed', 'Attended', 'Declined']),
     resumes_received: faker.number.int({ min: 0, max: 200 }),
@@ -79,7 +84,7 @@ async function seedData() {
     last_contacted: faker.date.past().toISOString()
   }));
 
-  const onboardingWorkflows: Omit<Onboarding, 'id'>[] = Array.from({ length: 5 }, () => ({
+  const onboardingWorkflows = Array.from({ length: 5 }, () => ({
     employee_name: faker.person.fullName(),
     employee_avatar: faker.image.avatar(),
     job_title: faker.person.jobTitle(),
@@ -90,7 +95,7 @@ async function seedData() {
     start_date: faker.date.past().toISOString()
   }));
 
-  const performanceReviews: Omit<PerformanceReview, 'id'>[] = Array.from({ length: 10 }, () => ({
+  const performanceReviews = Array.from({ length: 10 }, () => ({
     employee_name: faker.person.fullName(),
     employee_avatar: faker.image.avatar(),
     job_title: faker.person.jobTitle(),
@@ -98,7 +103,7 @@ async function seedData() {
     status: faker.helpers.arrayElement(['Pending', 'In Progress', 'Completed'])
   }));
 
-  const timeOffRequests: Omit<TimeOffRequest, 'id'>[] = Array.from({ length: 8 }, () => ({
+  const timeOffRequests = Array.from({ length: 8 }, () => ({
     employee_name: faker.person.fullName(),
     employee_avatar: faker.image.avatar(),
     type: faker.helpers.arrayElement(['Vacation', 'Sick Leave', 'Personal']),
