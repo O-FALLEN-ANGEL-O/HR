@@ -2,7 +2,6 @@
 
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
 
 import { applicantMatchScoring } from '@/ai/flows/applicant-match-scoring';
 import { currentUser } from '@/lib/data';
@@ -41,23 +40,23 @@ export async function generateAiMatchScore(applicantId: string) {
     // 1. Fetch the applicant data
     const { data: applicant, error: applicantError } = await supabase
         .from('applicants')
-        .select('*')
+        .select('job_id, resume_data')
         .eq('id', applicantId)
         .single();
     
-    if (applicantError || !applicant) {
-        throw new Error('Could not find applicant.');
+    if (applicantError || !applicant || !applicant.job_id) {
+        throw new Error('Could not find applicant or they are not associated with a job.');
     }
 
     // 2. Fetch the job description
     const { data: job, error: jobError } = await supabase
         .from('jobs')
         .select('description')
-        .eq('title', applicant.job_title)
+        .eq('id', applicant.job_id)
         .single();
 
     if (jobError || !job || !job.description) {
-        throw new Error(`Could not find job description for "${applicant.job_title}".`);
+        throw new Error(`Could not find job description for the associated job.`);
     }
 
     // 3. Prepare the data for the AI flow

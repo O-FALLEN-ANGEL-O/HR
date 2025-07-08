@@ -23,9 +23,8 @@ async function clearData() {
   ];
 
   for (const table of tables) {
-    // The metrics table has a SERIAL primary key, so we handle its clearing differently.
     const id_column = table === 'metrics' ? 'id' : 'id';
-    const { error } = await supabase.from(table).delete().neq(id_column, '0');
+    const { error } = await supabase.from(table).delete().neq(id_column, table === 'metrics' ? -1 : '00000000-0000-0000-0000-000000000000');
     if (error) {
         console.error(`Error clearing table ${table}:`, error.message);
     }
@@ -55,50 +54,65 @@ async function seedData() {
         applicants: faker.number.int({ min: 5, max: 100 }),
         posted_date: faker.date.past().toISOString(),
     }));
-    await supabase.from('jobs').insert(jobs);
-    console.log('  - Seeded jobs');
+    const { data: seededJobs, error: jobError } = await supabase.from('jobs').insert(jobs).select('id');
+    if (jobError) console.error("Error seeding jobs:", jobError.message);
+    else console.log('  - Seeded jobs');
 
     // Seed Applicants
-    const openJobs = jobs.filter(j => j.status === 'Open');
-    const applicants = Array.from({ length: 20 }, () => {
-        const applicantName = faker.person.fullName();
-        const applicantEmail = faker.internet.email().toLowerCase();
-        return {
-            name: applicantName,
-            email: applicantEmail,
-            phone: faker.phone.number(),
-            job_title: faker.helpers.arrayElement(openJobs).title,
-            stage: faker.helpers.arrayElement(['Sourced', 'Applied', 'Phone Screen', 'Interview', 'Offer', 'Hired']),
-            applied_date: faker.date.past().toISOString(),
-            avatar: faker.image.avatar(),
-            source: faker.helpers.arrayElement(['walk-in', 'college', 'email', 'manual']),
-            aptitude_score: faker.helpers.arrayElement([null, faker.number.int({ min: 40, max: 100 })]),
-            wpm: faker.helpers.arrayElement([null, faker.number.int({ min: 30, max: 90 })]),
-            accuracy: faker.helpers.arrayElement([null, faker.number.int({ min: 85, max: 99 })]),
-            ai_match_score: faker.helpers.arrayElement([null, faker.number.int({ min: 50, max: 95 })]),
-            ai_justification: faker.helpers.arrayElement([null, faker.lorem.paragraph()]),
-            resume_data: {
-                fullName: applicantName,
+    if (seededJobs) {
+        const applicants = Array.from({ length: 20 }, () => {
+            const applicantName = faker.person.fullName();
+            const applicantEmail = faker.internet.email().toLowerCase();
+            return {
+                name: applicantName,
                 email: applicantEmail,
                 phone: faker.phone.number(),
-                skills: Array.from({ length: faker.number.int({min: 4, max: 8}) }, () => faker.person.jobSkill()),
-                experience: Array.from({ length: faker.number.int({min: 1, max: 3}) }, () => ({
-                    jobTitle: faker.person.jobTitle(),
-                    company: faker.company.name(),
-                    duration: `${faker.number.int({min: 1, max: 5})} years`
-                })),
-                education: [{
-                    institution: `${faker.location.city()} University`,
-                    degree: 'B.S. in Computer Science',
-                    year: '2020'
-                }],
-                fullText: faker.lorem.paragraphs(5),
-            }
-        };
-    });
-    const { data: seededApplicants, error: applicantError } = await supabase.from('applicants').insert(applicants).select();
-    if (applicantError) console.error("Error seeding applicants:", applicantError.message);
-    else console.log('  - Seeded applicants');
+                job_id: faker.helpers.arrayElement(seededJobs).id,
+                stage: faker.helpers.arrayElement(['Sourced', 'Applied', 'Phone Screen', 'Interview', 'Offer', 'Hired']),
+                applied_date: faker.date.past().toISOString(),
+                avatar: faker.image.avatar(),
+                source: faker.helpers.arrayElement(['walk-in', 'college', 'email', 'manual']),
+                aptitude_score: faker.helpers.arrayElement([null, faker.number.int({ min: 40, max: 100 })]),
+                wpm: faker.helpers.arrayElement([null, faker.number.int({ min: 30, max: 90 })]),
+                accuracy: faker.helpers.arrayElement([null, faker.number.int({ min: 85, max: 99 })]),
+                ai_match_score: faker.helpers.arrayElement([null, faker.number.int({ min: 50, max: 95 })]),
+                ai_justification: faker.helpers.arrayElement([null, faker.lorem.paragraph()]),
+                resume_data: {
+                    fullName: applicantName,
+                    email: applicantEmail,
+                    phone: faker.phone.number(),
+                    skills: Array.from({ length: faker.number.int({min: 4, max: 8}) }, () => faker.person.jobSkill()),
+                    experience: Array.from({ length: faker.number.int({min: 1, max: 3}) }, () => ({
+                        jobTitle: faker.person.jobTitle(),
+                        company: faker.company.name(),
+                        duration: `${faker.number.int({min: 1, max: 5})} years`
+                    })),
+                    education: [{
+                        institution: `${faker.location.city()} University`,
+                        degree: 'B.S. in Computer Science',
+                        year: '2020'
+                    }],
+                    fullText: faker.lorem.paragraphs(5),
+                }
+            };
+        });
+        const { data: seededApplicants, error: applicantError } = await supabase.from('applicants').insert(applicants).select();
+        if (applicantError) console.error("Error seeding applicants:", applicantError.message);
+        else console.log('  - Seeded applicants');
+
+        // Seed Applicant Notes
+        if (seededApplicants) {
+            const applicantNotes = seededApplicants.slice(0, 10).map(applicant => ({
+                applicant_id: applicant.id,
+                author_name: faker.person.fullName(),
+                author_avatar: faker.image.avatar(),
+                note: faker.lorem.sentence(),
+                created_at: faker.date.recent().toISOString()
+            }));
+            await supabase.from('applicant_notes').insert(applicantNotes);
+            console.log('  - Seeded applicant_notes');
+        }
+    }
 
     // Seed Interviews
     const interviews = Array.from({ length: 12 }, () => ({
@@ -162,19 +176,6 @@ async function seedData() {
     }));
     await supabase.from('time_off_requests').insert(timeOffRequests);
     console.log('  - Seeded time_off_requests');
-
-    // Seed Applicant Notes
-    if (seededApplicants) {
-        const applicantNotes = seededApplicants.slice(0, 10).map(applicant => ({
-            applicant_id: applicant.id,
-            author_name: faker.person.fullName(),
-            author_avatar: faker.image.avatar(),
-            note: faker.lorem.sentence(),
-            created_at: faker.date.recent().toISOString()
-        }));
-        await supabase.from('applicant_notes').insert(applicantNotes);
-        console.log('  - Seeded applicant_notes');
-    }
 }
 
 

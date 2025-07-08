@@ -36,7 +36,7 @@ export default function ApplicantPortalPage() {
             setLoading(true);
             const { data, error } = await supabase
                 .from('applicants')
-                .select('*')
+                .select('*, jobs(title)')
                 .eq('id', id)
                 .single();
 
@@ -103,7 +103,7 @@ export default function ApplicantPortalPage() {
                             </div>
                             <div className="flex items-center justify-between">
                                 <span className="text-muted-foreground">Applying for:</span>
-                                <span className="font-medium">{applicant.job_title}</span>
+                                <span className="font-medium">{applicant.jobs?.title || 'N/A'}</span>
                             </div>
                             <div className="flex items-center justify-between">
                                 <span className="text-muted-foreground">Current Stage:</span>

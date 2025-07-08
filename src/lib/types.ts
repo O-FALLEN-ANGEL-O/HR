@@ -31,7 +31,8 @@ export type Applicant = {
   name: string;
   email: string;
   phone: string;
-  job_title?: string;
+  job_id?: string;
+  jobs?: { title: string } | null; // For joined data
   stage: 'Sourced' | 'Applied' | 'Phone Screen' | 'Interview' | 'Offer' | 'Hired';
   applied_date: string;
   avatar?: string;

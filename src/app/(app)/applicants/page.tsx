@@ -10,7 +10,7 @@ export default async function ApplicantsPage() {
 
   const { data, error } = await supabase
     .from('applicants')
-    .select('*')
+    .select('*, jobs(title)')
     .order('applied_date', { ascending: false });
 
   if (error) {

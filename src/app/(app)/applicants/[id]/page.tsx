@@ -17,7 +17,7 @@ export default async function ApplicantProfilePage({ params }: ApplicantProfileP
 
   const { data: applicantData, error: applicantError } = await supabase
     .from('applicants')
-    .select('*')
+    .select('*, jobs(title)')
     .eq('id', params.id)
     .single();
 
@@ -25,11 +25,15 @@ export default async function ApplicantProfilePage({ params }: ApplicantProfileP
     notFound();
   }
   
-  const { data: notesData } = await supabase
+  const { data: notesData, error: notesError } = await supabase
     .from('applicant_notes')
     .select('*')
     .eq('applicant_id', params.id)
     .order('created_at', { ascending: false });
+
+  if (notesError) {
+    // We can still render the page without notes
+  }
 
   const applicant: Applicant = applicantData;
   const notes: ApplicantNote[] = notesData || [];

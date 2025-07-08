@@ -43,7 +43,7 @@ const FormSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters.'),
   email: z.string().email('Please enter a valid email address.'),
   phone: z.string().min(10, 'Phone number seems too short.'),
-  jobTitle: z.string().min(1, 'Please select a position.'),
+  jobId: z.string().min(1, 'Please select a position.'),
   resumeFile: z.any().optional(),
   profilePic: z.any().optional(),
 });
@@ -73,7 +73,7 @@ export default function RegisterPage() {
       fullName: '',
       email: '',
       phone: '',
-      jobTitle: '',
+      jobId: '',
     },
   });
 
@@ -211,7 +211,7 @@ export default function RegisterPage() {
           name: data.fullName,
           email: data.email,
           phone: data.phone,
-          job_title: data.jobTitle,
+          job_id: data.jobId,
           stage: 'Applied',
           source: 'walk-in',
           applied_date: new Date().toISOString(),
@@ -385,7 +385,7 @@ export default function RegisterPage() {
                 />
                  <FormField
                   control={form.control}
-                  name="jobTitle"
+                  name="jobId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Position Applying For</FormLabel>
@@ -397,7 +397,7 @@ export default function RegisterPage() {
                         </FormControl>
                         <SelectContent>
                           {openJobs.map(job => (
-                             <SelectItem key={job.id} value={job.title}>{job.title}</SelectItem>
+                             <SelectItem key={job.id} value={job.id}>{job.title}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { format, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import {
   BrainCircuit,
   FileText,
@@ -150,7 +150,7 @@ export default function ApplicantProfileClient({
               </Avatar>
               <div>
                 <CardTitle className="text-2xl">{applicant.name}</CardTitle>
-                <CardDescription>Applying for {applicant.job_title}</CardDescription>
+                <CardDescription>Applying for {applicant.jobs?.title || 'N/A'}</CardDescription>
               </div>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">

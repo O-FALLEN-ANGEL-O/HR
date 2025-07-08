@@ -95,22 +95,14 @@ export default function ApplicantList({
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'applicants' },
-        (payload) => {
+        async (payload) => {
           toast({
             title: 'Applicant Data Updated',
             description: 'The list of applicants has been refreshed.',
           });
-           if (payload.eventType === 'INSERT') {
-            setApplicants((prev) => [payload.new as Applicant, ...prev].sort((a,b) => new Date(b.applied_date).getTime() - new Date(a.applied_date).getTime()));
-          } else if (payload.eventType === 'UPDATE') {
-            setApplicants((prev) =>
-              prev.map((applicant) =>
-                applicant.id === payload.new.id ? { ...applicant, ...(payload.new as Applicant) } : applicant
-              )
-            );
-          } else if (payload.eventType === 'DELETE') {
-            setApplicants((prev) => prev.filter((applicant) => applicant.id !== (payload.old as Applicant).id));
-          }
+          
+          const { data } = await supabase.from('applicants').select('*, jobs(title)').order('applied_date', { ascending: false });
+          setApplicants(data || []);
         }
       )
       .subscribe();
@@ -151,7 +143,7 @@ export default function ApplicantList({
           `"${a.name}"`,
           a.email,
           a.phone,
-          `"${a.job_title}"`,
+          `"${a.jobs?.title || 'N/A'}"`,
           a.stage,
           format(new Date(a.applied_date), 'yyyy-MM-dd'),
           a.source
@@ -287,7 +279,7 @@ export default function ApplicantList({
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>{applicant.job_title || 'Walk-in'}</TableCell>
+                  <TableCell>{applicant.jobs?.title || 'Walk-in'}</TableCell>
                   <TableCell>
                     {isClient ? format(new Date(applicant.applied_date), 'PPP') : ''}
                   </TableCell>

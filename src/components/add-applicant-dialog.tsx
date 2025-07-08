@@ -38,7 +38,7 @@ const FormSchema = z.object({
   name: z.string().min(2, 'Full name must be at least 2 characters.'),
   email: z.string().email('Please enter a valid email address.'),
   phone: z.string().min(10, 'Phone number seems too short.'),
-  job_title: z.string().min(1, 'Please select a position.'),
+  job_id: z.string().min(1, 'Please select a position.'),
 });
 
 type AddApplicantDialogProps = {
@@ -55,7 +55,7 @@ export function AddApplicantDialog({ children, onApplicantAdded }: AddApplicantD
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
-    defaultValues: { name: '', email: '', phone: '', job_title: '' },
+    defaultValues: { name: '', email: '', phone: '', job_id: '' },
   });
   
   React.useEffect(() => {
@@ -116,14 +116,14 @@ export function AddApplicantDialog({ children, onApplicantAdded }: AddApplicantD
             <FormField control={form.control} name="phone" render={({ field }) => (
               <FormItem><FormLabel>Phone</FormLabel><FormControl><Input type="tel" {...field} /></FormControl><FormMessage /></FormItem>
             )}/>
-            <FormField control={form.control} name="job_title" render={({ field }) => (
+            <FormField control={form.control} name="job_id" render={({ field }) => (
               <FormItem>
                 <FormLabel>Position Applying For</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl><SelectTrigger><SelectValue placeholder="Select a position" /></SelectTrigger></FormControl>
                   <SelectContent>
                     {openJobs.map((job) => (
-                      <SelectItem key={job.id} value={job.title}>{job.title}</SelectItem>
+                      <SelectItem key={job.id} value={job.id}>{job.title}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
