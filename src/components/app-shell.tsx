@@ -30,6 +30,7 @@ import {
   ShieldCheck,
   UserCog,
   WalletCards,
+  CalendarDays,
 } from 'lucide-react';
 
 import {
@@ -92,6 +93,19 @@ const getNavLinks = (role: UserRole) => {
       return [
         { href: '/hr/dashboard', label: 'HR Dashboard', icon: LayoutDashboard },
         ...commonHrLinks,
+      ];
+    case 'manager':
+      return [
+        { href: '/manager/dashboard', label: 'Manager Dashboard', icon: LayoutDashboard },
+        { href: '/time-off', label: 'Team Time Off', icon: Clock },
+        { href: '/performance', label: 'Team Performance', icon: BarChart3 },
+        { href: '/employee/directory', label: 'Employee Directory', icon: Users },
+      ];
+    case 'team_lead':
+      return [
+        { href: '/team-lead/dashboard', label: 'Team Lead Hub', icon: LayoutDashboard },
+        { href: '/employee/directory', label: 'Team Directory', icon: Users },
+        { href: '/employee/kudos', label: 'Team Kudos', icon: Award },
       ];
     case 'recruiter':
       return [
@@ -208,7 +222,7 @@ export default function AppShell({
                   </Avatar>
                   <div className="flex flex-col text-sm items-start">
                     <span className="font-semibold">{user?.full_name || 'Guest'}</span>
-                    <span className="text-muted-foreground capitalize">{user?.role.replace('_', ' ') || 'user'}</span>
+                    <span className="text-muted-foreground capitalize">{user?.role.replace(/_/g, ' ') || 'user'}</span>
                   </div>
                 </Button>
               </DropdownMenuTrigger>

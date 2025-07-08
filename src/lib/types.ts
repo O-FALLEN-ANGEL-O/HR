@@ -4,6 +4,8 @@ export type UserRole =
   | 'admin'
   | 'super_hr'
   | 'hr_manager'
+  | 'manager'
+  | 'team_lead'
   | 'recruiter'
   | 'interviewer'
   | 'employee'
@@ -69,6 +71,8 @@ export type Applicant = {
 
 export type Interview = {
   id: string;
+  applicant_id: string;
+  interviewer_id: string;
   candidate_name: string;
   candidate_avatar: string;
   job_title: string;
@@ -82,6 +86,9 @@ export type Interview = {
 
 export type Onboarding = {
   id: string;
+  user_id: string;
+  manager_id: string;
+  buddy_id: string;
   employee_name: string;
   employee_avatar: string;
   job_title: string;

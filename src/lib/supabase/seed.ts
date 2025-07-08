@@ -75,7 +75,7 @@ async function seedData() {
 
     // Seed Users first, as other data may depend on them.
     console.log('  - Seeding users...');
-    const roles: UserRole[] = ['admin', 'super_hr', 'hr_manager', 'recruiter', 'interviewer', 'employee', 'intern', 'guest'];
+    const roles: UserRole[] = ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'recruiter', 'interviewer', 'employee', 'intern', 'guest'];
     const seededUsers: User[] = [];
 
     for (const role of roles) {

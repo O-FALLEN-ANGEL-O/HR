@@ -8,9 +8,11 @@ const authRoutes = ['/login', '/signup'];
 
 // Role-based access control matrix
 const roleAccess: Record<UserRole, string[]> = {
-  admin: ['/admin', '/hr', '/super_hr', '/recruiter', '/applicants', '/jobs', '/interviews', '/college-drive', '/onboarding', '/performance', '/ai-tools', '/employee', '/intern', '/time-off'],
+  admin: ['/admin', '/hr', '/super_hr', '/recruiter', '/applicants', '/jobs', '/interviews', '/college-drive', '/onboarding', '/performance', '/ai-tools', '/employee', '/intern', '/time-off', '/manager', '/team-lead'],
   super_hr: ['/super_hr', '/hr', '/applicants', '/jobs', '/interviews', '/college-drive', '/onboarding', '/performance', '/ai-tools', '/employee', '/intern', '/time-off', '/admin/roles'], // Super HR can access role management
   hr_manager: ['/hr', '/applicants', '/jobs', '/interviews', '/college-drive', '/onboarding', '/performance', '/ai-tools', '/employee', '/intern', '/time-off'],
+  manager: ['/manager', '/employee', '/time-off', '/performance', '/employee/directory'],
+  team_lead: ['/team-lead', '/employee', '/employee/kudos', '/employee/directory'],
   recruiter: ['/recruiter', '/hr/dashboard', '/applicants', '/jobs', '/ai-tools/applicant-scoring'],
   interviewer: ['/interviews'],
   employee: ['/employee', '/time-off'],
@@ -23,6 +25,8 @@ function getHomePathForRole(role: UserRole): string {
     case 'admin': return '/admin/dashboard';
     case 'super_hr': return '/super_hr/dashboard';
     case 'hr_manager': return '/hr/dashboard';
+    case 'manager': return '/manager/dashboard';
+    case 'team_lead': return '/team-lead/dashboard';
     case 'recruiter': return '/recruiter/dashboard';
     case 'interviewer': return '/interviews';
     case 'employee': return '/employee/dashboard';

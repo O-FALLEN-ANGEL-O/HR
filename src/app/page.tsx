@@ -11,6 +11,10 @@ function getHomePathForRole(role: UserRole): string {
       return '/super_hr/dashboard';
     case 'hr_manager':
       return '/hr/dashboard';
+    case 'manager':
+      return '/manager/dashboard';
+    case 'team_lead':
+      return '/team-lead/dashboard';
     case 'recruiter':
       return '/recruiter/dashboard';
     case 'interviewer':
