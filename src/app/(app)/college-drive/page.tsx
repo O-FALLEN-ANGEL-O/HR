@@ -23,8 +23,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { MoreHorizontal, PlusCircle, Send } from 'lucide-react';
-import { colleges } from '@/lib/data';
 import { format } from 'date-fns';
+import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
+import type { College } from '@/lib/types';
 
 const statusColors: { [key: string]: string } = {
   Invited: 'bg-yellow-100 text-yellow-800',
@@ -33,8 +35,20 @@ const statusColors: { [key: string]: string } = {
   Declined: 'bg-red-100 text-red-800',
 };
 
-export default function CollegeDrivePage() {
-  const data = colleges;
+export default async function CollegeDrivePage() {
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+
+  const { data, error } = await supabase
+    .from('colleges')
+    .select('*')
+    .order('lastContacted', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching colleges:', error);
+  }
+
+  const colleges: College[] = data || [];
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
@@ -64,7 +78,7 @@ export default function CollegeDrivePage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((college) => (
+              {colleges.map((college) => (
                 <TableRow key={college.id}>
                   <TableCell>
                     <div className="font-medium">{college.name}</div>

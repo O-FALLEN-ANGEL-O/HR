@@ -17,11 +17,27 @@ import {
 } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
-import { onboardingWorkflows } from '@/lib/data';
 import { PlusCircle, Upload } from 'lucide-react';
 import { format } from 'date-fns';
+import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
+import type { Onboarding } from '@/lib/types';
 
-export default function OnboardingPage() {
+export default async function OnboardingPage() {
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+
+  const { data, error } = await supabase
+    .from('onboarding_workflows')
+    .select('*')
+    .order('startDate', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching onboarding workflows:', error);
+  }
+
+  const onboardingWorkflows: Onboarding[] = data || [];
+
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <Header title="Onboarding Workflows">

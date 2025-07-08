@@ -17,9 +17,11 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { timeOffRequests } from '@/lib/data';
 import { PlusCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
+import type { TimeOffRequest } from '@/lib/types';
 
 const statusColors: { [key: string]: string } = {
   Pending: 'bg-yellow-100 text-yellow-800',
@@ -27,7 +29,21 @@ const statusColors: { [key: string]: string } = {
   Rejected: 'bg-red-100 text-red-800',
 };
 
-export default function TimeOffPage() {
+export default async function TimeOffPage() {
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+
+  const { data, error } = await supabase
+    .from('time_off_requests')
+    .select('*')
+    .order('startDate', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching time off requests:', error);
+  }
+  
+  const timeOffRequests: TimeOffRequest[] = data || [];
+
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <Header title="Time & Attendance">

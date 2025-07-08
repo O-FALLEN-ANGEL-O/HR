@@ -17,7 +17,6 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { performanceReviews } from '@/lib/data';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import {
   DropdownMenu,
@@ -25,6 +24,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
+import type { PerformanceReview } from '@/lib/types';
+
 
 const statusColors: { [key: string]: string } = {
   Pending: 'bg-yellow-100 text-yellow-800',
@@ -32,7 +35,21 @@ const statusColors: { [key: string]: string } = {
   Completed: 'bg-green-100 text-green-800',
 };
 
-export default function PerformancePage() {
+export default async function PerformancePage() {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+  
+    const { data, error } = await supabase
+      .from('performance_reviews')
+      .select('*')
+      .order('reviewDate', { ascending: false });
+  
+    if (error) {
+      console.error('Error fetching performance reviews:', error);
+    }
+  
+    const performanceReviews: PerformanceReview[] = data || [];
+
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <Header title="Performance Management">
