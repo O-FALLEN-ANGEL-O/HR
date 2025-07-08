@@ -77,7 +77,6 @@ export default function ApplicantList({
   const [sourceFilter, setSourceFilter] = React.useState('all');
   const [isEmailScannerActive, setIsEmailScannerActive] = React.useState(true);
   const [isClient, setIsClient] = React.useState(false);
-  const supabase = createClient();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -90,17 +89,28 @@ export default function ApplicantList({
   }, [initialApplicants]);
 
   React.useEffect(() => {
+    const supabase = createClient();
     const channel = supabase
       .channel('realtime-applicants')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'applicants' },
         (payload) => {
-           router.refresh();
-           toast({
-            title: 'Applicant data updated!',
+          toast({
+            title: 'Applicant Data Updated',
             description: 'The list of applicants has been refreshed.',
           });
+           if (payload.eventType === 'INSERT') {
+            setApplicants((prev) => [payload.new as Applicant, ...prev].sort((a,b) => new Date(b.applied_date).getTime() - new Date(a.applied_date).getTime()));
+          } else if (payload.eventType === 'UPDATE') {
+            setApplicants((prev) =>
+              prev.map((applicant) =>
+                applicant.id === payload.new.id ? { ...applicant, ...(payload.new as Applicant) } : applicant
+              )
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setApplicants((prev) => prev.filter((applicant) => applicant.id !== (payload.old as Applicant).id));
+          }
         }
       )
       .subscribe();
@@ -108,7 +118,7 @@ export default function ApplicantList({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [supabase, router, toast]);
+  }, [toast]);
 
   const filteredApplicants = React.useMemo(() => {
     return applicants
@@ -186,7 +196,7 @@ export default function ApplicantList({
           <Upload className="mr-2 h-4 w-4" />
           Export
         </Button>
-        <AddApplicantDialog onApplicantAdded={() => router.refresh()}>
+        <AddApplicantDialog onApplicantAdded={() => {}}>
           <Button size="sm">
             <PlusCircle className="mr-2 h-4 w-4" />
             Add Applicant

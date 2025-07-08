@@ -53,6 +53,38 @@ function TimeOffClient({ initialRequests }: TimeOffPageProps) {
     setRequests(initialRequests);
   }, [initialRequests]);
   
+  React.useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel('realtime-time-off')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'time_off_requests' },
+        (payload) => {
+          toast({
+            title: 'Time Off Requests Updated',
+            description: 'The list of time off requests has been updated.',
+          });
+          if (payload.eventType === 'INSERT') {
+            setRequests((prev) => [payload.new as TimeOffRequest, ...prev].sort((a,b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime()));
+          } else if (payload.eventType === 'UPDATE') {
+            setRequests((prev) =>
+              prev.map((request) =>
+                request.id === payload.new.id ? { ...request, ...(payload.new as TimeOffRequest) } : request
+              )
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setRequests((prev) => prev.filter((request) => request.id !== (payload.old as TimeOffRequest).id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [toast]);
+
   const handleUpdateRequest = async (id: string, status: 'Approved' | 'Rejected') => {
     const supabase = createClient();
     const { error } = await supabase
@@ -64,7 +96,6 @@ function TimeOffClient({ initialRequests }: TimeOffPageProps) {
       toast({ title: 'Error', description: `Failed to update request. ${error.message}`, variant: 'destructive'});
     } else {
       toast({ title: 'Success', description: `Request has been ${status.toLowerCase()}.` });
-      router.refresh();
     }
   };
 
@@ -72,7 +103,7 @@ function TimeOffClient({ initialRequests }: TimeOffPageProps) {
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <Header title="Time & Attendance">
-        <AddTimeOffDialog onTimeOffAdded={() => router.refresh()}>
+        <AddTimeOffDialog onTimeOffAdded={() => {}}>
           <Button size="sm">
             <PlusCircle className="mr-2 h-4 w-4" />
             Add Time Off

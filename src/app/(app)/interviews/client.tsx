@@ -12,9 +12,6 @@ import {
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import {
   DropdownMenu,
@@ -28,14 +25,9 @@ import { format } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Calendar, Clock, MoreHorizontal, Phone, Users, Video } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { createClient } from '@/lib/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 type InterviewListProps = {
   initialInterviews: Interview[];
@@ -55,17 +47,49 @@ const typeIcons: { [key: string]: React.ReactNode } = {
 
 export default function InterviewList({ initialInterviews }: InterviewListProps) {
   const [interviews, setInterviews] = React.useState(initialInterviews);
-  const [filter, setFilter] = React.useState('all');
   const [isClient, setIsClient] = React.useState(false);
+  const { toast } = useToast();
 
   React.useEffect(() => {
     setIsClient(true);
   }, []);
 
-  const filteredInterviews = React.useMemo(() => {
-    if (filter === 'all') return interviews;
-    return interviews.filter((interview) => interview.status === filter);
-  }, [interviews, filter]);
+  React.useEffect(() => {
+    setInterviews(initialInterviews);
+  }, [initialInterviews]);
+
+   React.useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel('realtime-interviews')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'interviews' },
+        (payload) => {
+          toast({
+            title: 'Interview Data Updated',
+            description: 'The list of interviews has been updated.',
+          });
+           if (payload.eventType === 'INSERT') {
+            setInterviews((prev) => [payload.new as Interview, ...prev].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+          } else if (payload.eventType === 'UPDATE') {
+            setInterviews((prev) =>
+              prev.map((interview) =>
+                interview.id === payload.new.id ? { ...interview, ...(payload.new as Interview) } : interview
+              )
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setInterviews((prev) => prev.filter((interview) => interview.id !== (payload.old as Interview).id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [toast]);
+
 
   return (
     <Tabs defaultValue="upcoming" className="w-full">

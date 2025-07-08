@@ -74,6 +74,38 @@ export default function JobsClient({ initialJobs }: JobsClientProps) {
     setJobs(initialJobs);
   }, [initialJobs]);
 
+  React.useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel('realtime-jobs')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'jobs' },
+        (payload) => {
+          toast({
+            title: 'Job Postings Updated',
+            description: 'The list of jobs has been updated.',
+          });
+           if (payload.eventType === 'INSERT') {
+            setJobs((prev) => [payload.new as Job, ...prev].sort((a,b) => new Date(b.posted_date).getTime() - new Date(a.posted_date).getTime()));
+          } else if (payload.eventType === 'UPDATE') {
+            setJobs((prev) =>
+              prev.map((job) =>
+                job.id === payload.new.id ? { ...job, ...(payload.new as Job) } : job
+              )
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setJobs((prev) => prev.filter((job) => job.id !== (payload.old as Job).id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [toast]);
+
   const filteredJobs = React.useMemo(() => {
     return jobs
       .filter(
@@ -97,14 +129,13 @@ export default function JobsClient({ initialJobs }: JobsClientProps) {
       toast({ title: 'Error', description: `Failed to update job status. ${error.message}`, variant: 'destructive' });
     } else {
       toast({ title: 'Success', description: `Job has been ${status === 'Closed' ? 'closed' : 'put on hold'}.` });
-      router.refresh();
     }
   };
 
   return (
     <>
       <Header title="Job Postings">
-        <JobDialog onJobAddedOrUpdated={() => router.refresh()}>
+        <JobDialog onJobAddedOrUpdated={() => {}}>
           <Button size="sm">
             <PlusCircle className="mr-2 h-4 w-4" />
             Create Job
@@ -147,7 +178,7 @@ export default function JobsClient({ initialJobs }: JobsClientProps) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <JobDialog job={job} onJobAddedOrUpdated={() => router.refresh()}>
+                    <JobDialog job={job} onJobAddedOrUpdated={() => {}}>
                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                         <Edit className="mr-2 h-4 w-4" /> Edit Job
                        </DropdownMenuItem>
