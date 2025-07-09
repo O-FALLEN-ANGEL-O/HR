@@ -3,14 +3,14 @@ import { type ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension
 
 export async function getUser(cookieStore: ReadonlyRequestCookies) {
   const supabase = createClient(cookieStore);
-  const { data: { session }} = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
   
-  if (!session) return null;
+  if (!user) return null;
 
   const { data: userProfile, error } = await supabase
     .from('users')
     .select('*')
-    .eq('id', session.user.id)
+    .eq('id', user.id)
     .single();
 
   if (error || !userProfile) {

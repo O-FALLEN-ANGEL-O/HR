@@ -110,8 +110,8 @@ async function seedData() {
             email_confirm: true,
             user_metadata: { 
                 full_name: fullName,
-                avatar_url: faker.image.avatar(),
-                role: role // Store role directly in metadata
+                avatar_url: `https://i.pravatar.cc/150?u=${faker.string.uuid()}`,
+                role: role
              }
         });
 
@@ -135,7 +135,7 @@ async function seedData() {
             email_confirm: true,
             user_metadata: { 
                 full_name: fullName,
-                avatar_url: faker.image.avatar(),
+                avatar_url: `https://i.pravatar.cc/150?u=${faker.string.uuid()}`,
                 role: 'employee'
             }
         });
@@ -197,7 +197,7 @@ async function seedData() {
             college_id: fromCollege ? faker.helpers.arrayElement(seededColleges).id : null,
             stage: faker.helpers.arrayElement(['Sourced', 'Applied', 'Phone Screen', 'Interview', 'Offer', 'Hired']),
             applied_date: faker.date.past().toISOString(),
-            avatar: faker.image.avatar(),
+            avatar: `https://i.pravatar.cc/150?u=${faker.string.uuid()}`,
             source: fromCollege ? 'college' as const : faker.helpers.arrayElement(['walk-in', 'email', 'manual'] as const),
             ai_match_score: faker.helpers.arrayElement([null, faker.number.int({ min: 50, max: 95 })]),
             ai_justification: faker.helpers.arrayElement([null, faker.lorem.paragraph()]),
@@ -233,6 +233,7 @@ async function seedData() {
             const interviewer = faker.helpers.arrayElement(interviewers);
             const job = seededJobs.find(j => j.id === applicant.job_id);
             return {
+                applicant_id: applicant.id,
                 interviewer_id: interviewer.id,
                 candidate_name: applicant.name,
                 candidate_avatar: applicant.avatar,
@@ -262,6 +263,7 @@ async function seedData() {
             return {
                 user_id: employee.id,
                 manager_id: manager.id,
+                buddy_id: buddy.id,
                 employee_name: employee.user_metadata.full_name,
                 employee_avatar: employee.user_metadata.avatar_url,
                 job_title: faker.person.jobTitle(),
