@@ -177,3 +177,21 @@ export type Kudo = {
   value: 'Team Player' | 'Innovation' | 'Customer First' | 'Ownership';
   timestamp: string;
 };
+
+export type CompanyPost = {
+  id: string;
+  authorName: string;
+  authorAvatar: string;
+  content: string;
+  imageUrl?: string;
+  timestamp: string;
+}
+
+export type WeeklyAward = {
+    id: string;
+    employeeName: string;
+    employeeAvatar: string;
+    reason: string;
+    weekOf: string;
+    awardedByName: string;
+}

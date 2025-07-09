@@ -19,6 +19,7 @@ import {
   GraduationCap,
   LayoutDashboard,
   LogOut,
+  Newspaper,
   PenSquare,
   ScanSearch,
   Settings,
@@ -30,7 +31,6 @@ import {
   ShieldCheck,
   UserCog,
   WalletCards,
-  CalendarDays,
 } from 'lucide-react';
 
 import {
@@ -69,7 +69,6 @@ const getNavLinks = (role: UserRole) => {
     { href: '/interviews', label: 'Interviews', icon: Calendar },
     { href: '/college-drive', label: 'College Drives', icon: GraduationCap },
     { href: '/onboarding', label: 'Onboarding', icon: ClipboardCheck },
-    { href: '/performance', label: 'Performance', icon: BarChart3 },
     { href: '/ai-tools/applicant-scoring', label: 'Applicant Scoring', icon: ScanSearch, group: 'AI Tools' },
     { href: '/ai-tools/chatbot', label: 'AI Chatbot', icon: Bot, group: 'AI Tools' },
     { href: '/ai-tools/review-analyzer', label: 'Review Analyzer', icon: PenSquare, group: 'AI Tools' },
@@ -94,21 +93,6 @@ const getNavLinks = (role: UserRole) => {
         { href: '/hr/dashboard', label: 'HR Dashboard', icon: LayoutDashboard },
         ...commonHrLinks,
       ];
-    case 'manager':
-      return [
-        { href: '/manager/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { href: '/time-off', label: 'Team Time Off', icon: Clock },
-        { href: '/performance', label: 'Team Performance', icon: BarChart3 },
-        { href: '/employee/directory', label: 'Employee Directory', icon: Users },
-        { href: '/employee/kudos', label: 'Team Kudos', icon: Award },
-      ];
-    case 'team_lead':
-      return [
-        { href: '/team-lead/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { href: '/employee/directory', label: 'Team Directory', icon: Users },
-        { href: '/employee/kudos', label: 'Team Kudos', icon: Award },
-        { href: '/time-off', label: 'Team Time Off', icon: Clock },
-      ];
     case 'recruiter':
       return [
         { href: '/recruiter/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -123,6 +107,7 @@ const getNavLinks = (role: UserRole) => {
     case 'employee':
       return [
         { href: '/employee/dashboard', label: 'My Dashboard', icon: LayoutDashboard },
+        { href: '/company-feed', label: 'Company Feed', icon: Newspaper },
         { href: '/employee/directory', label: 'Directory', icon: Users },
         { href: '/employee/payslips', label: 'Payslips', icon: WalletCards },
         { href: '/time-off', label: 'Time Off', icon: Clock },
@@ -132,6 +117,7 @@ const getNavLinks = (role: UserRole) => {
     case 'intern':
         return [
           { href: '/intern/dashboard', label: 'Welcome', icon: LayoutDashboard },
+          { href: '/company-feed', label: 'Company Feed', icon: Newspaper },
           { href: '/onboarding', label: 'Onboarding Tasks', icon: ClipboardCheck },
         ]
     default:
