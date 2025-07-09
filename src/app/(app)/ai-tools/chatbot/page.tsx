@@ -18,10 +18,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import type { ChatMessage } from '@/lib/types';
+import type { ChatMessage, UserProfile } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Bot, Loader2, Send } from 'lucide-react';
-import { currentUser } from '@/lib/data';
+import { createClient } from '@/lib/supabase/client';
+
 
 const ChatSchema = z.object({
   query: z.string().min(1, 'Message cannot be empty.'),
@@ -30,6 +31,7 @@ const ChatSchema = z.object({
 export default function AIChatbotPage() {
   const [messages, setMessages] = React.useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [currentUser, setCurrentUser] = React.useState<UserProfile | null>(null);
   const { toast } = useToast();
   const scrollAreaRef = React.useRef<HTMLDivElement>(null);
 
@@ -37,6 +39,18 @@ export default function AIChatbotPage() {
     resolver: zodResolver(ChatSchema),
     defaultValues: { query: '' },
   });
+
+  React.useEffect(() => {
+    const fetchUser = async () => {
+        const supabase = createClient();
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser) {
+            const { data: userProfile } = await supabase.from('users').select('*').eq('id', authUser.id).single();
+            setCurrentUser(userProfile);
+        }
+    };
+    fetchUser();
+  }, []);
 
   React.useEffect(() => {
     setMessages([
@@ -128,8 +142,8 @@ export default function AIChatbotPage() {
                 </div>
                 {message.role === 'user' && (
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={currentUser.avatar} />
-                    <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
+                    <AvatarImage src={currentUser?.avatar_url || undefined} />
+                    <AvatarFallback>{currentUser?.full_name?.charAt(0)}</AvatarFallback>
                   </Avatar>
                 )}
               </div>

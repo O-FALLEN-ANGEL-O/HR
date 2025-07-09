@@ -4,7 +4,6 @@ import dotenv from 'dotenv';
 import path from 'path';
 import type { UserRole } from '../types';
 
-// Load environment variables from .env file at the root of the project
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -19,46 +18,14 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 async function clearData() {
   console.log('🗑️  Clearing existing data...');
   
-  // Clear auth users first. This will cascade to public.users.
-  console.log('🗑️  Clearing auth users...');
-  
-  // Handle pagination to delete all users
-  let allUsers: User[] = [];
-  let page = 0;
-  const PAGE_SIZE = 50;
-
-  while (true) {
-    const { data: { users }, error } = await supabase.auth.admin.listUsers({
-      page: page,
-      perPage: PAGE_SIZE,
-    });
-
-    if (error) {
-      console.error('Error listing auth users:', error.message);
-      break;
-    }
-    
-    allUsers = allUsers.concat(users);
-
-    if (users.length < PAGE_SIZE) {
-      break; // Last page
-    }
-    page++;
-  }
-
-  const userDeletionPromises = allUsers
-    .filter(user => user.email && !user.email.endsWith('@supabase.com'))
-    .map(user => supabase.auth.admin.deleteUser(user.id, true)); // true for hard delete
-
-  await Promise.all(userDeletionPromises);
-  console.log(`✅ ${userDeletionPromises.length} Auth users cleared.`);
-
-
-  // The order is important due to foreign key constraints. Start with tables that have dependencies.
   const tablesToDelete = [
+    'kudos',
+    'weekly_awards',
+    'company_posts',
+    'payslips',
+    'company_documents',
     'applicant_notes',
     'time_off_requests',
-    'performance_reviews',
     'onboarding_workflows',
     'interviews',
     'applicants',
@@ -68,42 +35,38 @@ async function clearData() {
   ];
 
   for (const table of tablesToDelete) {
-      let query = supabase.from(table).delete();
-      // Use a filter that will always be true to delete all rows.
-      // Supabase requires a filter for delete operations unless row-level security is off.
-      if (table === 'metrics') {
-          query = query.gte('id', 0); // For serial integer IDs
-      } else {
-          query = query.neq('id', '00000000-0000-0000-0000-000000000000'); // For UUIDs
-      }
-      
-      const { error } = await query;
-
-      if (error) {
-          // This specific error can be ignored if the table is already empty.
-          if (error.code !== 'P0001' && error.code !== '42P01') { 
-              console.error(`Error clearing table ${table}:`, error.message);
-          }
-      }
+    const { error } = await supabase.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    if (error && error.code !== '42P01') { 
+      console.error(`Error clearing table ${table}:`, error.message);
+    }
   }
+
+  const { data: { users }, error } = await supabase.auth.admin.listUsers();
+  if (error) {
+    console.error('Error listing auth users:', error.message);
+  } else {
+    const userDeletionPromises = users
+      .filter(user => user.email && !user.email.endsWith('@supabase.com'))
+      .map(user => supabase.auth.admin.deleteUser(user.id, true)); 
+    await Promise.all(userDeletionPromises);
+    console.log(`✅ ${userDeletionPromises.length} Auth users cleared.`);
+  }
+
   console.log('✅ Data cleared.');
 }
-
 
 async function seedData() {
     console.log('🌱 Seeding data...');
 
-    // Seed Users first, as other data may depend on them.
     console.log('  - Seeding users...');
-    const roles: UserRole[] = ['admin', 'super_hr', 'hr_manager', 'recruiter', 'interviewer', 'employee', 'intern', 'guest'];
-    const seededUsers: User[] = [];
+    const roles: UserRole[] = ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'recruiter', 'interviewer', 'employee', 'intern', 'guest'];
+    const seededUsers: (User & { user_metadata: { role: UserRole, full_name: string, avatar_url: string }})[] = [];
     const password = 'Password123!';
 
-    // Create role-specific users
     for (const role of roles) {
-        const email = `${role.replace('_', '.')}` + '@example.com';
         const fullName = `${role.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} User`;
-
+        const email = `${role.replace(/_/g, '.')}@example.com`;
+        
         const { data: authData, error: authError } = await supabase.auth.admin.createUser({
             email,
             password,
@@ -121,12 +84,11 @@ async function seedData() {
         }
         if (authData.user) {
             console.log(`    - Created ${role} user: ${email} (pw: ${password})`);
-            seededUsers.push(authData.user);
+            seededUsers.push(authData.user as any);
         }
     }
     
-    // Create multiple generic employee users
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i < 25; i++) {
         const fullName = faker.person.fullName();
         const email = faker.internet.email({ firstName: fullName.split(' ')[0], lastName: fullName.split(' ')[1] }).toLowerCase();
         const { data: authData, error: authError } = await supabase.auth.admin.createUser({
@@ -141,26 +103,22 @@ async function seedData() {
         });
         if (authError) {
             console.error(`Error creating employee user ${email}:`, authError.message);
-        }
-        if(authData.user) {
-            seededUsers.push(authData.user);
+        } else if (authData.user) {
+            seededUsers.push(authData.user as any);
         }
     }
 
     console.log(`  - Total users successfully created: ${seededUsers.length}`);
 
-    // Seed Metrics
     const metrics = [
         { title: 'Total Employees', value: seededUsers.filter(u => u.user_metadata.role !== 'intern').length.toString(), change: `+${faker.number.int({ min: 1, max: 15 })}%`, change_type: 'increase' as const },
         { title: 'Attrition Rate', value: `${faker.number.float({ min: 1, max: 10, multipleOf: 0.1 })}%`, change: `-${faker.number.float({ min: 0.1, max: 2, multipleOf: 0.1 })}%`, change_type: 'decrease' as const },
-        { title: 'Compliance Score', value: `${faker.number.int({ min: 90, max: 100 })}%`, change: `+${faker.number.int({ min: 1, max: 5 })}%`, change_type: 'increase' as const },
-        { title: 'Open Positions', value: faker.number.int({ min: 5, max: 50 }).toString(), change: `-${faker.number.int({ min: 1, max: 5 })}%`, change_type: 'decrease' as const }
+        { title: 'Open Positions', value: faker.number.int({ min: 5, max: 20 }).toString(), change: `-${faker.number.int({ min: 1, max: 5 })}%`, change_type: 'decrease' as const },
+        { title: 'Applicants/Week', value: faker.number.int({ min: 20, max: 100 }).toString(), change: `+${faker.number.int({ min: 1, max: 5 })}%`, change_type: 'increase' as const }
     ];
-    const { error: metricsError } = await supabase.from('metrics').insert(metrics);
-    if (metricsError) console.error("Error seeding metrics:", metricsError.message);
-    else console.log('  - Seeded metrics');
+    await supabase.from('metrics').insert(metrics);
+    console.log('  - Seeded metrics');
 
-    // Seed Jobs
     const jobs = Array.from({ length: 15 }, () => ({
         title: faker.person.jobTitle(),
         department: faker.commerce.department(),
@@ -169,65 +127,46 @@ async function seedData() {
         posted_date: faker.date.past().toISOString(),
         applicants: faker.number.int({ min: 0, max: 100 }),
     }));
-    const { data: seededJobs, error: jobError } = await supabase.from('jobs').insert(jobs).select('id, title');
-    if (jobError) console.error("Error seeding jobs:", jobError.message);
-    else console.log('  - Seeded jobs');
+    const { data: seededJobs } = await supabase.from('jobs').insert(jobs).select('id, title');
+    console.log('  - Seeded jobs');
 
-    // Seed Colleges
     const collegesToSeed = Array.from({ length: 8 }, () => ({
         name: `${faker.location.city()} University`,
         status: faker.helpers.arrayElement(['Invited', 'Confirmed', 'Attended', 'Declined']),
         contact_email: faker.internet.email(),
         last_contacted: faker.date.past().toISOString()
     }));
-    const { data: seededColleges, error: collegesError } = await supabase.from('colleges').insert(collegesToSeed).select('id');
-    if (collegesError) console.error("Error seeding colleges:", collegesError.message);
-    else console.log('  - Seeded colleges');
+    const { data: seededColleges } = await supabase.from('colleges').insert(collegesToSeed).select('id');
+    console.log('  - Seeded colleges');
 
-    const applicants = (seededJobs && seededColleges) ? Array.from({ length: 50 }, () => {
-        const applicantName = faker.person.fullName();
-        const applicantEmail = faker.internet.email().toLowerCase();
-        const selectedJob = faker.helpers.arrayElement(seededJobs);
-        const fromCollege = faker.datatype.boolean();
-        return {
-            name: applicantName,
-            email: applicantEmail,
-            phone: faker.phone.number(),
-            job_id: selectedJob.id,
-            college_id: fromCollege ? faker.helpers.arrayElement(seededColleges).id : null,
-            stage: faker.helpers.arrayElement(['Sourced', 'Applied', 'Phone Screen', 'Interview', 'Offer', 'Hired']),
-            applied_date: faker.date.past().toISOString(),
-            avatar: `https://i.pravatar.cc/150?u=${faker.string.uuid()}`,
-            source: fromCollege ? 'college' as const : faker.helpers.arrayElement(['walk-in', 'email', 'manual'] as const),
-            ai_match_score: faker.helpers.arrayElement([null, faker.number.int({ min: 50, max: 95 })]),
-            ai_justification: faker.helpers.arrayElement([null, faker.lorem.paragraph()]),
-        };
-    }) : [];
-    const { data: seededApplicants, error: applicantError } = await supabase.from('applicants').insert(applicants).select();
-    if (applicantError) console.error("Error seeding applicants:", applicantError.message);
-    else if (applicants.length > 0) console.log('  - Seeded applicants');
-
-    // Seed Applicant Notes
-    if (seededApplicants && seededApplicants.length > 0 && seededUsers.length > 0) {
-        const applicantNotes = seededApplicants.slice(0, 20).map(applicant => {
-            const author = faker.helpers.arrayElement(seededUsers);
-            return {
-                applicant_id: applicant.id,
-                user_id: author.id,
-                author_name: author.user_metadata.full_name,
-                author_avatar: author.user_metadata.avatar_url,
-                note: faker.lorem.sentence(),
-                created_at: faker.date.recent().toISOString()
-            }
-        });
-        const { error: notesError } = await supabase.from('applicant_notes').insert(applicantNotes);
-        if (notesError) console.error("Error seeding applicant_notes:", notesError.message);
-        else console.log('  - Seeded applicant_notes');
+    const applicants = (seededJobs && seededColleges) ? Array.from({ length: 50 }, () => ({
+        name: faker.person.fullName(),
+        email: faker.internet.email().toLowerCase(),
+        phone: faker.phone.number(),
+        job_id: faker.helpers.arrayElement(seededJobs).id,
+        college_id: faker.datatype.boolean() ? faker.helpers.arrayElement(seededColleges).id : null,
+        stage: faker.helpers.arrayElement(['Sourced', 'Applied', 'Phone Screen', 'Interview', 'Offer', 'Hired']),
+        applied_date: faker.date.past().toISOString(),
+        avatar: `https://i.pravatar.cc/150?u=${faker.string.uuid()}`,
+        source: 'walk-in' as const,
+    })) : [];
+    const { data: seededApplicants } = await supabase.from('applicants').insert(applicants).select();
+    console.log('  - Seeded applicants');
+    
+    if (seededApplicants && seededUsers.length > 0) {
+        const applicantNotes = seededApplicants.slice(0, 20).map(applicant => ({
+            applicant_id: applicant.id,
+            user_id: faker.helpers.arrayElement(seededUsers).id,
+            author_name: faker.helpers.arrayElement(seededUsers).user_metadata.full_name,
+            author_avatar: faker.helpers.arrayElement(seededUsers).user_metadata.avatar_url,
+            note: faker.lorem.sentence(),
+        }));
+        await supabase.from('applicant_notes').insert(applicantNotes);
+        console.log('  - Seeded applicant_notes');
     }
-
-    // Seed Interviews
+    
     const interviewers = seededUsers.filter(u => ['interviewer', 'hr_manager', 'recruiter'].includes(u.user_metadata.role));
-    if (seededApplicants && seededApplicants.length > 0 && interviewers.length > 0 && seededJobs) {
+    if (seededApplicants && interviewers.length > 0 && seededJobs) {
         const interviews = Array.from({ length: 20 }, () => {
             const applicant = faker.helpers.arrayElement(seededApplicants);
             const interviewer = faker.helpers.arrayElement(interviewers);
@@ -246,16 +185,12 @@ async function seedData() {
                 status: faker.helpers.arrayElement(['Scheduled', 'Completed', 'Canceled'])
             }
         });
-        const { error: interviewsError } = await supabase.from('interviews').insert(interviews);
-        if (interviewsError) console.error("Error seeding interviews:", interviewsError.message);
-        else console.log('  - Seeded interviews');
-    } else {
-        console.log('  - Skipped seeding interviews due to missing applicants or interviewers.');
+        await supabase.from('interviews').insert(interviews);
+        console.log('  - Seeded interviews');
     }
     
-    // Seed Onboarding
     const employeesForOnboarding = seededUsers.filter(u => u.user_metadata.role === 'employee');
-    const managers = seededUsers.filter(u => u.user_metadata.role === 'hr_manager');
+    const managers = seededUsers.filter(u => u.user_metadata.role === 'manager');
     if (employeesForOnboarding.length > 5 && managers.length > 0) {
         const onboardingWorkflows = employeesForOnboarding.slice(0, 5).map(employee => {
             const manager = faker.helpers.arrayElement(managers);
@@ -274,34 +209,95 @@ async function seedData() {
                 start_date: faker.date.past().toISOString()
             }
         });
-        const { error: onboardingError } = await supabase.from('onboarding_workflows').insert(onboardingWorkflows);
-        if (onboardingError) console.error("Error seeding onboarding_workflows:", onboardingError.message);
-        else console.log('  - Seeded onboarding_workflows');
-    } else {
-        console.log('  - Skipped seeding onboarding_workflows due to insufficient users.');
+        await supabase.from('onboarding_workflows').insert(onboardingWorkflows);
+        console.log('  - Seeded onboarding_workflows');
     }
 
-    // Seed Time Off Requests
-    const employeesForTimeOff = seededUsers.filter(u => ['employee', 'hr_manager', 'recruiter'].includes(u.user_metadata.role));
+    const employeesForTimeOff = seededUsers.filter(u => u.user_metadata.role === 'employee');
     if (employeesForTimeOff.length > 0) {
         const timeOffRequests = Array.from({ length: 25 }, () => {
             const startDate = faker.date.between({ from: new Date(new Date().setMonth(new Date().getMonth() - 3)), to: new Date(new Date().setMonth(new Date().getMonth() + 1)) });
             const endDate = new Date(startDate);
             endDate.setDate(startDate.getDate() + faker.number.int({min: 0, max: 5}));
-            const user = faker.helpers.arrayElement(employeesForTimeOff);
-            
             return {
-                user_id: user.id,
+                user_id: faker.helpers.arrayElement(employeesForTimeOff).id,
                 type: faker.helpers.arrayElement(['Vacation', 'Sick Leave', 'Personal']),
                 start_date: startDate.toISOString().split('T')[0],
                 end_date: endDate.toISOString().split('T')[0],
                 status: faker.helpers.arrayElement(['Pending', 'Approved', 'Rejected'])
             };
         });
-        const { error: timeoffError } = await supabase.from('time_off_requests').insert(timeOffRequests);
-        if (timeoffError) console.error("Error seeding time_off_requests:", timeoffError.message);
-        else console.log('  - Seeded time_off_requests');
+        await supabase.from('time_off_requests').insert(timeOffRequests);
+        console.log('  - Seeded time_off_requests');
     }
+
+    const hrUsers = seededUsers.filter(u => u.user_metadata.role === 'hr_manager');
+    if (hrUsers.length > 0) {
+        const companyPosts = Array.from({length: 5}, () => ({
+            author_id: faker.helpers.arrayElement(hrUsers).id,
+            content: faker.lorem.paragraph(),
+            image_url: faker.datatype.boolean() ? `https://placehold.co/600x400.png` : undefined,
+        }));
+        await supabase.from('company_posts').insert(companyPosts);
+        console.log('  - Seeded company posts');
+    }
+
+    const allEmployees = seededUsers.filter(u => u.user_metadata.role === 'employee' || u.user_metadata.role === 'manager');
+    if (allEmployees.length > 1) {
+        const kudos = Array.from({length: 15}, () => {
+            const fromUser = faker.helpers.arrayElement(allEmployees);
+            const toUser = faker.helpers.arrayElement(allEmployees.filter(u => u.id !== fromUser.id));
+            return {
+                from_user_id: fromUser.id,
+                to_user_id: toUser.id,
+                message: faker.lorem.sentence(),
+                value: faker.helpers.arrayElement(['Team Player', 'Innovation', 'Customer First', 'Ownership']),
+            }
+        });
+        await supabase.from('kudos').insert(kudos);
+        console.log('  - Seeded kudos');
+
+        const employeeOfTheWeek = faker.helpers.arrayElement(allEmployees);
+        const awardedBy = faker.helpers.arrayElement(hrUsers);
+        if (employeeOfTheWeek && awardedBy) {
+            const weeklyAward = {
+                user_id: employeeOfTheWeek.id,
+                awarded_by_user_id: awardedBy.id,
+                reason: faker.lorem.sentences(2),
+                week_of: new Date().toISOString()
+            };
+            await supabase.from('weekly_awards').insert(weeklyAward);
+            console.log('  - Seeded weekly award');
+        }
+    }
+    
+    if (allEmployees.length > 0) {
+        const payslips = allEmployees.flatMap(employee => {
+            return Array.from({length: 6}, (_, i) => {
+                const date = faker.date.past({refDate: new Date(new Date().setMonth(new Date().getMonth() - i))});
+                const gross = faker.number.int({min: 4000, max: 8000});
+                return {
+                    user_id: employee.id,
+                    month: date.toLocaleString('default', { month: 'long' }),
+                    year: date.getFullYear(),
+                    gross_salary: gross,
+                    net_salary: gross * faker.number.float({min: 0.75, max: 0.85}),
+                    download_url: '#'
+                }
+            })
+        });
+        await supabase.from('payslips').insert(payslips);
+        console.log('  - Seeded payslips');
+    }
+    
+    const documents = [
+        { title: 'Employee Handbook 2024', category: 'HR Policies', description: 'The official guide to company policies, procedures, and culture.', last_updated: faker.date.recent().toISOString(), download_url: '#' },
+        { title: 'Work From Home Policy', category: 'HR Policies', description: 'Guidelines and best practices for remote work.', last_updated: faker.date.recent().toISOString(), download_url: '#' },
+        { title: 'IT Security Guidelines', category: 'IT Policies', description: 'Procedures for maintaining the security of company data and systems.', last_updated: faker.date.recent().toISOString(), download_url: '#' },
+        { title: 'Code of Conduct', category: 'HR Policies', description: 'Our commitment to a respectful and inclusive workplace.', last_updated: faker.date.recent().toISOString(), download_url: '#' },
+    ];
+    await supabase.from('company_documents').insert(documents);
+    console.log('  - Seeded company documents');
 }
 
 

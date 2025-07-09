@@ -16,18 +16,34 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
-import type { Payslip } from '@/lib/types';
-import { currentUser } from '@/lib/data';
+import type { Payslip, UserProfile } from '@/lib/types';
+import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
+import { getUser } from '@/lib/supabase/user';
 
-const mockPayslips: Payslip[] = [
-  { id: 'ps-1', month: 'May', year: 2024, grossSalary: 5000, netSalary: 4200, downloadUrl: '#' },
-  { id: 'ps-2', month: 'April', year: 2024, grossSalary: 5000, netSalary: 4200, downloadUrl: '#' },
-  { id: 'ps-3', month: 'March', year: 2024, grossSalary: 4800, netSalary: 4050, downloadUrl: '#' },
-  { id: 'ps-4', month: 'February', year: 2024, grossSalary: 4800, netSalary: 4050, downloadUrl: '#' },
-  { id: 'ps-5', month: 'January', year: 2024, grossSalary: 4800, netSalary: 4050, downloadUrl: '#' },
-];
+async function getPayslips(user: UserProfile | null): Promise<Payslip[]> {
+  if (!user) return [];
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+  const { data, error } = await supabase
+    .from('payslips')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('year', { ascending: false })
+    .order('month', { ascending: false }); // Note: month sorting will be alphabetical, not chronological
 
-export default function PayslipsPage() {
+  if (error) {
+    console.error("Error fetching payslips:", error);
+    return [];
+  }
+  return data;
+}
+
+export default async function PayslipsPage() {
+  const cookieStore = cookies();
+  const user = await getUser(cookieStore);
+  const payslips = await getPayslips(user);
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
   };
@@ -39,7 +55,7 @@ export default function PayslipsPage() {
         <CardHeader>
           <CardTitle>Payslip History</CardTitle>
           <CardDescription>
-            Here is a list of your recent payslips for {currentUser.name}.
+            Here is a list of your recent payslips for {user?.full_name || '...loading'}.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -53,16 +69,16 @@ export default function PayslipsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockPayslips.map((payslip) => (
+              {payslips.map((payslip) => (
                 <TableRow key={payslip.id}>
                   <TableCell className="font-medium">
                     {payslip.month} {payslip.year}
                   </TableCell>
-                  <TableCell>{formatCurrency(payslip.grossSalary)}</TableCell>
-                  <TableCell>{formatCurrency(payslip.netSalary)}</TableCell>
+                  <TableCell>{formatCurrency(payslip.gross_salary)}</TableCell>
+                  <TableCell>{formatCurrency(payslip.net_salary)}</TableCell>
                   <TableCell className="text-right">
                     <Button asChild variant="outline" size="sm">
-                      <a href={payslip.downloadUrl}>
+                      <a href={payslip.download_url}>
                         <Download className="mr-2" />
                         Download
                       </a>

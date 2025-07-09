@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Table,
   TableBody,
@@ -14,9 +15,19 @@ import {
   CardContent,
 } from '@/components/ui/card';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
@@ -24,10 +35,13 @@ import { Interview } from '@/lib/types';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, MoreHorizontal, Phone, Users, Video } from 'lucide-react';
+import { Calendar, Clock, MoreHorizontal, Phone, Users, Video, Edit, MessageSquare, Trash2, Check, Loader2 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { addApplicantNote, updateInterviewStatus } from '@/app/actions';
+import { Textarea } from '@/components/ui/textarea';
+
 
 type InterviewListProps = {
   initialInterviews: Interview[];
@@ -104,7 +118,7 @@ export default function InterviewList({ initialInterviews }: InterviewListProps)
         <InterviewTable interviews={interviews.filter(i => i.status === 'Scheduled')} isClient={isClient} />
       </TabsContent>
       <TabsContent value="completed">
-        <InterviewTable interviews={interviews.filter(i => i.status === 'Completed')} isClient={isClient} />
+        <InterviewTable interviews={interviews.filter(i => i.status === 'Completed' || i.status === 'Canceled')} isClient={isClient} />
       </TabsContent>
       <TabsContent value="all">
         <InterviewTable interviews={interviews} isClient={isClient} />
@@ -114,6 +128,8 @@ export default function InterviewList({ initialInterviews }: InterviewListProps)
 }
 
 function InterviewTable({ interviews, isClient }: { interviews: Interview[], isClient: boolean }) {
+    const router = useRouter();
+
     if (interviews.length === 0) {
         return <div className="text-center text-muted-foreground p-8">No interviews to display.</div>
     }
@@ -192,10 +208,17 @@ function InterviewTable({ interviews, isClient }: { interviews: Interview[], isC
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem>View Details</DropdownMenuItem>
-                            <DropdownMenuItem>Collect Feedback</DropdownMenuItem>
-                            <DropdownMenuItem>Reschedule</DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-500">Cancel</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => router.push(`/applicants/${interview.applicant_id}`)}>
+                                <Users className="mr-2" /> View Applicant
+                            </DropdownMenuItem>
+                            {interview.status === 'Scheduled' && (
+                                <>
+                                 <FeedbackDialog interviewId={interview.id} applicantId={interview.applicant_id} />
+                                 <DropdownMenuItem onClick={() => updateInterviewStatus(interview.id, 'Canceled')} className="text-red-500">
+                                    <Trash2 className="mr-2" /> Cancel Interview
+                                 </DropdownMenuItem>
+                                </>
+                            )}
                         </DropdownMenuContent>
                         </DropdownMenu>
                     </TableCell>
@@ -205,5 +228,53 @@ function InterviewTable({ interviews, isClient }: { interviews: Interview[], isC
             </Table>
             </CardContent>
         </Card>
+    )
+}
+
+function FeedbackDialog({ interviewId, applicantId }: { interviewId: string, applicantId: string}) {
+    const { toast } = useToast();
+    const [open, setOpen] = React.useState(false);
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const formRef = React.useRef<HTMLFormElement>(null);
+
+    const handleFormSubmit = async (formData: FormData) => {
+        setIsSubmitting(true);
+        formData.append('applicant_id', applicantId);
+        try {
+            await addApplicantNote(formData);
+            await updateInterviewStatus(interviewId, 'Completed');
+            toast({ title: "Feedback Submitted", description: "The interview has been marked as complete." });
+            setOpen(false);
+        } catch(error: any) {
+            toast({ title: "Error", description: error.message, variant: 'destructive' });
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <div className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50">
+                    <MessageSquare className="mr-2"/> Submit Feedback
+                </div>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Submit Interview Feedback</DialogTitle>
+                    <DialogDescription>
+                        Provide your feedback on the candidate. This will be added as a note to their profile and the interview will be marked as complete.
+                    </DialogDescription>
+                </DialogHeader>
+                <form action={handleFormSubmit} ref={formRef}>
+                    <Textarea name="note" placeholder="Enter your feedback here..." className="min-h-[120px]" required />
+                    <DialogFooter className="mt-4">
+                        <Button type="submit" disabled={isSubmitting}>
+                            {isSubmitting ? <Loader2 className="animate-spin mr-2"/> : <Check className="mr-2"/>} Submit & Complete
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
     )
 }

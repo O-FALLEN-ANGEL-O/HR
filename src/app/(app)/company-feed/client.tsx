@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { faker } from '@faker-js/faker';
 import {
   Card,
   CardContent,
@@ -26,68 +25,39 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import Image from 'next/image';
-import { PlusCircle, Send } from 'lucide-react';
+import { PlusCircle, Send, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { CompanyPost, UserRole } from '@/lib/types';
+import type { CompanyPost, UserProfile } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
-const mockPosts: CompanyPost[] = [
-  {
-    id: 'post-1',
-    authorName: 'HR Department',
-    authorAvatar: 'https://i.pravatar.cc/150?u=hr',
-    content: "Big welcome to our new summer interns! We're so excited to have you join the team. Let's make this a great summer!",
-    imageUrl: 'https://placehold.co/600x400.png',
-    timestamp: faker.date.recent({ days: 1 }).toISOString(),
-  },
-  {
-    id: 'post-2',
-    authorName: 'Alex Johnson',
-    authorAvatar: 'https://i.pravatar.cc/150?u=alex',
-    content: "The Q2 All-Hands meeting is scheduled for this Friday at 10 AM in the main conference room. See you all there!",
-    timestamp: faker.date.recent({ days: 2 }).toISOString(),
-  },
-   {
-    id: 'post-3',
-    authorName: 'Samantha Lee',
-    authorAvatar: 'https://i.pravatar.cc/150?u=samantha',
-    content: "Amazing job to the engineering team for the successful launch of Project Phoenix! Your hard work has paid off. Time to celebrate!",
-    imageUrl: 'https://placehold.co/600x400.png',
-    timestamp: faker.date.recent({ days: 5 }).toISOString(),
-  },
-];
+import { addCompanyPost } from '@/app/actions';
 
 type CompanyFeedClientProps = {
-  userRole?: UserRole;
+  user: UserProfile | null;
+  initialPosts: CompanyPost[];
 };
 
-export default function CompanyFeedClient({ userRole }: CompanyFeedClientProps) {
-  const [posts, setPosts] = React.useState(mockPosts);
+export default function CompanyFeedClient({ user, initialPosts }: CompanyFeedClientProps) {
+  const [posts, setPosts] = React.useState(initialPosts);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const { toast } = useToast();
-  const canPost = userRole === 'admin' || userRole === 'hr_manager' || userRole === 'super_hr';
+  const formRef = React.useRef<HTMLFormElement>(null);
+  const canPost = user?.role === 'admin' || user?.role === 'hr_manager' || user?.role === 'super_hr';
 
-  const handleNewPost = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const content = formData.get('content') as string;
-    const imageUrl = formData.get('imageUrl') as string;
+  React.useEffect(() => {
+    setPosts(initialPosts);
+  }, [initialPosts]);
 
-    if (!content) {
-        toast({ title: "Post content cannot be empty.", variant: "destructive" });
-        return;
+  const handleNewPost = async (formData: FormData) => {
+    setIsSubmitting(true);
+    try {
+        await addCompanyPost(formData);
+        toast({ title: "Post Published!", description: "Your update is now live on the feed." });
+        formRef.current?.reset();
+    } catch(error: any) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+        setIsSubmitting(false);
     }
-
-    const newPost: CompanyPost = {
-        id: faker.string.uuid(),
-        authorName: "Admin User", // In a real app, get this from current user context
-        authorAvatar: "https://i.pravatar.cc/150?u=admin",
-        content,
-        imageUrl,
-        timestamp: new Date().toISOString()
-    };
-    
-    setPosts(prev => [newPost, ...prev]);
-    toast({ title: "Post Published!", description: "Your update is now live on the feed." });
   };
 
   return (
@@ -100,36 +70,31 @@ export default function CompanyFeedClient({ userRole }: CompanyFeedClientProps) 
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <Avatar>
-                    <AvatarImage src={post.authorAvatar} />
-                    <AvatarFallback>{post.authorName.charAt(0)}</AvatarFallback>
+                    <AvatarImage src={post.users?.avatar_url || undefined} />
+                    <AvatarFallback>{post.users?.full_name?.charAt(0) || 'U'}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <CardTitle className="text-base">{post.authorName}</CardTitle>
+                    <CardTitle className="text-base">{post.users?.full_name}</CardTitle>
                     <CardDescription>
-                      {formatDistanceToNow(new Date(post.timestamp), { addSuffix: true })}
+                      {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                     </CardDescription>
                   </div>
                 </div>
               </CardHeader>
-              {post.imageUrl && (
-                <CardContent>
-                    <p className="mb-4">{post.content}</p>
+              <CardContent>
+                <p className="mb-4 whitespace-pre-wrap">{post.content}</p>
+                {post.image_url && (
                     <div className="relative aspect-video w-full">
                          <Image
-                            src={post.imageUrl}
+                            src={post.image_url}
                             alt="Post image"
                             fill
                             className="rounded-md object-cover"
                             data-ai-hint="office celebration"
                         />
                     </div>
-                </CardContent>
-              )}
-              {!post.imageUrl && (
-                 <CardContent>
-                    <p>{post.content}</p>
-                </CardContent>
-              )}
+                )}
+              </CardContent>
             </Card>
           ))}
         </div>
@@ -143,7 +108,7 @@ export default function CompanyFeedClient({ userRole }: CompanyFeedClientProps) 
           </CardHeader>
           <CardContent>
              {canPost && (
-                <Dialog>
+                <Dialog onOpenChange={(open) => !open && formRef.current?.reset()}>
                     <DialogTrigger asChild>
                         <Button className="w-full">
                             <PlusCircle className="mr-2" /> New Post
@@ -154,14 +119,17 @@ export default function CompanyFeedClient({ userRole }: CompanyFeedClientProps) 
                             <DialogTitle>Create a new post</DialogTitle>
                             <DialogDescription>Share an update with the rest of the company.</DialogDescription>
                         </DialogHeader>
-                        <form onSubmit={handleNewPost}>
+                        <form action={handleNewPost} ref={formRef}>
                             <div className="grid gap-4 py-4">
                                 <Textarea name="content" placeholder="What's happening?" required />
                                 <Input name="imageUrl" placeholder="Image URL (optional)" />
                             </div>
                             <DialogFooter>
                                 <DialogClose asChild>
-                                    <Button type="submit"><Send className="mr-2" />Post</Button>
+                                    <Button type="submit" disabled={isSubmitting}>
+                                        {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : <Send className="mr-2" />}
+                                        Post
+                                    </Button>
                                 </DialogClose>
                             </DialogFooter>
                         </form>

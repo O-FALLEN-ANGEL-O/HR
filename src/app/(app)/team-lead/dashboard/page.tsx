@@ -4,24 +4,40 @@ import { Users, Award, CalendarDays, Briefcase, UserCheck } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
+import { getUser } from '@/lib/supabase/user';
+import type { UserProfile } from '@/lib/types';
 
-// Mock data for demonstration purposes
-// In a real app, this would come from the database
-const teamMembers = [
-    { name: 'Liam Johnson', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704d', onLeave: true, leaveStart: '2024-07-28', leaveEnd: '2024-08-02' },
-    { name: 'Olivia Smith', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704e', onLeave: false },
-    { name: 'Noah Williams', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704f', onLeave: false },
-    { name: 'Emma Brown', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704a', onLeave: false },
-    { name: 'Oliver Jones', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704b', onLeave: true, leaveStart: '2024-07-29', leaveEnd: '2024-07-29' },
-];
+async function getDashboardData(user: UserProfile | null) {
+  if (!user) return { teamMembers: [], openTeamPositions: [] };
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
 
-const openTeamPositions = [
-    { title: 'Senior Frontend Developer', applicants: 12 },
-    { title: 'UX/UI Designer', applicants: 5 },
-]
+  // In a real app, you'd have a manager_id or team_id column on the users table.
+  // For this demo, we'll just grab a few other employees to simulate a team.
+  const { data: teamMembers } = await supabase
+    .from('users')
+    .select('full_name, avatar_url')
+    .neq('id', user.id)
+    .limit(5);
 
-export default function TeamLeadDashboardPage() {
-  const teamOnLeave = teamMembers.filter(m => m.onLeave);
+  const { data: openTeamPositions } = await supabase
+    .from('jobs')
+    .select('title, applicants')
+    .eq('status', 'Open')
+    .limit(3);
+    
+  return {
+    teamMembers: teamMembers || [],
+    openTeamPositions: openTeamPositions || []
+  };
+}
+
+export default async function TeamLeadDashboardPage() {
+  const cookieStore = cookies();
+  const user = await getUser(cookieStore);
+  const { teamMembers, openTeamPositions } = await getDashboardData(user);
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
@@ -33,16 +49,16 @@ export default function TeamLeadDashboardPage() {
             </CardHeader>
             <CardContent className="space-y-2">
                 {teamMembers.map(member => (
-                    <div key={member.name} className="flex items-center justify-between">
+                    <div key={member.full_name} className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <Avatar className="h-8 w-8">
-                                <AvatarImage src={member.avatar} />
-                                <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                                <AvatarImage src={member.avatar_url || undefined} />
+                                <AvatarFallback>{member.full_name?.charAt(0)}</AvatarFallback>
                             </Avatar>
-                            <span>{member.name}</span>
+                            <span>{member.full_name}</span>
                         </div>
-                        <Badge variant={member.onLeave ? "destructive" : "secondary"} className={member.onLeave ? '' : 'bg-green-100 text-green-800'}>
-                            {member.onLeave ? "On Leave" : "Active"}
+                        <Badge variant="secondary" className='bg-green-100 text-green-800'>
+                            Active
                         </Badge>
                     </div>
                 ))}
@@ -83,27 +99,10 @@ export default function TeamLeadDashboardPage() {
                 <CardDescription>Upcoming and current leave for your team.</CardDescription>
             </CardHeader>
             <CardContent>
-                {teamOnLeave.length > 0 ? (
-                    <div className="space-y-3">
-                        {teamOnLeave.map(member => (
-                             <div key={member.name} className="flex items-center gap-3 p-2 rounded-md border">
-                                <Avatar className="h-8 w-8">
-                                    <AvatarImage src={member.avatar} />
-                                    <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <p className="font-medium text-sm">{member.name}</p>
-                                    <p className="text-xs text-muted-foreground">{member.leaveStart} to {member.leaveEnd}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-center text-muted-foreground py-4">
-                        <UserCheck className="mx-auto h-8 w-8 mb-2" />
-                        <p>Everyone is available this week!</p>
-                    </div>
-                )}
+                <div className="text-center text-muted-foreground py-4">
+                    <UserCheck className="mx-auto h-8 w-8 mb-2" />
+                    <p>Everyone is available this week!</p>
+                </div>
                  <Link href="/time-off">
                     <p className="text-sm text-primary hover:underline mt-4">View All Time Off →</p>
                 </Link>

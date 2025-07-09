@@ -12,56 +12,32 @@ import { Download } from 'lucide-react';
 import { format } from 'date-fns';
 import type { CompanyDocument } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
+import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 
-const mockDocuments: CompanyDocument[] = [
-  {
-    id: 'doc-1',
-    title: 'Employee Handbook 2024',
-    category: 'HR Policies',
-    description: 'The official guide to company policies, procedures, and culture.',
-    lastUpdated: '2024-05-20T10:00:00Z',
-    downloadUrl: '#',
-  },
-  {
-    id: 'doc-2',
-    title: 'Work From Home Policy',
-    category: 'HR Policies',
-    description: 'Guidelines and best practices for remote work.',
-    lastUpdated: '2024-03-15T14:30:00Z',
-    downloadUrl: '#',
-  },
-  {
-    id: 'doc-3',
-    title: 'IT Security Guidelines',
-    category: 'IT Policies',
-    description: 'Procedures for maintaining the security of company data and systems.',
-    lastUpdated: '2024-06-01T09:00:00Z',
-    downloadUrl: '#',
-  },
-  {
-    id: 'doc-4',
-    title: 'Code of Conduct',
-    category: 'HR Policies',
-    description: 'Our commitment to a respectful and inclusive workplace.',
-    lastUpdated: '2023-11-10T11:00:00Z',
-    downloadUrl: '#',
-  },
-  {
-    id: 'doc-5',
-    title: 'Emergency Evacuation Plan',
-    category: 'Health & Safety',
-    description: 'Procedures to follow in case of an emergency at the office.',
-    lastUpdated: '2024-02-28T16:00:00Z',
-    downloadUrl: '#',
-  },
-];
+async function getDocuments(): Promise<CompanyDocument[]> {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data, error } = await supabase
+        .from('company_documents')
+        .select('*')
+        .order('last_updated', { ascending: false });
 
-export default function CompanyDocumentsPage() {
+    if (error) {
+        console.error("Error fetching documents:", error);
+        return [];
+    }
+    return data;
+}
+
+export default async function CompanyDocumentsPage() {
+  const documents = await getDocuments();
+
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <Header title="Company Policies & Documents" />
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {mockDocuments.map((doc) => (
+        {documents.map((doc) => (
           <Card key={doc.id} className="flex flex-col">
             <CardHeader>
               <CardTitle>{doc.title}</CardTitle>
@@ -72,10 +48,10 @@ export default function CompanyDocumentsPage() {
             </CardContent>
             <CardFooter className="flex justify-between items-center">
               <p className="text-xs text-muted-foreground">
-                Updated: {format(new Date(doc.lastUpdated), 'PPP')}
+                Updated: {format(new Date(doc.last_updated), 'PPP')}
               </p>
               <Button asChild variant="secondary" size="sm">
-                <a href={doc.downloadUrl}>
+                <a href={doc.download_url}>
                   <Download className="mr-2" />
                   Download
                 </a>

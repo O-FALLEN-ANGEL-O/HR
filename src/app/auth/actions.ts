@@ -51,7 +51,7 @@ export async function login(formData: any, isMagicLink: boolean = false) {
   const { data: authData, error } = await supabase.auth.signInWithPassword(formData);
     
   if (error || !authData.user) {
-      return { error: `Could not authenticate user: ${error?.message}` };
+      return { error: `Invalid credentials. Please try again.` };
   }
 
   const { data: userProfile, error: profileError } = await supabase
@@ -65,12 +65,12 @@ export async function login(formData: any, isMagicLink: boolean = false) {
     return { error: `Login successful, but there was an issue retrieving your user profile. Please contact support. Error: ${profileError.message}` };
   }
 
-  if (!userProfile) {
+  if (!userProfile?.role || !Object.values(['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'recruiter', 'interviewer', 'employee', 'intern', 'guest'] as UserRole[]).includes(userProfile.role)) {
     await supabase.auth.signOut();
-    return { error: `Login successful, but your user profile could not be found. Please contact support.` };
+    return { error: `Login successful, but your user role ('${userProfile?.role || 'none'}') is not configured for platform access. Please contact support.` };
   }
     
-  const homePath = getHomePathForRole(userProfile.role || 'guest');
+  const homePath = getHomePathForRole(userProfile.role);
   redirect(homePath);
 }
 

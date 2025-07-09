@@ -8,9 +8,11 @@ const authRoutes = ['/login', '/signup'];
 
 // Role-based access control matrix
 const roleAccess: Record<UserRole, string[]> = {
-  admin: ['/admin', '/hr', '/super_hr', '/recruiter', '/applicants', '/jobs', '/interviews', '/college-drive', '/onboarding', '/ai-tools', '/employee', '/intern', '/time-off', '/company-feed'],
-  super_hr: ['/super_hr', '/hr', '/applicants', '/jobs', '/interviews', '/college-drive', '/onboarding', '/ai-tools', '/employee', '/intern', '/time-off', '/admin/roles', '/company-feed'], // Super HR can access role management
-  hr_manager: ['/hr', '/applicants', '/jobs', '/interviews', '/college-drive', '/onboarding', '/ai-tools', '/employee', '/intern', '/time-off', '/company-feed'],
+  admin: ['/admin', '/hr', '/super_hr', '/recruiter', '/applicants', '/jobs', '/interviews', '/college-drive', '/onboarding', '/ai-tools', '/employee', '/intern', '/time-off', '/company-feed', '/performance', '/manager', '/team-lead'],
+  super_hr: ['/super_hr', '/hr', '/applicants', '/jobs', '/interviews', '/college-drive', '/onboarding', '/ai-tools', '/employee', '/intern', '/time-off', '/admin/roles', '/company-feed', '/performance'],
+  hr_manager: ['/hr', '/applicants', '/jobs', '/interviews', '/college-drive', '/onboarding', '/ai-tools', '/employee', '/intern', '/time-off', '/company-feed', '/performance'],
+  manager: ['/manager', '/employee', '/time-off', '/company-feed', '/performance'],
+  team_lead: ['/team-lead', '/employee', '/time-off', '/company-feed'],
   recruiter: ['/recruiter', '/hr/dashboard', '/applicants', '/jobs', '/ai-tools/applicant-scoring', '/company-feed'],
   interviewer: ['/interviews'],
   employee: ['/employee', '/time-off', '/company-feed'],
@@ -23,6 +25,8 @@ function getHomePathForRole(role: UserRole): string {
     case 'admin': return '/admin/dashboard';
     case 'super_hr': return '/super_hr/dashboard';
     case 'hr_manager': return '/hr/dashboard';
+    case 'manager': return '/manager/dashboard';
+    case 'team_lead': return '/team-lead/dashboard';
     case 'recruiter': return '/recruiter/dashboard';
     case 'interviewer': return '/interviews';
     case 'employee': return '/employee/dashboard';

@@ -7,7 +7,8 @@ import { cookies } from 'next/headers';
 import type { TimeOffRequest } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
+import { updateTimeOffRequest } from '@/app/actions';
 
 async function getPendingRequests(): Promise<TimeOffRequest[]> {
     const cookieStore = cookies();
@@ -24,6 +25,11 @@ async function getPendingRequests(): Promise<TimeOffRequest[]> {
         return [];
     }
     return data;
+}
+
+function TimeOffRequestForm({ requestId, status, children }: { requestId: string, status: 'Approved' | 'Rejected', children: React.ReactNode }) {
+    const action = updateTimeOffRequest.bind(null, requestId, status);
+    return <form action={action}>{children}</form>;
 }
 
 export default async function ManagerDashboardPage() {
@@ -95,8 +101,12 @@ export default async function ManagerDashboardPage() {
                             </div>
                            </div>
                            <div className="flex gap-2">
-                                <Button size="sm" variant="outline"><Check className="mr-2" />Approve</Button>
-                                <Button size="sm" variant="ghost"><X className="mr-2" />Reject</Button>
+                                <TimeOffRequestForm requestId={request.id} status="Approved">
+                                    <Button size="sm" variant="outline" type="submit"><Check className="mr-2" />Approve</Button>
+                                </TimeOffRequestForm>
+                                <TimeOffRequestForm requestId={request.id} status="Rejected">
+                                    <Button size="sm" variant="ghost" type="submit"><X className="mr-2" />Reject</Button>
+                                </TimeOffRequestForm>
                            </div>
                         </div>
                     ))}

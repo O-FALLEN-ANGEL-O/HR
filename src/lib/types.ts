@@ -4,6 +4,8 @@ export type UserRole =
   | 'admin'
   | 'super_hr'
   | 'hr_manager'
+  | 'manager'
+  | 'team_lead'
   | 'recruiter'
   | 'interviewer'
   | 'employee'
@@ -35,7 +37,7 @@ export type TimeOffMetric = {
 }
 
 export type Job = {
-  id: string;
+  id:string;
   title: string;
   department: string;
   description?: string;
@@ -69,7 +71,7 @@ export type Applicant = {
 
 export type Interview = {
   id: string;
-  applicant_id?: string;
+  applicant_id: string;
   interviewer_id: string;
   candidate_name: string;
   candidate_avatar: string;
@@ -86,12 +88,12 @@ export type Onboarding = {
   id: string;
   user_id: string;
   manager_id: string;
-  buddy_id?: string;
+  buddy_id?: string | null;
   employee_name: string;
   employee_avatar: string;
   job_title: string;
   manager_name: string;
-  buddy_name: string;
+  buddy_name?: string | null;
   progress: number;
   current_step: string;
   start_date: string;
@@ -136,7 +138,7 @@ export type College = {
   resumes_received: number;
   contact_email: string;
   last_contacted: string;
-  applicants: { count: number }[];
+  applicants?: { count: number }[];
 };
 
 export type ApplicantNote = {
@@ -151,11 +153,12 @@ export type ApplicantNote = {
 
 export type Payslip = {
   id: string;
+  user_id: string;
   month: string;
   year: number;
-  grossSalary: number;
-  netSalary: number;
-  downloadUrl: string;
+  gross_salary: number;
+  net_salary: number;
+  download_url: string;
 };
 
 export type CompanyDocument = {
@@ -163,37 +166,41 @@ export type CompanyDocument = {
   title: string;
   category: string;
   description: string;
-  lastUpdated: string;
-  downloadUrl: string;
+  last_updated: string;
+  download_url: string;
 };
 
 export type Kudo = {
   id: string;
-  fromName: string;
-  fromAvatar: string;
-  toName: string;
-  toAvatar: string;
+  from_user_id: string;
+  to_user_id: string;
   message: string;
   value: 'Team Player' | 'Innovation' | 'Customer First' | 'Ownership';
-  timestamp: string;
+  created_at: string;
+  users_from: { full_name: string | null; avatar_url: string | null; } | null;
+  users_to: { full_name: string | null; avatar_url: string | null; } | null;
 };
 
 export type CompanyPost = {
   id: string;
-  authorName: string;
-  authorAvatar: string;
+  author_id: string;
   content: string;
-  imageUrl?: string;
-  timestamp: string;
+  image_url?: string;
+  created_at: string;
+  users: {
+    full_name: string | null;
+    avatar_url: string | null;
+  } | null;
 }
 
 export type WeeklyAward = {
     id: string;
-    employeeName: string;
-    employeeAvatar: string;
+    user_id: string;
+    awarded_by_user_id: string;
     reason: string;
-    weekOf: string;
-    awardedByName: string;
+    week_of: string;
+    users: { full_name: string | null, avatar_url: string | null } | null;
+    awarded_by: { full_name: string | null } | null;
 }
 
 export type LeaveBalance = {
