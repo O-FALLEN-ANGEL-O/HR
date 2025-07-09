@@ -95,7 +95,7 @@ async function seedData() {
 
     // Seed Users first, as other data may depend on them.
     console.log('  - Seeding users...');
-    const roles: UserRole[] = ['admin', 'super_hr', 'hr_manager', 'recruiter', 'interviewer', 'intern', 'guest'];
+    const roles: UserRole[] = ['admin', 'super_hr', 'hr_manager', 'recruiter', 'interviewer', 'employee', 'intern', 'guest'];
     const seededUsers: User[] = [];
     const password = 'Password123!';
 
@@ -233,7 +233,6 @@ async function seedData() {
             const interviewer = faker.helpers.arrayElement(interviewers);
             const job = seededJobs.find(j => j.id === applicant.job_id);
             return {
-                applicant_id: applicant.id,
                 interviewer_id: interviewer.id,
                 candidate_name: applicant.name,
                 candidate_avatar: applicant.avatar,
@@ -263,7 +262,6 @@ async function seedData() {
             return {
                 user_id: employee.id,
                 manager_id: manager.id,
-                buddy_id: buddy.id,
                 employee_name: employee.user_metadata.full_name,
                 employee_avatar: employee.user_metadata.avatar_url,
                 job_title: faker.person.jobTitle(),
