@@ -25,11 +25,12 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Check, UserCheck, Users, X, Loader2 } from 'lucide-react';
-import { format, subMonths, startOfDay, endOfDay, getMonth } from 'date-fns';
+import { Check, UserCheck, Users, X, Sun, Umbrella, Calendar } from 'lucide-react';
+import { format, subMonths, getMonth } from 'date-fns';
 import { createClient } from '@/lib/supabase/client';
-import type { TimeOffRequest, TimeOffMetric } from '@/lib/types';
+import type { TimeOffRequest, TimeOffMetric, UserProfile, LeaveBalance, Holiday } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { AddTimeOffDialog } from '@/components/add-time-off-dialog';
 
 const statusColors: { [key: string]: string } = {
   Pending: 'bg-yellow-100 text-yellow-800',
@@ -38,89 +39,82 @@ const statusColors: { [key: string]: string } = {
 };
 
 const chartConfig = {
-  requests: {
-    label: 'Requests',
-  },
-  vacation: {
-    label: 'Vacation',
-    color: 'hsl(var(--chart-1))',
-  },
-  sick: {
-    label: 'Sick Leave',
-    color: 'hsl(var(--chart-2))',
-  },
-  personal: {
-    label: 'Personal',
-    color: 'hsl(var(--chart-3))',
-  },
+  requests: { label: 'Requests' },
+  vacation: { label: 'Vacation', color: 'hsl(var(--chart-1))' },
+  sick: { label: 'Sick Leave', color: 'hsl(var(--chart-2))' },
+  personal: { label: 'Personal', color: 'hsl(var(--chart-3))' },
 };
 
+// In a real app, this data would come from your backend based on company policy and employee tenure.
+const mockLeaveBalances: LeaveBalance[] = [
+  { type: 'Annual', balance: 14, accruedThisYear: 24 },
+  { type: 'Sick', balance: 8, accruedThisYear: 12 },
+  { type: 'Unpaid', balance: 2, accruedThisYear: 2 },
+];
 
-export default function TimeOffClient() {
-  const [requests, setRequests] = React.useState<TimeOffRequest[]>([]);
-  const [metrics, setMetrics] = React.useState<TimeOffMetric[]>([]);
+const currentYear = new Date().getFullYear();
+const mockHolidays: Holiday[] = [
+  { date: `${currentYear}-01-01`, name: "New Year's Day" },
+  { date: `${currentYear}-01-26`, name: "Republic Day" },
+  { date: `${currentYear}-03-25`, name: "Holi" },
+  { date: `${currentYear}-08-15`, name: "Independence Day" },
+  { date: `${currentYear}-10-02`, name: "Gandhi Jayanti" },
+  { date: `${currentYear}-10-31`, name: "Diwali" },
+  { date: `${currentYear}-12-25`, name: "Christmas" },
+];
+
+
+type TimeOffClientProps = {
+    user: UserProfile | null;
+    initialRequests: TimeOffRequest[];
+    initialMetrics: TimeOffMetric[];
+};
+
+export default function TimeOffClient({ user, initialRequests, initialMetrics }: TimeOffClientProps) {
+  const [requests, setRequests] = React.useState<TimeOffRequest[]>(initialRequests);
+  const [metrics, setMetrics] = React.useState<TimeOffMetric[]>(initialMetrics);
   const [chartData, setChartData] = React.useState<any[]>([]);
-  const [loading, setLoading] = React.useState(true);
   const [isClient, setIsClient] = React.useState(false);
   const { toast } = useToast();
+  
+  const isManager = user?.role === 'admin' || user?.role === 'super_hr' || user?.role === 'hr_manager';
+
+  const fetchData = React.useCallback(async () => {
+    const supabase = createClient();
+    const { data: requestsData, error } = await supabase
+        .from('time_off_requests')
+        .select('*, users (full_name, avatar_url)')
+        .order('start_date', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching time off requests:', error);
+        return;
+    }
+    setRequests(requestsData || []);
+  }, []);
 
   React.useEffect(() => {
     setIsClient(true);
-    
-    const fetchData = async () => {
-        setLoading(true);
-        const supabase = createClient();
-        const { data: requestsData, error } = await supabase
-            .from('time_off_requests')
-            .select('*, users (full_name, avatar_url)')
-            .order('start_date', { ascending: false });
+    setRequests(initialRequests);
+    setMetrics(initialMetrics);
 
-        if (error) {
-            console.error('Error fetching time off requests:', error);
-            setLoading(false);
-            return;
+    // Chart Data
+    const now = new Date();
+    const threeMonthsAgo = subMonths(now, 2);
+    const months = [format(threeMonthsAgo, 'MMMM'), format(subMonths(now, 1), 'MMMM'), format(now, 'MMMM')];
+    
+    const newChartData = months.map((monthName, index) => {
+        const monthIndex = getMonth(subMonths(now, 2 - index));
+        const monthRequests = initialRequests.filter(r => getMonth(new Date(r.start_date)) === monthIndex);
+        
+        return {
+            month: monthName,
+            vacation: monthRequests.filter(r => r.type === 'Vacation').length,
+            sick: monthRequests.filter(r => r.type === 'Sick Leave').length,
+            personal: monthRequests.filter(r => r.type === 'Personal').length,
         }
-
-        const now = new Date();
-        const todayStart = startOfDay(now);
-        const todayEnd = endOfDay(now);
-
-        const pendingRequests = requestsData.filter(r => r.status === 'Pending').length;
-        const onLeaveToday = requestsData.filter(r => 
-            r.status === 'Approved' && 
-            new Date(r.start_date) <= todayEnd && 
-            new Date(r.end_date) >= todayStart
-        ).length;
-
-        const newMetrics: TimeOffMetric[] = [
-            { title: 'Pending Requests', value: pendingRequests.toString(), change: 'Awaiting your review' },
-            { title: 'On Leave Today', value: onLeaveToday.toString(), change: 'Across all departments' },
-        ];
-        
-        setRequests(requestsData || []);
-        setMetrics(newMetrics);
-
-        // Chart Data
-        const threeMonthsAgo = subMonths(now, 2);
-        const months = [format(threeMonthsAgo, 'MMMM'), format(subMonths(now, 1), 'MMMM'), format(now, 'MMMM')];
-        
-        const newChartData = months.map((monthName, index) => {
-            const monthIndex = getMonth(subMonths(now, 2 - index));
-            const monthRequests = requestsData.filter(r => getMonth(new Date(r.start_date)) === monthIndex);
-            
-            return {
-                month: monthName,
-                vacation: monthRequests.filter(r => r.type === 'Vacation').length,
-                sick: monthRequests.filter(r => r.type === 'Sick Leave').length,
-                personal: monthRequests.filter(r => r.type === 'Personal').length,
-            }
-        });
-        
-        setChartData(newChartData);
-        setLoading(false);
-    };
-    
-    fetchData();
+    });
+    setChartData(newChartData);
 
     const supabase = createClient();
     const channel = supabase
@@ -133,7 +127,7 @@ export default function TimeOffClient() {
             title: 'Time Off Requests Updated',
             description: 'The list of time off requests has been updated.',
           });
-          fetchData();
+          fetchData(); // Refetch all data on any change
         }
       )
       .subscribe();
@@ -141,7 +135,7 @@ export default function TimeOffClient() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [toast]);
+  }, [initialRequests, initialMetrics, fetchData, toast]);
   
 
   const handleUpdateRequest = async (
@@ -168,14 +162,93 @@ export default function TimeOffClient() {
     }
   };
   
-  if (loading) {
-    return (
-        <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-    );
+  if (!user) {
+    return <p>You must be logged in to view this page.</p>;
   }
 
+  // Employee View
+  if (!isManager) {
+    const employeeRequests = requests.filter(r => r.user_id === user.id);
+    return (
+        <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>My Leave Balances</CardTitle>
+                    <CardDescription>Your available leave days as of today.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4 md:grid-cols-3">
+                    {mockLeaveBalances.map(balance => {
+                        let icon;
+                        if (balance.type === 'Annual') icon = <Sun className="h-6 w-6 text-yellow-500" />;
+                        else if (balance.type === 'Sick') icon = <Umbrella className="h-6 w-6 text-blue-500" />;
+                        else icon = <Calendar className="h-6 w-6 text-gray-500" />;
+
+                        return (
+                            <Card key={balance.type}>
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                    <CardTitle className="text-sm font-medium">{balance.type} Leave</CardTitle>
+                                    {icon}
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-4xl font-bold">{balance.balance}</div>
+                                    <p className="text-xs text-muted-foreground">{balance.accruedThisYear} days accrued this year</p>
+                                </CardContent>
+                            </Card>
+                        );
+                    })}
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>My Leave Requests</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader><TableRow><TableHead>Type</TableHead><TableHead>Dates</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+                        <TableBody>
+                            {employeeRequests.map(req => (
+                                <TableRow key={req.id}>
+                                    <TableCell>{req.type}</TableCell>
+                                    <TableCell>{isClient ? `${format(new Date(req.start_date), 'PPP')} - ${format(new Date(req.end_date), 'PPP')}`: null}</TableCell>
+                                    <TableCell><Badge variant="secondary" className={statusColors[req.status]}>{req.status}</Badge></TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Upcoming Public Holidays</CardTitle>
+                    <CardDescription>List of recognized public holidays for {currentYear}.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Day</TableHead><TableHead>Holiday Name</TableHead></TableRow></TableHeader>
+                        <TableBody>
+                            {mockHolidays.map(holiday => {
+                                const date = new Date(holiday.date + 'T00:00:00');
+                                const day = date.toLocaleDateString('en-US', { weekday: 'long' });
+                                const formattedDate = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+                                return (
+                                    <TableRow key={holiday.name}>
+                                        <TableCell>{formattedDate}</TableCell>
+                                        <TableCell>{day}</TableCell>
+                                        <TableCell className="font-medium">{holiday.name}</TableCell>
+                                    </TableRow>
+                                );
+                            })}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </div>
+    )
+  }
+
+  // Manager View
   return (
     <div className="space-y-6">
        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

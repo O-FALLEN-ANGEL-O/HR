@@ -195,3 +195,14 @@ export type WeeklyAward = {
     weekOf: string;
     awardedByName: string;
 }
+
+export type LeaveBalance = {
+  type: 'Annual' | 'Sick' | 'Unpaid';
+  balance: number;
+  accruedThisYear: number;
+};
+
+export type Holiday = {
+  date: string;
+  name: string;
+};

@@ -12,8 +12,8 @@ const features = [
         comingSoon: true,
     },
     {
-        title: "Time Off",
-        description: "Request time off and view your leave balance.",
+        title: "Leave Manager",
+        description: "View leave balances and request time off.",
         icon: Clock,
         href: "/time-off",
     },

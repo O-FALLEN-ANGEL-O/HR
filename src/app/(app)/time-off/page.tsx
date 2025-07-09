@@ -1,47 +1,48 @@
-'use client';
 import * as React from 'react';
+import { cookies } from 'next/headers';
 import { format, subMonths, startOfDay, endOfDay, getMonth } from 'date-fns';
 
-import { createClient } from '@/lib/supabase/client';
-import type { TimeOffRequest, TimeOffMetric, UserProfile } from '@/lib/types';
+import { createClient } from '@/lib/supabase/server';
+import { getUser } from '@/lib/supabase/user';
+import type { TimeOffRequest, TimeOffMetric } from '@/lib/types';
 import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Loader2 } from 'lucide-react';
 import { AddTimeOffDialog } from '@/components/add-time-off-dialog';
 import TimeOffClient from './client';
 
-// This component is now a simple wrapper that fetches the current user
-// and then renders the data-heavy client component.
-export default function TimeOffPage() {
-    const [user, setUser] = React.useState<UserProfile | null>(null);
-    const [loading, setLoading] = React.useState(true);
-    
-    React.useEffect(() => {
-        const fetchUser = async () => {
-            const supabase = createClient();
-            const { data: { user: authUser } } = await supabase.auth.getUser();
-            if (authUser) {
-                 const { data: userProfile } = await supabase
-                    .from('users')
-                    .select('*')
-                    .eq('id', authUser.id)
-                    .single();
-                setUser(userProfile);
-            }
-            setLoading(false);
-        }
-        fetchUser();
-    }, []);
+export default async function TimeOffPage() {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const user = await getUser(cookieStore);
 
-    if (loading) {
-        return (
-            <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-                 <div className="flex items-center justify-center py-16">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-            </div>
-        );
+    const { data: requestsData, error } = await supabase
+        .from('time_off_requests')
+        .select('*, users (full_name, avatar_url)')
+        .order('start_date', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching time off requests:', error);
     }
+    
+    const allRequests: TimeOffRequest[] = requestsData || [];
+
+    // Calculate metrics on the server
+    const now = new Date();
+    const todayStart = startOfDay(now);
+    const todayEnd = endOfDay(now);
+
+    const pendingRequests = allRequests.filter(r => r.status === 'Pending').length;
+    const onLeaveToday = allRequests.filter(r => 
+        r.status === 'Approved' && 
+        new Date(r.start_date) <= todayEnd && 
+        new Date(r.end_date) >= todayStart
+    ).length;
+
+    const metrics: TimeOffMetric[] = [
+        { title: 'Pending Requests', value: pendingRequests.toString(), change: 'Awaiting your review' },
+        { title: 'On Leave Today', value: onLeaveToday.toString(), change: 'Across all departments' },
+    ];
     
     return (
         <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
@@ -49,11 +50,15 @@ export default function TimeOffPage() {
                 <AddTimeOffDialog onTimeOffAdded={() => { /* Realtime updates handle refresh */ }} user={user}>
                 <Button size="sm">
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    Add Time Off
+                    Request Time Off
                 </Button>
                 </AddTimeOffDialog>
             </Header>
-            <TimeOffClient />
+            <TimeOffClient 
+                user={user}
+                initialRequests={allRequests}
+                initialMetrics={metrics}
+            />
         </div>
     );
 }

@@ -78,20 +78,22 @@ const getNavLinks = (role: UserRole) => {
     case 'admin':
       return [
         { href: '/admin/dashboard', label: 'Admin Dashboard', icon: ShieldCheck },
-        { href: '/admin/roles', label: 'Role Management', icon: UserCheck },
         { href: '/hr/dashboard', label: 'HR Dashboard', icon: LayoutDashboard },
         ...commonHrLinks,
+        { href: '/time-off', label: 'Time & Attendance', icon: Clock },
       ];
     case 'super_hr':
         return [
             { href: '/super_hr/dashboard', label: 'Super HR Dashboard', icon: UserCog },
             { href: '/hr/dashboard', label: 'HR Dashboard', icon: LayoutDashboard },
             ...commonHrLinks,
+            { href: '/time-off', label: 'Time & Attendance', icon: Clock },
         ];
     case 'hr_manager':
       return [
         { href: '/hr/dashboard', label: 'HR Dashboard', icon: LayoutDashboard },
         ...commonHrLinks,
+        { href: '/time-off', label: 'Time & Attendance', icon: Clock },
       ];
     case 'recruiter':
       return [
@@ -110,7 +112,7 @@ const getNavLinks = (role: UserRole) => {
         { href: '/company-feed', label: 'Company Feed', icon: Newspaper },
         { href: '/employee/directory', label: 'Directory', icon: Users },
         { href: '/employee/payslips', label: 'Payslips', icon: WalletCards },
-        { href: '/time-off', label: 'Time Off', icon: Clock },
+        { href: '/time-off', label: 'Leave Manager', icon: Clock },
         { href: '/employee/kudos', label: 'Kudos', icon: Award },
         { href: '/employee/documents', label: 'Policies', icon: FolderKanban },
       ];
