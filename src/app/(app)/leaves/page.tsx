@@ -12,9 +12,14 @@ async function getLeaveData(user: UserProfile) {
     
     if (user.role === 'manager' || user.role === 'team_lead') {
         // Fetch leaves for users in the same department
-        const { data: teamMembers } = await supabase.from('users').select('id').eq('department', user.department);
-        const teamMemberIds = teamMembers?.map(tm => tm.id) || [];
-        leavesQuery = leavesQuery.in('user_id', teamMemberIds);
+        if (user.department) {
+            const { data: teamMembers } = await supabase.from('users').select('id').eq('department', user.department);
+            const teamMemberIds = teamMembers?.map(tm => tm.id) || [];
+            leavesQuery = leavesQuery.in('user_id', teamMemberIds);
+        } else {
+            // If manager has no department, only show their own leaves
+             leavesQuery = leavesQuery.eq('user_id', user.id);
+        }
     } else if (user.role === 'employee' || user.role === 'intern') {
         leavesQuery = leavesQuery.eq('user_id', user.id);
     }
@@ -24,33 +29,35 @@ async function getLeaveData(user: UserProfile) {
     const { data: balances, error: balanceError } = await supabase.from('leave_balances').select('*').eq('user_id', user.id).single();
 
     if (leavesError) console.error('Error fetching leaves:', leavesError.message);
-    if (balanceError) console.error('Error fetching leave balances:', balanceError.message);
+    if (balanceError && balanceError.code !== 'PGRST116') { // Ignore "No rows found" for new users
+        console.error('Error fetching leave balances:', balanceError.message);
+    }
 
     // Calculate stats for admin/HR
     let stats = { totalEmployees: 0, presentToday: 0, absentToday: 0, pendingRequests: 0 };
     if (user.role === 'admin' || user.role === 'super_hr' || user.role === 'hr_manager') {
-        const { data: allUsers, error: usersError } = await supabase.from('users').select('id', { count: 'exact' }).neq('role', 'guest');
+        const { count: userCount, error: usersError } = await supabase.from('users').select('id', { count: 'exact' }).not('role', 'in', '("guest", "intern")');
         if (usersError) console.error('Error fetching user count:', usersError);
         
-        const today = new Date();
-        const start = startOfToday();
-        const end = endOfToday();
+        const today = new Date().toISOString().split('T')[0];
 
-        const { data: absentUsers, error: absentError } = await supabase
-            .from('leaves')
-            .select('user_id')
-            .eq('status', 'approved')
-            .lte('start_date', today.toISOString().split('T')[0])
-            .gte('end_date', today.toISOString().split('T')[0]);
-        
-        if(absentError) console.error('Error fetching absent users:', absentError);
+        const { data: allLeaves, error: allLeavesError } = await supabase.from('leaves').select('user_id, start_date, end_date').eq('status', 'approved');
 
-        const uniqueAbsentIds = new Set(absentUsers?.map(l => l.user_id));
+        if(allLeavesError) console.error('Error fetching all leaves for stats:', allLeavesError);
+
+        const absentUserIds = new Set<string>();
+        if (allLeaves) {
+            for (const leave of allLeaves) {
+                if (today >= leave.start_date && today <= leave.end_date) {
+                    absentUserIds.add(leave.user_id);
+                }
+            }
+        }
         
-        stats.totalEmployees = allUsers?.length || 0;
-        stats.absentToday = uniqueAbsentIds.size;
+        stats.totalEmployees = userCount || 0;
+        stats.absentToday = absentUserIds.size;
         stats.presentToday = stats.totalEmployees - stats.absentToday;
-        stats.pendingRequests = (leaves || []).filter(l => l.status === 'pending').length;
+        stats.pendingRequests = (await supabase.from('leaves').select('id', { count: 'exact' }).eq('status', 'pending')).count || 0;
     }
 
 

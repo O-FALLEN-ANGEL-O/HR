@@ -69,6 +69,7 @@ const getNavLinks = (role: UserRole) => {
     { href: '/interviews', label: 'Interviews', icon: Calendar },
     { href: '/college-drive', label: 'College Drives', icon: GraduationCap },
     { href: '/onboarding', label: 'Onboarding', icon: ClipboardCheck },
+    { href: '/leaves', label: 'Leave Management', icon: Clock },
     { href: '/ai-tools/applicant-scoring', label: 'Applicant Scoring', icon: ScanSearch, group: 'AI Tools' },
     { href: '/ai-tools/chatbot', label: 'AI Chatbot', icon: Bot, group: 'AI Tools' },
     { href: '/ai-tools/review-analyzer', label: 'Review Analyzer', icon: PenSquare, group: 'AI Tools' },
@@ -80,20 +81,17 @@ const getNavLinks = (role: UserRole) => {
         { href: '/admin/dashboard', label: 'Admin Dashboard', icon: ShieldCheck },
         { href: '/hr/dashboard', label: 'HR Dashboard', icon: LayoutDashboard },
         ...commonHrLinks,
-        { href: '/time-off', label: 'Time & Attendance', icon: Clock },
       ];
     case 'super_hr':
         return [
             { href: '/super_hr/dashboard', label: 'Super HR Dashboard', icon: UserCog },
             { href: '/hr/dashboard', label: 'HR Dashboard', icon: LayoutDashboard },
             ...commonHrLinks,
-            { href: '/time-off', label: 'Time & Attendance', icon: Clock },
         ];
     case 'hr_manager':
       return [
         { href: '/hr/dashboard', label: 'HR Dashboard', icon: LayoutDashboard },
         ...commonHrLinks,
-        { href: '/time-off', label: 'Time & Attendance', icon: Clock },
       ];
     case 'recruiter':
       return [
@@ -106,13 +104,26 @@ const getNavLinks = (role: UserRole) => {
       return [
         { href: '/interviews', label: 'My Interviews', icon: Calendar },
       ];
+    case 'manager':
+        return [
+          { href: '/manager/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+          { href: '/leaves', label: 'Team Leave', icon: Clock },
+          { href: '/employee/directory', label: 'Directory', icon: Users },
+          { href: '/employee/kudos', label: 'Kudos', icon: Award },
+        ]
+    case 'team_lead':
+        return [
+          { href: '/team-lead/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+          { href: '/leaves', label: 'Team Leave', icon: Clock },
+          { href: '/employee/directory', label: 'Directory', icon: Users },
+        ]
     case 'employee':
       return [
         { href: '/employee/dashboard', label: 'My Dashboard', icon: LayoutDashboard },
         { href: '/company-feed', label: 'Company Feed', icon: Newspaper },
         { href: '/employee/directory', label: 'Directory', icon: Users },
         { href: '/employee/payslips', label: 'Payslips', icon: WalletCards },
-        { href: '/time-off', label: 'Leave Manager', icon: Clock },
+        { href: '/leaves', label: 'Leave Manager', icon: Clock },
         { href: '/employee/kudos', label: 'Kudos', icon: Award },
         { href: '/employee/documents', label: 'Policies', icon: FolderKanban },
       ];
@@ -121,6 +132,7 @@ const getNavLinks = (role: UserRole) => {
           { href: '/intern/dashboard', label: 'Welcome', icon: LayoutDashboard },
           { href: '/company-feed', label: 'Company Feed', icon: Newspaper },
           { href: '/onboarding', label: 'Onboarding Tasks', icon: ClipboardCheck },
+          { href: '/leaves', label: 'Leave Manager', icon: Clock },
         ]
     default:
       return [];

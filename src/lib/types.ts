@@ -30,12 +30,6 @@ export type Metric = {
   change_type?: 'increase' | 'decrease';
 };
 
-export type TimeOffMetric = {
-  title: string;
-  value: string;
-  change?: string;
-}
-
 export type Job = {
   id:string;
   title: string;
@@ -111,18 +105,28 @@ export type PerformanceReview = {
   } | null;
 };
 
-export type TimeOffRequest = {
-  id: string;
-  user_id: string;
-  type: 'Vacation' | 'Sick Leave' | 'Personal';
-  start_date: string;
-  end_date: string;
-  status: 'Pending' | 'Approved' | 'Rejected';
-  users: {
-    full_name: string | null;
-    avatar_url: string | null;
-  } | null;
-};
+export type Leave = {
+    id: string;
+    user_id: string;
+    leave_type: 'sick' | 'casual' | 'earned' | 'unpaid';
+    start_date: string;
+    end_date: string;
+    total_days: number;
+    reason: string;
+    status: 'pending' | 'approved' | 'rejected';
+    approver_id?: string;
+    created_at: string;
+    users?: Pick<UserProfile, 'full_name' | 'avatar_url' | 'department'>;
+}
+
+export type LeaveBalance = {
+    id: string;
+    user_id: string;
+    sick_leave: number;
+    casual_leave: number;
+    earned_leave: number;
+    unpaid_leave: number;
+}
 
 export type ChatMessage = {
   id: string;
@@ -202,14 +206,3 @@ export type WeeklyAward = {
     users: { full_name: string | null, avatar_url: string | null } | null;
     awarded_by: { full_name: string | null } | null;
 }
-
-export type LeaveBalance = {
-  type: 'Annual' | 'Sick' | 'Unpaid';
-  balance: number;
-  accruedThisYear: number;
-};
-
-export type Holiday = {
-  date: string;
-  name: string;
-};

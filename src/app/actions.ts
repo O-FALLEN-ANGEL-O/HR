@@ -6,7 +6,8 @@ import { cookies } from 'next/headers';
 import { applicantMatchScoring } from '@/ai/flows/applicant-match-scoring';
 import { createClient } from '@/lib/supabase/server';
 import { getUser } from '@/lib/supabase/user';
-import type { Kudo } from '@/lib/types';
+import type { Kudo, LeaveBalance } from '@/lib/types';
+import { differenceInDays } from 'date-fns';
 
 export async function addCompanyPost(formData: FormData) {
   const cookieStore = cookies();
@@ -109,27 +110,95 @@ export async function addWeeklyAward(formData: FormData) {
   revalidatePath('/employee/kudos');
 }
 
-export async function updateTimeOffRequest(requestId: string, status: 'Approved' | 'Rejected') {
+export async function applyForLeave(formData: FormData) {
     const cookieStore = cookies();
     const supabase = createClient(cookieStore);
     const user = await getUser(cookieStore);
 
-    if (!user || !['admin', 'hr_manager', 'super_hr', 'manager'].includes(user.role)) {
-        throw new Error('You do not have permission to update time off requests.');
+    if (!user) throw new Error('You must be logged in.');
+
+    const leaveType = formData.get('leave_type') as keyof Omit<LeaveBalance, 'id' | 'user_id'>;
+    const startDate = formData.get('start_date') as string;
+    const endDate = formData.get('end_date') as string;
+    const reason = formData.get('reason') as string;
+
+    if (!leaveType || !startDate || !endDate || !reason) {
+        throw new Error('All fields are required.');
+    }
+    
+    const totalDays = differenceInDays(new Date(endDate), new Date(startDate)) + 1;
+    if (totalDays <= 0) throw new Error('End date must be after start date.');
+
+    const { data: balance, error: balanceError } = await supabase
+        .from('leave_balances')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+    if (balanceError || !balance) throw new Error('Could not retrieve your leave balance.');
+    if (leaveType !== 'unpaid_leave' && balance[leaveType] < totalDays) {
+        throw new Error('Insufficient leave balance for this request.');
+    }
+    
+    // Deduct from balance
+    const { error: updateBalanceError } = await supabase
+        .from('leave_balances')
+        .update({ [leaveType]: balance[leaveType] - totalDays })
+        .eq('user_id', user.id);
+        
+    if (updateBalanceError) throw new Error('Could not update leave balance.');
+
+    const { error: insertError } = await supabase.from('leaves').insert({
+        user_id: user.id,
+        leave_type: leaveType.replace('_leave', ''),
+        start_date: startDate,
+        end_date: endDate,
+        reason: reason,
+        total_days: totalDays,
+        status: 'pending',
+    });
+
+    if (insertError) {
+        // Rollback balance deduction
+        await supabase.from('leave_balances').update({ [leaveType]: balance[leaveType] }).eq('user_id', user.id);
+        throw new Error(`Could not submit leave request: ${insertError.message}`);
     }
 
-    const { error } = await supabase
-      .from('time_off_requests')
-      .update({ status })
-      .eq('id', requestId);
+    revalidatePath('/leaves');
+}
 
-    if (error) {
-        console.error('Error updating time off request:', error);
-        throw new Error('Could not update the request.');
+export async function updateLeaveStatus(leaveId: string, status: 'approved' | 'rejected') {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const approver = await getUser(cookieStore);
+
+    if (!approver || !['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead'].includes(approver.role)) {
+        throw new Error('You do not have permission to approve/reject leaves.');
     }
 
-    revalidatePath('/time-off');
-    revalidatePath('/manager/dashboard');
+    const { data: leave, error: fetchError } = await supabase.from('leaves').select('*').eq('id', leaveId).single();
+    if (fetchError || !leave) throw new Error('Leave request not found.');
+
+    const { error: updateError } = await supabase.from('leaves').update({ status, approver_id: approver.id }).eq('id', leaveId);
+
+    if (updateError) {
+        throw new Error(`Failed to update leave status: ${updateError.message}`);
+    }
+
+    // If a request is rejected, refund the leave days to the user's balance.
+    if (status === 'rejected') {
+        const { data: balance, error: balanceError } = await supabase.from('leave_balances').select('*').eq('user_id', leave.user_id).single();
+        if (balanceError || !balance) throw new Error('Could not find user balance to refund.');
+
+        const leaveTypeKey = `${leave.leave_type}_leave` as keyof LeaveBalance;
+        if (leaveTypeKey in balance) {
+            const currentBalance = balance[leaveTypeKey] as number;
+            const newBalance = currentBalance + leave.total_days;
+            await supabase.from('leave_balances').update({ [leaveTypeKey]: newBalance }).eq('user_id', leave.user_id);
+        }
+    }
+    
+    revalidatePath('/leaves');
 }
 
 export async function addApplicantNote(formData: FormData) {

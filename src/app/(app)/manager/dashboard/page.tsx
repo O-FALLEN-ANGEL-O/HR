@@ -1,40 +1,11 @@
 import { Header } from '@/components/header';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Users, BarChart3, Clock, Check, X, Award } from 'lucide-react';
+import { Users, BarChart3, Clock, Award } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
-import type { TimeOffRequest } from '@/lib/types';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { format } from 'date-fns';
-import { updateTimeOffRequest } from '@/app/actions';
-
-async function getPendingRequests(): Promise<TimeOffRequest[]> {
-    const cookieStore = cookies();
-    const supabase = createClient(cookieStore);
-    const { data, error } = await supabase
-        .from('time_off_requests')
-        .select('*, users(full_name, avatar_url)')
-        .eq('status', 'Pending')
-        .order('start_date', { ascending: true })
-        .limit(5);
-
-    if (error) {
-        console.error("Error fetching pending requests:", error);
-        return [];
-    }
-    return data;
-}
-
-function TimeOffRequestForm({ requestId, status, children }: { requestId: string, status: 'Approved' | 'Rejected', children: React.ReactNode }) {
-    const action = updateTimeOffRequest.bind(null, requestId, status);
-    return <form action={action}>{children}</form>;
-}
 
 export default async function ManagerDashboardPage() {
-  const pendingRequests = await getPendingRequests();
-
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <Header title="Manager's Dashboard" />
@@ -51,15 +22,15 @@ export default async function ManagerDashboardPage() {
                 </CardContent>
             </Card>
         </Link>
-        <Link href="/performance">
+        <Link href="/leaves">
             <Card className="hover:bg-muted/50 transition-colors">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Performance Reviews</CardTitle>
-                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium">Leave Requests</CardTitle>
+                    <Clock className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                        <div className="text-2xl font-bold">5 Upcoming</div>
-                    <p className="text-xs text-muted-foreground">Track and manage team performance cycles.</p>
+                        <div className="text-2xl font-bold">3 Pending</div>
+                    <p className="text-xs text-muted-foreground">Approve or reject team leave requests.</p>
                 </CardContent>
             </Card>
         </Link>
@@ -75,55 +46,17 @@ export default async function ManagerDashboardPage() {
                 </CardContent>
             </Card>
         </Link>
+         <Card className="opacity-50 cursor-not-allowed">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Performance Reviews</CardTitle>
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                    <div className="text-2xl font-bold">5 Upcoming</div>
+                <p className="text-xs text-muted-foreground">Track performance cycles. (Coming Soon)</p>
+            </CardContent>
+        </Card>
       </div>
-      <Card>
-        <CardHeader>
-            <CardTitle>Pending Time Off Requests</CardTitle>
-            <CardDescription>Review and act on new leave requests from your team.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            {pendingRequests.length > 0 ? (
-                <div className="space-y-4">
-                    {pendingRequests.map(request => (
-                        <div key={request.id} className="flex items-center justify-between p-3 rounded-lg border bg-background">
-                           <div className="flex items-center gap-3">
-                             <Avatar>
-                                <AvatarImage src={(request as any).users?.avatar_url || undefined} />
-                                <AvatarFallback>{(request as any).users?.full_name?.charAt(0) || 'U'}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <p className="font-medium">{(request as any).users?.full_name}</p>
-                                <p className="text-sm text-muted-foreground">
-                                    {format(new Date(request.start_date), 'MMM d')} - {format(new Date(request.end_date), 'MMM d')}
-                                    <span className="mx-2">&middot;</span>
-                                    <span className="font-semibold">{request.type}</span>
-                                </p>
-                            </div>
-                           </div>
-                           <div className="flex gap-2">
-                                <TimeOffRequestForm requestId={request.id} status="Approved">
-                                    <Button size="sm" variant="outline" type="submit"><Check className="mr-2" />Approve</Button>
-                                </TimeOffRequestForm>
-                                <TimeOffRequestForm requestId={request.id} status="Rejected">
-                                    <Button size="sm" variant="ghost" type="submit"><X className="mr-2" />Reject</Button>
-                                </TimeOffRequestForm>
-                           </div>
-                        </div>
-                    ))}
-                    {pendingRequests.length >= 5 && (
-                         <Button variant="link" asChild className="w-full">
-                            <Link href="/time-off">View All Pending Requests</Link>
-                        </Button>
-                    )}
-                </div>
-            ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                    <Clock className="mx-auto h-8 w-8 mb-2" />
-                    <p>No pending requests. Great job!</p>
-                </div>
-            )}
-        </CardContent>
-      </Card>
     </div>
   );
 }

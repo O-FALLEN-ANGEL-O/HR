@@ -127,7 +127,7 @@ export function LeaveClient({
   const renderContent = () => {
     if (isAdmin) return <AdminLeaveView leaves={leaves} stats={stats} />;
     if (isManager) return <ManagerLeaveView leaves={leaves.filter(l => l.users?.department === currentUser.department)} currentUser={currentUser}/>;
-    return <EmployeeLeaveView leaves={leaves} balance={balance} user={currentUser} />;
+    return <EmployeeLeaveView leaves={leaves.filter(l => l.user_id === currentUser.id)} balance={balance} user={currentUser} />;
   };
 
   return <div>{renderContent()}</div>;

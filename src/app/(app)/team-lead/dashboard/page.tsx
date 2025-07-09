@@ -1,6 +1,6 @@
 import { Header } from '@/components/header';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Users, Award, CalendarDays, Briefcase, UserCheck } from 'lucide-react';
+import { Users, Award, CalendarDays, Briefcase, UserCheck, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -95,7 +95,7 @@ export default async function TeamLeadDashboardPage() {
           </div>
           <Card>
             <CardHeader>
-                <CardTitle className="flex items-center gap-2"><CalendarDays /> Who's On Leave?</CardTitle>
+                <CardTitle className="flex items-center gap-2"><Clock /> Team Leave</CardTitle>
                 <CardDescription>Upcoming and current leave for your team.</CardDescription>
             </CardHeader>
             <CardContent>
@@ -103,8 +103,8 @@ export default async function TeamLeadDashboardPage() {
                     <UserCheck className="mx-auto h-8 w-8 mb-2" />
                     <p>Everyone is available this week!</p>
                 </div>
-                 <Link href="/time-off">
-                    <p className="text-sm text-primary hover:underline mt-4">View All Time Off →</p>
+                 <Link href="/leaves">
+                    <p className="text-sm text-primary hover:underline mt-4">View All Leave Requests →</p>
                 </Link>
             </CardContent>
           </Card>

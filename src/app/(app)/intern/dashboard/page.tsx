@@ -1,6 +1,6 @@
 import { Header } from '@/components/header';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { ClipboardCheck, BookOpen } from 'lucide-react';
+import { ClipboardCheck, BookOpen, Clock } from 'lucide-react';
 import Link from 'next/link';
 
 export default function InternDashboardPage() {
@@ -23,6 +23,17 @@ export default function InternDashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <p className="text-xs text-muted-foreground">Complete your onboarding checklist.</p>
+                    </CardContent>
+                </Card>
+            </Link>
+            <Link href="/leaves">
+                <Card className="hover:bg-muted/50 transition-colors">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Request Leave</CardTitle>
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-xs text-muted-foreground">Apply for time off and track your requests.</p>
                     </CardContent>
                 </Card>
             </Link>

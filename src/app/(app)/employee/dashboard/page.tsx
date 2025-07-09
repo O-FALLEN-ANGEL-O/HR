@@ -15,7 +15,7 @@ const features = [
         title: "Leave Manager",
         description: "View leave balances and request time off.",
         icon: Clock,
-        href: "/time-off",
+        href: "/leaves",
     },
     {
         title: "Employee Directory",

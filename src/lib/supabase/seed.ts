@@ -25,7 +25,8 @@ async function clearData() {
     'payslips',
     'company_documents',
     'applicant_notes',
-    'time_off_requests',
+    'leaves',
+    'leave_balances',
     'onboarding_workflows',
     'interviews',
     'applicants',
@@ -41,16 +42,28 @@ async function clearData() {
     }
   }
 
-  const { data: { users }, error } = await supabase.auth.admin.listUsers();
-  if (error) {
-    console.error('Error listing auth users:', error.message);
-  } else {
-    const userDeletionPromises = users
-      .filter(user => user.email && !user.email.endsWith('@supabase.com'))
-      .map(user => supabase.auth.admin.deleteUser(user.id, true)); 
-    await Promise.all(userDeletionPromises);
-    console.log(`✅ ${userDeletionPromises.length} Auth users cleared.`);
+  // Hard delete all users except Supabase-internal ones.
+  console.log('🗑️  Clearing auth users...');
+  let hasMoreUsers = true;
+  let page = 0;
+  let totalCleared = 0;
+  while(hasMoreUsers) {
+      const { data: { users }, error } = await supabase.auth.admin.listUsers({ page, perPage: 50 });
+      if (error) {
+        console.error('Error listing auth users:', error.message);
+        break;
+      }
+      if (users.length > 0) {
+        const usersToDelete = users.filter(user => user.email && !user.email.endsWith('@supabase.com'));
+        const userDeletionPromises = usersToDelete.map(user => supabase.auth.admin.deleteUser(user.id, true));
+        await Promise.all(userDeletionPromises);
+        totalCleared += usersToDelete.length;
+      } else {
+        hasMoreUsers = false;
+      }
+      page++;
   }
+  console.log(`✅ ${totalCleared} Auth users cleared.`);
 
   console.log('✅ Data cleared.');
 }
@@ -60,7 +73,7 @@ async function seedData() {
 
     console.log('  - Seeding users...');
     const roles: UserRole[] = ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'recruiter', 'interviewer', 'employee', 'intern', 'guest'];
-    const seededUsers: (User & { user_metadata: { role: UserRole, full_name: string, avatar_url: string }})[] = [];
+    const seededUsers: (User & { user_metadata: { role: UserRole, full_name: string, avatar_url: string, department: string }})[] = [];
     const password = 'Password123!';
 
     for (const role of roles) {
@@ -74,7 +87,8 @@ async function seedData() {
             user_metadata: { 
                 full_name: fullName,
                 avatar_url: `https://i.pravatar.cc/150?u=${faker.string.uuid()}`,
-                role: role
+                role: role,
+                department: faker.helpers.arrayElement(['Engineering', 'Product', 'Design', 'Sales', 'HR'])
              }
         });
 
@@ -98,7 +112,8 @@ async function seedData() {
             user_metadata: { 
                 full_name: fullName,
                 avatar_url: `https://i.pravatar.cc/150?u=${faker.string.uuid()}`,
-                role: 'employee'
+                role: 'employee',
+                department: faker.helpers.arrayElement(['Engineering', 'Product', 'Design', 'Sales', 'HR'])
             }
         });
         if (authError) {
@@ -213,25 +228,41 @@ async function seedData() {
         console.log('  - Seeded onboarding_workflows');
     }
 
-    const employeesForTimeOff = seededUsers.filter(u => u.user_metadata.role === 'employee');
-    if (employeesForTimeOff.length > 0) {
-        const timeOffRequests = Array.from({ length: 25 }, () => {
+    const employeeUsers = seededUsers.filter(u => u.user_metadata.role !== 'guest');
+    if (employeeUsers.length > 0) {
+        const leaveBalances = employeeUsers.map(u => ({
+            user_id: u.id,
+            sick_leave: 10,
+            casual_leave: 8,
+            earned_leave: 15,
+            unpaid_leave: 0
+        }));
+        await supabase.from('leave_balances').insert(leaveBalances);
+        console.log('  - Seeded leave balances');
+
+        const leaves = Array.from({length: 50}, () => {
+            const user = faker.helpers.arrayElement(employeeUsers);
+            const approver = faker.helpers.arrayElement(managers);
             const startDate = faker.date.between({ from: new Date(new Date().setMonth(new Date().getMonth() - 3)), to: new Date(new Date().setMonth(new Date().getMonth() + 1)) });
             const endDate = new Date(startDate);
-            endDate.setDate(startDate.getDate() + faker.number.int({min: 0, max: 5}));
+            const totalDays = faker.number.int({min: 1, max: 5})
+            endDate.setDate(startDate.getDate() + totalDays - 1);
             return {
-                user_id: faker.helpers.arrayElement(employeesForTimeOff).id,
-                type: faker.helpers.arrayElement(['Vacation', 'Sick Leave', 'Personal']),
+                user_id: user.id,
+                leave_type: faker.helpers.arrayElement(['sick', 'casual', 'earned', 'unpaid']),
                 start_date: startDate.toISOString().split('T')[0],
                 end_date: endDate.toISOString().split('T')[0],
-                status: faker.helpers.arrayElement(['Pending', 'Approved', 'Rejected'])
-            };
+                total_days: totalDays,
+                reason: faker.lorem.sentence(),
+                status: faker.helpers.arrayElement(['pending', 'approved', 'rejected']),
+                approver_id: approver.id
+            }
         });
-        await supabase.from('time_off_requests').insert(timeOffRequests);
-        console.log('  - Seeded time_off_requests');
+        await supabase.from('leaves').insert(leaves);
+        console.log('  - Seeded leaves');
     }
-
-    const hrUsers = seededUsers.filter(u => u.user_metadata.role === 'hr_manager');
+    
+    const hrUsers = seededUsers.filter(u => ['admin', 'super_hr', 'hr_manager'].includes(u.user_metadata.role));
     if (hrUsers.length > 0) {
         const companyPosts = Array.from({length: 5}, () => ({
             author_id: faker.helpers.arrayElement(hrUsers).id,
