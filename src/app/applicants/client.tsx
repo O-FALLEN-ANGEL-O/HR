@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -33,7 +34,7 @@ import { Button } from '@/components/ui/button';
 import {
   Mail,
   MoreHorizontal,
-  ClipboardCheck,
+  Keyboard,
   PlusCircle,
   Upload,
   ClipboardCopy,
@@ -42,6 +43,7 @@ import {
   BrainCircuit,
   Library,
   SpellCheck,
+  HeartHandshake,
 } from 'lucide-react';
 import {
   Select,
@@ -259,7 +261,7 @@ export default function ApplicantList({
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar>
-                        <AvatarImage src={applicant.avatar} />
+                        <AvatarImage src={applicant.avatar || undefined} />
                         <AvatarFallback>
                           {applicant.name.charAt(0)}
                         </AvatarFallback>
@@ -314,7 +316,7 @@ export default function ApplicantList({
                         <DropdownMenuItem
                           onClick={() => handleAssignTest(applicant.id, 'Typing Test', 'typing-test')}
                         >
-                          <ClipboardCheck className="mr-2 h-4 w-4" />
+                          <Keyboard className="mr-2 h-4 w-4" />
                           Assign Typing Test
                         </DropdownMenuItem>
                          <DropdownMenuItem
@@ -334,6 +336,12 @@ export default function ApplicantList({
                         >
                           <SpellCheck className="mr-2 h-4 w-4" />
                           Assign English Grammar Test
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleAssignTest(applicant.id, 'Customer Service Test', 'customer-service-test')}
+                        >
+                          <HeartHandshake className="mr-2 h-4 w-4" />
+                          Assign Customer Service Test
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

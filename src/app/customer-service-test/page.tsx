@@ -105,9 +105,9 @@ export default function CustomerServiceTestPage() {
         toast({ title: 'Success', description: 'Your test results have been saved.'});
         router.push(`/portal/${applicantId}`);
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error saving results:", error);
-        toast({ title: 'Error', description: 'Failed to save your results. Please contact HR.', variant: 'destructive'});
+        toast({ title: 'Error', description: error.message || 'Failed to save your results. Please contact HR.', variant: 'destructive'});
     } finally {
         setIsSubmitting(false);
     }
@@ -116,7 +116,7 @@ export default function CustomerServiceTestPage() {
   const renderContent = () => {
     if (testState === 'not-started') {
       return (
-        <div className="text-center">
+        <div className="text-center p-6">
             <HeartHandshake className="mx-auto h-16 w-16 text-primary mb-4" />
             <p className="text-muted-foreground mb-6">This test contains 5 situational questions. The test will start as soon as you click the button below.</p>
             <Button onClick={startTest} size="lg">Start Test</Button>
@@ -126,7 +126,7 @@ export default function CustomerServiceTestPage() {
 
     if (testState === 'finished') {
       return (
-        <div className="text-center">
+        <div className="text-center p-6">
             <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
             <CardTitle>Test Complete!</CardTitle>
             <CardDescription className="my-2">Your final score is:</CardDescription>
@@ -171,13 +171,13 @@ export default function CustomerServiceTestPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
       <Card className="w-full max-w-2xl">
-        {testState !== 'in-progress' && (
-            <CardHeader className="text-center">
-                <CardTitle className="text-2xl">Customer Service Skills Test</CardTitle>
-                <CardDescription>Assess your customer service and situational judgment skills.</CardDescription>
-            </CardHeader>
-        )}
-        {renderContent()}
+        <CardHeader className="text-center">
+            <CardTitle className="text-2xl">Customer Service Skills Test</CardTitle>
+            <CardDescription>Assess your customer service and situational judgment skills.</CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+            {renderContent()}
+        </CardContent>
       </Card>
     </div>
   );

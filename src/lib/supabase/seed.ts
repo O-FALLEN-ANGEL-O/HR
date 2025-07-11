@@ -1,3 +1,4 @@
+
 import { createClient, type User } from '@supabase/supabase-js';
 import { faker } from '@faker-js/faker';
 import dotenv from 'dotenv';
@@ -32,12 +33,13 @@ async function clearData() {
     'applicants',
     'colleges',
     'jobs',
-    'metrics'
+    'metrics',
+    'performance_reviews'
   ];
 
   for (const table of tablesToDelete) {
     const { error } = await supabase.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    if (error && error.code !== '42P01') { 
+    if (error && error.code !== '42P01') { // 42P01: relation does not exist - ignore if table not found
       console.error(`Error clearing table ${table}:`, error.message);
     }
   }
@@ -55,9 +57,11 @@ async function clearData() {
       }
       if (users.length > 0) {
         const usersToDelete = users.filter(user => user.email && !user.email.endsWith('@supabase.com'));
-        const userDeletionPromises = usersToDelete.map(user => supabase.auth.admin.deleteUser(user.id, true));
-        await Promise.all(userDeletionPromises);
-        totalCleared += usersToDelete.length;
+        if (usersToDelete.length > 0) {
+            const userDeletionPromises = usersToDelete.map(user => supabase.auth.admin.deleteUser(user.id, true));
+            await Promise.all(userDeletionPromises);
+            totalCleared += usersToDelete.length;
+        }
       } else {
         hasMoreUsers = false;
       }
@@ -72,7 +76,7 @@ async function seedData() {
     console.log('🌱 Seeding data...');
 
     console.log('  - Seeding users...');
-    const roles: UserRole[] = ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'recruiter', 'interviewer', 'employee', 'intern', 'guest'];
+    const roles: UserRole[] = ['admin', 'super_hr', 'hr_manager', 'recruiter', 'interviewer', 'employee', 'intern', 'guest'];
     const seededUsers: (User & { user_metadata: { role: UserRole, full_name: string, avatar_url: string, department: string }})[] = [];
     const password = 'Password123!';
 
@@ -205,7 +209,7 @@ async function seedData() {
     }
     
     const employeesForOnboarding = seededUsers.filter(u => u.user_metadata.role === 'employee');
-    const managers = seededUsers.filter(u => u.user_metadata.role === 'manager');
+    const managers = seededUsers.filter(u => u.user_metadata.role === 'manager' || u.user_metadata.role === 'admin' || u.user_metadata.role === 'super_hr');
     if (employeesForOnboarding.length > 5 && managers.length > 0) {
         const onboardingWorkflows = employeesForOnboarding.slice(0, 5).map(employee => {
             const manager = faker.helpers.arrayElement(managers);
@@ -242,7 +246,7 @@ async function seedData() {
 
         const leaves = Array.from({length: 50}, () => {
             const user = faker.helpers.arrayElement(employeeUsers);
-            const approver = faker.helpers.arrayElement(managers);
+            const approver = faker.helpers.arrayElement(managers.length > 0 ? managers : [user]);
             const startDate = faker.date.between({ from: new Date(new Date().setMonth(new Date().getMonth() - 3)), to: new Date(new Date().setMonth(new Date().getMonth() + 1)) });
             const endDate = new Date(startDate);
             const totalDays = faker.number.int({min: 1, max: 5})
@@ -274,7 +278,7 @@ async function seedData() {
     }
 
     const allEmployees = seededUsers.filter(u => u.user_metadata.role === 'employee' || u.user_metadata.role === 'manager');
-    if (allEmployees.length > 1) {
+    if (allEmployees.length > 1 && hrUsers.length > 0) {
         const kudos = Array.from({length: 15}, () => {
             const fromUser = faker.helpers.arrayElement(allEmployees);
             const toUser = faker.helpers.arrayElement(allEmployees.filter(u => u.id !== fromUser.id));

@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -35,7 +36,6 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { currentUser } from '@/lib/data';
 import { createClient } from '@/lib/supabase/client';
 import type { Applicant, ApplicantNote } from '@/lib/types';
 import type { ProcessResumeOutput } from '@/ai/flows/process-resume';
@@ -125,12 +125,12 @@ export default function ApplicantProfileClient({
         title: 'Success!',
         description: "AI match score has been generated and saved.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       toast({
         variant: 'destructive',
         title: 'Error Generating Score',
-        description: 'Could not generate AI match score. Please try again.',
+        description: error.message || 'Could not generate AI match score. Please try again.',
       });
     } finally {
       setIsGeneratingScore(false);
@@ -149,7 +149,7 @@ export default function ApplicantProfileClient({
           <Card>
             <CardHeader className="flex flex-row items-center gap-4">
               <Avatar className="h-16 w-16">
-                <AvatarImage src={applicant.avatar} />
+                <AvatarImage src={applicant.avatar || undefined} />
                 <AvatarFallback>{applicant.name.charAt(0)}</AvatarFallback>
               </Avatar>
               <div>
@@ -203,6 +203,10 @@ export default function ApplicantProfileClient({
                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-muted-foreground"><SpellCheck className="h-4 w-4" /> English Grammar</div>
                     <p className="font-bold text-lg">{applicant.english_grammar_score ? `${applicant.english_grammar_score}%` : 'N/A'}</p>
+                 </div>
+                 <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-muted-foreground"><HeartHandshake className="h-4 w-4" /> Customer Service</div>
+                    <p className="font-bold text-lg">{applicant.customer_service_score ? `${applicant.customer_service_score}%` : 'N/A'}</p>
                  </div>
              </CardContent>
           </Card>
@@ -350,8 +354,8 @@ function NotesSection({ applicantId, notes }: { applicantId: string, notes: Appl
             await addApplicantNote(formData);
             toast({ title: 'Note Added', description: 'Your note has been saved.' });
             formRef.current?.reset();
-        } catch (error) {
-            toast({ title: 'Error', description: 'Could not save your note.', variant: 'destructive' });
+        } catch (error: any) {
+            toast({ title: 'Error', description: error.message || 'Could not save your note.', variant: 'destructive' });
         } finally {
             setIsSubmitting(false);
         }
@@ -378,7 +382,7 @@ function NotesSection({ applicantId, notes }: { applicantId: string, notes: Appl
                         notes.map(note => (
                             <div key={note.id} className="flex items-start gap-3">
                                 <Avatar className="h-9 w-9">
-                                    <AvatarImage src={note.author_avatar} />
+                                    <AvatarImage src={note.author_avatar || undefined} />
                                     <AvatarFallback>{note.author_name.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1 rounded-md border bg-muted/30 p-3">
