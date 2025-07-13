@@ -5,13 +5,24 @@ import dotenv from 'dotenv';
 import path from 'path';
 import type { UserRole } from '../types';
 
+// Only run the seed script in production environments (like Vercel builds)
+// to avoid issues during local development where env vars might not be set yet.
+if (process.env.NODE_ENV !== 'production') {
+  console.log('🌱 Skipping database seed in non-production environment.');
+  process.exit(0);
+}
+
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error('Supabase URL or service key is missing in .env file. Make sure to create a .env file with your project credentials.');
+  console.error('Supabase URL or service key is missing. Skipping seeding.');
+  // Exit gracefully instead of throwing an error to prevent build failures.
+  process.exit(0);
 }
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -348,4 +359,5 @@ async function run() {
 
 run().catch(error => {
     console.error('🔴 Seeding failed:', error);
+    process.exit(1);
 });
