@@ -38,7 +38,8 @@ function getHomePathForRole(role: UserRole): string {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  const { response, user, supabase } = await updateSession(request);
+  // This function now returns the full user profile, including the role.
+  const { response, user } = await updateSession(request);
 
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route)) || pathname.startsWith('/portal');
 
@@ -49,23 +50,15 @@ export async function middleware(request: NextRequest) {
   
   // If the user is logged in
   if (user) {
+    const role = user.role;
     // And tries to access an auth route, redirect to their home
     if (authRoutes.includes(pathname)) {
-        const { data: userProfile } = await supabase.from('users').select('role').eq('id', user.id).single();
-        const role = userProfile?.role;
-        if (role) {
-          return NextResponse.redirect(new URL(getHomePathForRole(role), request.url));
-        }
-        // If role is not found, maybe default to a generic dashboard or log out with an error
-        return NextResponse.redirect(new URL('/login?error=role_not_found', request.url));
+        return NextResponse.redirect(new URL(getHomePathForRole(role), request.url));
     }
     
     // Check role-based access for protected routes
     if (!isPublicRoute) {
-      const { data: userProfile } = await supabase.from('users').select('role').eq('id', user.id).single();
-      const role = userProfile?.role || 'guest';
       const allowedPaths = roleAccess[role] || [];
-      
       const isAuthorized = allowedPaths.some(path => pathname.startsWith(path));
       
       if (!isAuthorized) {
