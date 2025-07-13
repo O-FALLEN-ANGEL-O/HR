@@ -4,8 +4,43 @@ import { Users, BarChart3, Clock, Award } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
+import { getUser } from '@/lib/supabase/user';
+import type { UserProfile } from '@/lib/types';
+
+
+async function getDashboardData(user: UserProfile | null) {
+  if (!user?.department) return { teamMemberCount: 0, pendingLeaveCount: 0 };
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+
+  const { count: teamMemberCount, error: teamError } = await supabase
+    .from('users')
+    .select('id', { count: 'exact' })
+    .eq('department', user.department)
+    .neq('id', user.id);
+
+  if (teamError) console.error("Error fetching team member count", teamError);
+  
+  const { data: teamMembers } = await supabase.from('users').select('id').eq('department', user.department);
+  const teamMemberIds = teamMembers?.map(tm => tm.id) || [];
+  
+  const { count: pendingLeaveCount, error: leaveError } = await supabase
+    .from('leaves')
+    .select('id', { count: 'exact' })
+    .in('user_id', teamMemberIds)
+    .eq('status', 'pending');
+  
+  if (leaveError) console.error("Error fetching pending leave count", leaveError);
+
+  return { teamMemberCount: teamMemberCount || 0, pendingLeaveCount: pendingLeaveCount || 0 };
+}
+
 
 export default async function ManagerDashboardPage() {
+  const cookieStore = cookies();
+  const user = await getUser(cookieStore);
+  const { teamMemberCount, pendingLeaveCount } = await getDashboardData(user);
+
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <Header title="Manager's Dashboard" />
@@ -17,7 +52,7 @@ export default async function ManagerDashboardPage() {
                     <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">8</div>
+                    <div className="text-2xl font-bold">{teamMemberCount}</div>
                     <p className="text-xs text-muted-foreground">View and manage your team members.</p>
                 </CardContent>
             </Card>
@@ -29,7 +64,7 @@ export default async function ManagerDashboardPage() {
                     <Clock className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                        <div className="text-2xl font-bold">3 Pending</div>
+                        <div className="text-2xl font-bold">{pendingLeaveCount} Pending</div>
                     <p className="text-xs text-muted-foreground">Approve or reject team leave requests.</p>
                 </CardContent>
             </Card>
@@ -41,7 +76,6 @@ export default async function ManagerDashboardPage() {
                     <Award className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                        <div className="text-2xl font-bold">18 Kudos</div>
                     <p className="text-xs text-muted-foreground">View your team's latest kudos.</p>
                 </CardContent>
             </Card>
@@ -52,7 +86,6 @@ export default async function ManagerDashboardPage() {
                 <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                    <div className="text-2xl font-bold">5 Upcoming</div>
                 <p className="text-xs text-muted-foreground">Track performance cycles. (Coming Soon)</p>
             </CardContent>
         </Card>

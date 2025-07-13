@@ -1,4 +1,3 @@
-
 import { createClient, type User } from '@supabase/supabase-js';
 import { faker } from '@faker-js/faker';
 import dotenv from 'dotenv';
@@ -15,7 +14,7 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 if (process.env.NODE_ENV === 'production' || process.env.FORCE_DB_SEED === 'true') {
   console.log('🌱 Starting database seed process...');
 } else {
-  console.log('🌱 SKIPPING DB SEED: To run locally, use `npm run seed:force` or set FORCE_DB_SEED=true.');
+  console.log('🌱 SKIPPING DB SEED: NODE_ENV is not "production" and FORCE_DB_SEED is not "true".');
   process.exit(0);
 }
 
@@ -91,6 +90,7 @@ async function seedData() {
 
     console.log('  - Seeding users...');
     const roles: UserRole[] = ['admin', 'super_hr', 'hr_manager', 'recruiter', 'interviewer', 'employee', 'intern', 'guest', 'manager', 'team_lead'];
+    const departments = ['Engineering', 'Product', 'Design', 'Sales', 'HR', 'Marketing'];
     const seededUsers: (User & { user_metadata: { role: UserRole, full_name: string, avatar_url: string, department: string }})[] = [];
     const password = 'Password123!';
 
@@ -106,7 +106,7 @@ async function seedData() {
                 full_name: fullName,
                 avatar_url: `https://i.pravatar.cc/150?u=${faker.string.uuid()}`,
                 role: role,
-                department: faker.helpers.arrayElement(['Engineering', 'Product', 'Design', 'Sales', 'HR'])
+                department: faker.helpers.arrayElement(departments)
              }
         });
 
@@ -131,7 +131,7 @@ async function seedData() {
                 full_name: fullName,
                 avatar_url: `https://i.pravatar.cc/150?u=${faker.string.uuid()}`,
                 role: 'employee',
-                department: faker.helpers.arrayElement(['Engineering', 'Product', 'Design', 'Sales', 'HR'])
+                department: faker.helpers.arrayElement(departments)
             }
         });
         if (authError) {
@@ -154,7 +154,7 @@ async function seedData() {
 
     const jobs = Array.from({ length: 15 }, () => ({
         title: faker.person.jobTitle(),
-        department: faker.commerce.department(),
+        department: faker.helpers.arrayElement(departments),
         description: faker.lorem.paragraphs(3),
         status: faker.helpers.arrayElement(['Open', 'Closed', 'On hold']),
         posted_date: faker.date.past().toISOString(),
@@ -252,7 +252,7 @@ async function seedData() {
         console.log('  - Seeded onboarding_workflows');
     }
 
-    const employeeUsers = seededUsers.filter(u => u.user_metadata.role !== 'guest' && u.user_metadata.role !== 'intern');
+    const employeeUsers = seededUsers.filter(u => u.user_metadata.role !== 'guest');
     if (employeeUsers.length > 0) {
         const leaveBalances = employeeUsers.map(u => ({
             user_id: u.id,
@@ -267,7 +267,7 @@ async function seedData() {
         const managersForApproval = seededUsers.filter(u => ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead'].includes(u.user_metadata.role));
 
         if (managersForApproval.length > 0) {
-            const leaves = Array.from({length: 50}, () => {
+            const leaves = Array.from({length: 150}, () => {
                 const user = faker.helpers.arrayElement(employeeUsers);
                 const approver = faker.helpers.arrayElement(managersForApproval);
                 const startDate = faker.date.between({ from: new Date(new Date().setMonth(new Date().getMonth() - 3)), to: new Date(new Date().setMonth(new Date().getMonth() + 1)) });
