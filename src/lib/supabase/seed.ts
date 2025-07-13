@@ -5,24 +5,23 @@ import dotenv from 'dotenv';
 import path from 'path';
 import type { UserRole } from '../types';
 
-// By default, the seed script will only run in production environments (like Vercel builds)
-// to prevent accidental data wipes during local development.
-// You can force it to run locally by setting this environment variable:
-// e.g., `FORCE_DB_SEED=true npm run db:seed`
-if (process.env.NODE_ENV !== 'production' && process.env.FORCE_DB_SEED !== 'true') {
-  console.log('🌱 Skipping database seed in non-production environment. Set FORCE_DB_SEED=true to override.');
-  process.exit(0);
-}
-
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
+
+// By default, the seed script will only run in production environments (like Vercel builds)
+// to prevent accidental data wipes during local development.
+// You can force it to run by setting the FORCE_DB_SEED environment variable.
+if (process.env.NODE_ENV !== 'production' && process.env.FORCE_DB_SEED !== 'true') {
+  console.log('🌱 SKIPPING DB SEED: NODE_ENV is not "production". Use `npm run seed:force` to run locally.');
+  process.exit(0);
+}
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('Supabase URL or service key is missing. Skipping seeding.');
+  console.error('🔴 ERROR: Supabase URL or service key is missing. Skipping seeding.');
   // Exit gracefully instead of throwing an error to prevent build failures.
   process.exit(0);
 }
@@ -360,6 +359,7 @@ async function seedData() {
 
 
 async function run() {
+  console.log('▶️  Starting database seed process...');
   await clearData();
   await seedData();
   console.log('🎉 Database seeding complete!');

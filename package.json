@@ -1,3 +1,4 @@
+
 {
   "name": "nextn",
   "version": "0.1.0",
@@ -6,11 +7,12 @@
     "dev": "next dev --turbopack",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
-    "build": "npm run db:seed && next build",
+    "build": "FORCE_DB_SEED=true npm run db:seed && next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "db:seed": "tsx src/lib/supabase/seed.ts"
+    "db:seed": "tsx src/lib/supabase/seed.ts",
+    "seed:force": "FORCE_DB_SEED=true npm run db:seed"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.13.0",
