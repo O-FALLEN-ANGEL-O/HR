@@ -1,3 +1,4 @@
+
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -54,23 +55,15 @@ export async function login(formData: any, isMagicLink: boolean = false) {
       return { error: `Invalid credentials. Please try again.` };
   }
 
-  const { data: userProfile, error: profileError } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', authData.user.id)
-    .single();
+  // More robust way to get the role directly from auth data, removing a failure point.
+  const userRole = authData.user.user_metadata?.role;
     
-  if (profileError) {
+  if (!userRole || !['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'recruiter', 'interviewer', 'employee', 'intern', 'guest'].includes(userRole)) {
     await supabase.auth.signOut();
-    return { error: `Login successful, but there was an issue retrieving your user profile. Please contact support. Error: ${profileError.message}` };
-  }
-
-  if (!userProfile?.role || !Object.values(['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'recruiter', 'interviewer', 'employee', 'intern', 'guest'] as UserRole[]).includes(userProfile.role)) {
-    await supabase.auth.signOut();
-    return { error: `Login successful, but your user role ('${userProfile?.role || 'none'}') is not configured for platform access. Please contact support.` };
+    return { error: `Login successful, but your user role ('${userRole || 'none'}') is not configured for platform access. Please contact support.` };
   }
     
-  const homePath = getHomePathForRole(userProfile.role);
+  const homePath = getHomePathForRole(userRole);
   redirect(homePath);
 }
 
