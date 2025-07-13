@@ -5,10 +5,12 @@ import dotenv from 'dotenv';
 import path from 'path';
 import type { UserRole } from '../types';
 
-// Only run the seed script in production environments (like Vercel builds)
-// to avoid issues during local development where env vars might not be set yet.
-if (process.env.NODE_ENV !== 'production') {
-  console.log('🌱 Skipping database seed in non-production environment.');
+// By default, the seed script will only run in production environments (like Vercel builds)
+// to prevent accidental data wipes during local development.
+// You can force it to run locally by setting this environment variable:
+// e.g., `FORCE_DB_SEED=true npm run db:seed`
+if (process.env.NODE_ENV !== 'production' && process.env.FORCE_DB_SEED !== 'true') {
+  console.log('🌱 Skipping database seed in non-production environment. Set FORCE_DB_SEED=true to override.');
   process.exit(0);
 }
 
@@ -87,7 +89,7 @@ async function seedData() {
     console.log('🌱 Seeding data...');
 
     console.log('  - Seeding users...');
-    const roles: UserRole[] = ['admin', 'super_hr', 'hr_manager', 'recruiter', 'interviewer', 'employee', 'intern', 'guest'];
+    const roles: UserRole[] = ['admin', 'super_hr', 'hr_manager', 'recruiter', 'interviewer', 'employee', 'intern', 'guest', 'manager', 'team_lead'];
     const seededUsers: (User & { user_metadata: { role: UserRole, full_name: string, avatar_url: string, department: string }})[] = [];
     const password = 'Password123!';
 
@@ -179,6 +181,12 @@ async function seedData() {
         applied_date: faker.date.past().toISOString(),
         avatar: `https://i.pravatar.cc/150?u=${faker.string.uuid()}`,
         source: 'walk-in' as const,
+        wpm: faker.number.int({ min: 40, max: 100 }),
+        accuracy: faker.number.int({ min: 90, max: 100 }),
+        aptitude_score: faker.number.int({ min: 70, max: 100 }),
+        comprehensive_score: faker.number.int({ min: 70, max: 100 }),
+        english_grammar_score: faker.number.int({ min: 70, max: 100 }),
+        customer_service_score: faker.number.int({ min: 70, max: 100 }),
     })) : [];
     const { data: seededApplicants } = await supabase.from('applicants').insert(applicants).select();
     console.log('  - Seeded applicants');
