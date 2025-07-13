@@ -52,7 +52,8 @@ export async function login(formData: any, isMagicLink: boolean = false) {
   const { data: authData, error } = await supabase.auth.signInWithPassword(formData);
     
   if (error || !authData.user) {
-      return { error: `Invalid credentials. Please try again.` };
+      // Return the specific error from Supabase for better debugging
+      return { error: `Login failed: ${error?.message || 'Invalid credentials. Please try again.'}` };
   }
 
   // More robust way to get the role directly from auth data, removing a failure point.

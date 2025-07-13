@@ -71,7 +71,7 @@ export default function LoginPage() {
     if (result?.error) {
       toast({
         title: 'Login Failed',
-        description: result.error,
+        description: result.error, // Display the detailed error from the server action
         variant: 'destructive',
       });
     }
