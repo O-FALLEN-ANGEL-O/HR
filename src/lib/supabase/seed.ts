@@ -113,6 +113,11 @@ async function seedData() {
             continue;
         }
         if (authData.user) {
+            const { error: updateError } = await supabase.auth.admin.updateUserById(authData.user.id, { password });
+            if (updateError) {
+                console.error(`Error setting password for ${email}:`, updateError.message);
+                continue;
+            }
             console.log(`    - Created ${role} user: ${email} (pw: ${password})`);
             seededUsers.push(authData.user as any);
         }
@@ -135,6 +140,11 @@ async function seedData() {
         if (authError) {
             console.error(`Error creating employee user ${email}:`, authError.message);
         } else if (authData.user) {
+             const { error: updateError } = await supabase.auth.admin.updateUserById(authData.user.id, { password });
+            if (updateError) {
+                console.error(`Error setting password for ${email}:`, updateError.message);
+                continue;
+            }
             seededUsers.push(authData.user as any);
         }
     }
@@ -380,3 +390,5 @@ run().catch(error => {
     console.error('🔴 Seeding failed:', error);
     process.exit(1);
 });
+
+    
