@@ -357,6 +357,18 @@ async function seedData() {
     ];
     await supabase.from('company_documents').insert(documents);
     console.log('  - Seeded company documents');
+    
+    // Seed Performance Reviews
+    if (employeeUsers.length > 0) {
+        const reviews = employeeUsers.map(user => ({
+            user_id: user.id,
+            job_title: faker.person.jobTitle(),
+            review_date: faker.date.past(),
+            status: faker.helpers.arrayElement(['Pending', 'In Progress', 'Completed']),
+        }));
+        await supabase.from('performance_reviews').insert(reviews);
+        console.log('  - Seeded performance reviews');
+    }
 }
 
 
