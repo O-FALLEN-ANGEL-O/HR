@@ -356,18 +356,6 @@ async function seedData() {
     await supabase.from('company_documents').insert(documents);
     console.log('  - Seeded company documents');
 
-    const performanceReviews = allEmployees.map(employee => ({
-        user_id: employee.id,
-        job_title: faker.person.jobTitle(),
-        review_date: faker.date.past().toISOString(),
-        status: faker.helpers.arrayElement(['Pending', 'In Progress', 'Completed'])
-    }));
-    await supabase.from('performance_reviews').insert(performanceReviews);
-    console.log('  - Seeded performance reviews');
->>>>>>> c5b0471ecee309d29599bf1c6ee17c8a30116c7b
-}
-=======
-
     // Seed Performance Reviews
     if (employeeUsers.length > 0) {
         const reviews = employeeUsers.map(user => ({
@@ -379,18 +367,6 @@ async function seedData() {
         await supabase.from('performance_reviews').insert(reviews);
         console.log('  - Seeded performance reviews');
     }
-}
-=======
-
-    const performanceReviews = allEmployees.map(employee => ({
-        user_id: employee.id,
-        job_title: faker.person.jobTitle(),
-        review_date: faker.date.past().toISOString(),
-        status: faker.helpers.arrayElement(['Pending', 'In Progress', 'Completed'])
-    }));
-    await supabase.from('performance_reviews').insert(performanceReviews);
-    console.log('  - Seeded performance reviews');
->>>>>>> c5b0471ecee309d29599bf1c6ee17c8a30116c7b
 }
 
 
