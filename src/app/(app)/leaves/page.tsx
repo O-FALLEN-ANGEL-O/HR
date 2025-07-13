@@ -13,8 +13,11 @@ async function getLeaveData(user: UserProfile) {
     if (user.role === 'manager' || user.role === 'team_lead') {
         // Fetch leaves for users in the same department
         if (user.department) {
-            const { data: teamMembers } = await supabase.from('users').select('id').eq('department', user.department);
-            const teamMemberIds = teamMembers?.map(tm => tm.id) || [];
+             const { data: teamMembers, error: teamError } = await supabase.from('users').select('id').eq('department', user.department);
+            if (teamError) {
+                console.error('Error fetching team members:', teamError.message);
+            }
+            const teamMemberIds = teamMembers?.map(tm => tm.id) || [user.id]; // Default to own ID if no team members found
             leavesQuery = leavesQuery.in('user_id', teamMemberIds);
         } else {
             // If manager has no department, only show their own leaves
@@ -57,7 +60,8 @@ async function getLeaveData(user: UserProfile) {
         stats.totalEmployees = userCount || 0;
         stats.absentToday = absentUserIds.size;
         stats.presentToday = stats.totalEmployees - stats.absentToday;
-        stats.pendingRequests = (await supabase.from('leaves').select('id', { count: 'exact' }).eq('status', 'pending')).count || 0;
+        const { count: pendingCount } = await supabase.from('leaves').select('id', { count: 'exact' }).eq('status', 'pending');
+        stats.pendingRequests = pendingCount || 0;
     }
 
 

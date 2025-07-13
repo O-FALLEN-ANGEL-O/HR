@@ -12,8 +12,10 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 // By default, the seed script will only run in production environments (like Vercel builds)
 // to prevent accidental data wipes during local development.
 // You can force it to run by setting the FORCE_DB_SEED environment variable.
-if (process.env.NODE_ENV !== 'production' && process.env.FORCE_DB_SEED !== 'true') {
-  console.log('🌱 SKIPPING DB SEED: NODE_ENV is not "production". Use `npm run seed:force` to run locally.');
+if (process.env.NODE_ENV === 'production' || process.env.FORCE_DB_SEED === 'true') {
+  console.log('🌱 Starting database seed process...');
+} else {
+  console.log('🌱 SKIPPING DB SEED: To run locally, use `npm run seed:force` or set FORCE_DB_SEED=true.');
   process.exit(0);
 }
 
@@ -250,12 +252,12 @@ async function seedData() {
         console.log('  - Seeded onboarding_workflows');
     }
 
-    const employeeUsers = seededUsers.filter(u => u.user_metadata.role !== 'guest');
+    const employeeUsers = seededUsers.filter(u => u.user_metadata.role !== 'guest' && u.user_metadata.role !== 'intern');
     if (employeeUsers.length > 0) {
         const leaveBalances = employeeUsers.map(u => ({
             user_id: u.id,
-            sick_leave: 10,
-            casual_leave: 8,
+            sick_leave: 12,
+            casual_leave: 10,
             earned_leave: 15,
             unpaid_leave: 0
         }));
@@ -269,8 +271,8 @@ async function seedData() {
                 const user = faker.helpers.arrayElement(employeeUsers);
                 const approver = faker.helpers.arrayElement(managersForApproval);
                 const startDate = faker.date.between({ from: new Date(new Date().setMonth(new Date().getMonth() - 3)), to: new Date(new Date().setMonth(new Date().getMonth() + 1)) });
-                const endDate = new Date(startDate);
                 const totalDays = faker.number.int({min: 1, max: 5})
+                const endDate = new Date(startDate);
                 endDate.setDate(startDate.getDate() + totalDays - 1);
                 return {
                     user_id: user.id,
@@ -290,7 +292,7 @@ async function seedData() {
     
     const hrUsers = seededUsers.filter(u => ['admin', 'super_hr', 'hr_manager'].includes(u.user_metadata.role));
     if (hrUsers.length > 0) {
-        const companyPosts = Array.from({length: 5}, () => ({
+        const companyPosts = Array.from({length: 8}, () => ({
             author_id: faker.helpers.arrayElement(hrUsers).id,
             content: faker.lorem.paragraph(),
             image_url: faker.datatype.boolean() ? `https://placehold.co/600x400.png` : undefined,
@@ -299,9 +301,9 @@ async function seedData() {
         console.log('  - Seeded company posts');
     }
 
-    const allEmployees = seededUsers.filter(u => u.user_metadata.role === 'employee' || u.user_metadata.role === 'manager');
+    const allEmployees = seededUsers.filter(u => ['employee', 'manager', 'team_lead', 'recruiter', 'hr_manager'].includes(u.user_metadata.role));
     if (allEmployees.length > 1 && hrUsers.length > 0) {
-        const kudos = Array.from({length: 15}, () => {
+        const kudos = Array.from({length: 25}, () => {
             const fromUser = faker.helpers.arrayElement(allEmployees);
             const toUser = faker.helpers.arrayElement(allEmployees.filter(u => u.id !== fromUser.id));
             return {
@@ -328,8 +330,8 @@ async function seedData() {
         }
     }
     
-    if (allEmployees.length > 0) {
-        const payslips = allEmployees.flatMap(employee => {
+    if (employeeUsers.length > 0) {
+        const payslips = employeeUsers.flatMap(employee => {
             return Array.from({length: 6}, (_, i) => {
                 const date = faker.date.past({refDate: new Date(new Date().setMonth(new Date().getMonth() - i))});
                 const gross = faker.number.int({min: 4000, max: 8000});
@@ -359,7 +361,6 @@ async function seedData() {
 
 
 async function run() {
-  console.log('▶️  Starting database seed process...');
   await clearData();
   await seedData();
   console.log('🎉 Database seeding complete!');

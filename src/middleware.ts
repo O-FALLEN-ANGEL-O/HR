@@ -3,7 +3,7 @@ import { updateSession } from '@/lib/supabase/middleware';
 import type { UserRole } from './lib/types';
 
 // Define public and authentication routes
-const publicRoutes = ['/login', '/signup', '/auth/callback', '/register', '/aptitude-test', '/comprehensive-test', '/customer-service-test', '/english-grammar-test', '/typing-test'];
+const publicRoutes = ['/login', '/signup', '/auth/callback', '/register', '/aptitude-test', '/comprehensive-test', '/customer-service-test', '/english-grammar-test', '/typing-test', '/403'];
 const authRoutes = ['/login', '/signup'];
 
 // Role-based access control matrix
@@ -15,7 +15,7 @@ const roleAccess: Record<UserRole, string[]> = {
   team_lead: ['/team-lead', '/employee', '/leaves', '/company-feed'],
   recruiter: ['/recruiter', '/hr/dashboard', '/applicants', '/jobs', '/ai-tools/applicant-scoring', '/company-feed'],
   interviewer: ['/interviews'],
-  employee: ['/employee', '/leaves', '/company-feed', '/kudos', '/documents', '/payslips'],
+  employee: ['/employee', '/leaves', '/company-feed', '/kudos', '/employee/documents', '/employee/payslips'],
   intern: ['/intern', '/onboarding', '/company-feed', '/leaves'],
   guest: [],
 };
