@@ -1,3 +1,4 @@
+
 import { createClient, type User } from '@supabase/supabase-js';
 import { faker } from '@faker-js/faker';
 import dotenv from 'dotenv';
@@ -8,9 +9,8 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 
-// By default, the seed script will only run in production environments (like Vercel builds)
-// to prevent accidental data wipes during local development.
-// You can force it to run by setting the FORCE_DB_SEED environment variable.
+// The seed script will only run in production environments (like Vercel builds)
+// to prevent accidental data wipes during local development, unless forced.
 if (process.env.NODE_ENV === 'production' || process.env.FORCE_DB_SEED === 'true') {
   console.log('🌱 Starting database seed process...');
 } else {
@@ -23,7 +23,6 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error('🔴 ERROR: Supabase URL or service key is missing. Skipping seeding.');
-  // Exit gracefully instead of throwing an error to prevent build failures.
   process.exit(0);
 }
 
@@ -57,7 +56,6 @@ async function clearData() {
     }
   }
 
-  // Hard delete all users except Supabase-internal ones.
   console.log('🗑️  Clearing auth users...');
   let hasMoreUsers = true;
   let page = 0;
@@ -357,6 +355,15 @@ async function seedData() {
     ];
     await supabase.from('company_documents').insert(documents);
     console.log('  - Seeded company documents');
+
+    const performanceReviews = allEmployees.map(employee => ({
+        user_id: employee.id,
+        job_title: faker.person.jobTitle(),
+        review_date: faker.date.past().toISOString(),
+        status: faker.helpers.arrayElement(['Pending', 'In Progress', 'Completed'])
+    }));
+    await supabase.from('performance_reviews').insert(performanceReviews);
+    console.log('  - Seeded performance reviews');
 }
 
 
