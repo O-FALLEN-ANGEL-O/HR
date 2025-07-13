@@ -244,26 +244,30 @@ async function seedData() {
         await supabase.from('leave_balances').insert(leaveBalances);
         console.log('  - Seeded leave balances');
 
-        const leaves = Array.from({length: 50}, () => {
-            const user = faker.helpers.arrayElement(employeeUsers);
-            const approver = faker.helpers.arrayElement(managers.length > 0 ? managers : [user]);
-            const startDate = faker.date.between({ from: new Date(new Date().setMonth(new Date().getMonth() - 3)), to: new Date(new Date().setMonth(new Date().getMonth() + 1)) });
-            const endDate = new Date(startDate);
-            const totalDays = faker.number.int({min: 1, max: 5})
-            endDate.setDate(startDate.getDate() + totalDays - 1);
-            return {
-                user_id: user.id,
-                leave_type: faker.helpers.arrayElement(['sick', 'casual', 'earned', 'unpaid']),
-                start_date: startDate.toISOString().split('T')[0],
-                end_date: endDate.toISOString().split('T')[0],
-                total_days: totalDays,
-                reason: faker.lorem.sentence(),
-                status: faker.helpers.arrayElement(['pending', 'approved', 'rejected']),
-                approver_id: approver.id
-            }
-        });
-        await supabase.from('leaves').insert(leaves);
-        console.log('  - Seeded leaves');
+        const managersForApproval = seededUsers.filter(u => ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead'].includes(u.user_metadata.role));
+
+        if (managersForApproval.length > 0) {
+            const leaves = Array.from({length: 50}, () => {
+                const user = faker.helpers.arrayElement(employeeUsers);
+                const approver = faker.helpers.arrayElement(managersForApproval);
+                const startDate = faker.date.between({ from: new Date(new Date().setMonth(new Date().getMonth() - 3)), to: new Date(new Date().setMonth(new Date().getMonth() + 1)) });
+                const endDate = new Date(startDate);
+                const totalDays = faker.number.int({min: 1, max: 5})
+                endDate.setDate(startDate.getDate() + totalDays - 1);
+                return {
+                    user_id: user.id,
+                    leave_type: faker.helpers.arrayElement(['sick', 'casual', 'earned', 'unpaid']),
+                    start_date: startDate.toISOString().split('T')[0],
+                    end_date: endDate.toISOString().split('T')[0],
+                    total_days: totalDays,
+                    reason: faker.lorem.sentence(),
+                    status: faker.helpers.arrayElement(['pending', 'approved', 'rejected']),
+                    approver_id: approver.id
+                }
+            });
+            await supabase.from('leaves').insert(leaves);
+            console.log('  - Seeded leaves');
+        }
     }
     
     const hrUsers = seededUsers.filter(u => ['admin', 'super_hr', 'hr_manager'].includes(u.user_metadata.role));
