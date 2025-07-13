@@ -68,7 +68,6 @@ export default function RegisterPage() {
   
   const router = useRouter();
   const { toast } = useToast();
-  const supabase = createClient();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
@@ -82,6 +81,7 @@ export default function RegisterPage() {
   });
 
   React.useEffect(() => {
+    const supabase = createClient();
     const fetchJobs = async () => {
       const { data, error } = await supabase
         .from('jobs')
@@ -109,7 +109,7 @@ export default function RegisterPage() {
     };
     fetchJobs();
     fetchColleges();
-  }, [supabase, toast]);
+  }, [toast]);
 
   React.useEffect(() => {
     if (showCamera) {
@@ -204,6 +204,7 @@ export default function RegisterPage() {
 
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
     setIsSubmitting(true);
+    const supabase = createClient();
     try {
       let avatarUrl: string | undefined = undefined;
 
