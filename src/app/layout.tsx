@@ -13,6 +13,9 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'HR+',
   description: 'A comprehensive Human Resources management platform.',
+  icons: {
+    icon: '/favicon.svg',
+  }
 };
 
 export default function RootLayout({
