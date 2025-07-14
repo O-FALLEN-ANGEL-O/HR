@@ -13,6 +13,9 @@ import {
 import {
   Card,
   CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
 } from '@/components/ui/card';
 import {
   Dialog,
@@ -35,7 +38,7 @@ import { Interview } from '@/lib/types';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, MoreHorizontal, Phone, Users, Video, Edit, MessageSquare, Trash2, Check, Loader2 } from 'lucide-react';
+import { Calendar, Clock, MoreHorizontal, Phone, Users, Video, Edit, MessageSquare, Trash2, Check, Loader2, Mic, MessagesSquare } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -106,24 +109,41 @@ export default function InterviewList({ initialInterviews }: InterviewListProps)
 
 
   return (
-    <Tabs defaultValue="upcoming" className="w-full">
-      <div className="flex items-center">
-        <TabsList>
-          <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-          <TabsTrigger value="completed">Completed</TabsTrigger>
-          <TabsTrigger value="all">All</TabsTrigger>
-        </TabsList>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="lg:col-span-2">
+        <Tabs defaultValue="upcoming" className="w-full">
+          <div className="flex items-center">
+            <TabsList>
+              <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+              <TabsTrigger value="completed">Completed</TabsTrigger>
+              <TabsTrigger value="all">All</TabsTrigger>
+            </TabsList>
+          </div>
+          <TabsContent value="upcoming">
+            <InterviewTable interviews={interviews.filter(i => i.status === 'Scheduled')} isClient={isClient} />
+          </TabsContent>
+          <TabsContent value="completed">
+            <InterviewTable interviews={interviews.filter(i => i.status === 'Completed' || i.status === 'Canceled')} isClient={isClient} />
+          </TabsContent>
+          <TabsContent value="all">
+            <InterviewTable interviews={interviews} isClient={isClient} />
+          </TabsContent>
+        </Tabs>
       </div>
-      <TabsContent value="upcoming">
-        <InterviewTable interviews={interviews.filter(i => i.status === 'Scheduled')} isClient={isClient} />
-      </TabsContent>
-      <TabsContent value="completed">
-        <InterviewTable interviews={interviews.filter(i => i.status === 'Completed' || i.status === 'Canceled')} isClient={isClient} />
-      </TabsContent>
-      <TabsContent value="all">
-        <InterviewTable interviews={interviews} isClient={isClient} />
-      </TabsContent>
-    </Tabs>
+       <div className="lg:col-span-1">
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><MessagesSquare/> Panel Chat</CardTitle>
+                <CardDescription>Private chat for panelists on the same interview round.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="text-center text-muted-foreground py-10">
+                    <p>Panel Chat feature is coming soon.</p>
+                </div>
+            </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }
 
@@ -267,8 +287,9 @@ function FeedbackDialog({ interviewId, applicantId }: { interviewId: string, app
                     </DialogDescription>
                 </DialogHeader>
                 <form action={handleFormSubmit} ref={formRef}>
-                    <Textarea name="note" placeholder="Enter your feedback here..." className="min-h-[120px]" required />
-                    <DialogFooter className="mt-4">
+                    <Textarea name="note" placeholder="Enter your feedback here... Your notes will be auto-saved." className="min-h-[120px]" required />
+                    <DialogFooter className="mt-4 flex justify-between w-full">
+                        <Button variant="outline" type="button"><Mic className="mr-2" /> Record Voice Note</Button>
                         <Button type="submit" disabled={isSubmitting}>
                             {isSubmitting ? <Loader2 className="animate-spin mr-2"/> : <Check className="mr-2"/>} Submit & Complete
                         </Button>

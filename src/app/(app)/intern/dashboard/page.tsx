@@ -1,6 +1,6 @@
 import { Header } from '@/components/header';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { ClipboardCheck, BookOpen, Clock, Award } from 'lucide-react';
+import { ClipboardCheck, BookOpen, Clock, Award, User, Wallet, BarChart } from 'lucide-react';
 import Link from 'next/link';
 
 export default function InternDashboardPage() {
@@ -37,6 +37,33 @@ export default function InternDashboardPage() {
                     </CardContent>
                 </Card>
             </Link>
+             <Card className="opacity-60 cursor-not-allowed">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">My Mentor</CardTitle>
+                    <User className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <p className="text-xs text-muted-foreground">View your assigned mentor's profile. (Coming Soon)</p>
+                </CardContent>
+            </Card>
+             <Card className="opacity-60 cursor-not-allowed">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Stipend Tracker</CardTitle>
+                    <Wallet className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <p className="text-xs text-muted-foreground">View stipend release date. (Coming Soon)</p>
+                </CardContent>
+            </Card>
+             <Card className="opacity-60 cursor-not-allowed">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Progress Card</CardTitle>
+                    <BarChart className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <p className="text-xs text-muted-foreground">Auto-generated report from mentor. (Coming Soon)</p>
+                </CardContent>
+            </Card>
             <Link href="/employee/documents">
               <Card className="hover:bg-muted/50 transition-colors">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

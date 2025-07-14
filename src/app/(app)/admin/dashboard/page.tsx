@@ -1,6 +1,6 @@
 import { Header } from '@/components/header';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Users, Settings, Workflow, ScanSearch, FileText, ShieldCheck } from 'lucide-react';
+import { Users, Settings, Workflow, ScanSearch, FileText, ShieldCheck, History, HeartPulse, FileArchive } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AdminDashboardPage() {
@@ -26,16 +26,34 @@ export default function AdminDashboardPage() {
                     </CardContent>
                 </Card>
             </Link>
-             <Card>
+             <Card className="opacity-60 cursor-not-allowed">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">System Settings</CardTitle>
-                    <Settings className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium">Role Audit History</CardTitle>
+                    <History className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <p className="text-xs text-muted-foreground">Configure system-wide settings and integrations. (Coming Soon)</p>
+                    <p className="text-xs text-muted-foreground">See who was assigned what role and when. (Coming Soon)</p>
                 </CardContent>
             </Card>
-             <Card>
+             <Card className="opacity-60 cursor-not-allowed">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">System Health Monitor</CardTitle>
+                    <HeartPulse className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <p className="text-xs text-muted-foreground">Track API health and integration logs. (Coming Soon)</p>
+                </CardContent>
+            </Card>
+             <Card className="opacity-60 cursor-not-allowed">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Access Control Templates</CardTitle>
+                    <FileArchive className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <p className="text-xs text-muted-foreground">Predefined access sets for faster role setup. (Coming Soon)</p>
+                </CardContent>
+            </Card>
+             <Card className="opacity-60 cursor-not-allowed">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Audit Trail</CardTitle>
                     <ScanSearch className="h-4 w-4 text-muted-foreground" />
@@ -44,16 +62,7 @@ export default function AdminDashboardPage() {
                     <p className="text-xs text-muted-foreground">Review logs of all major actions in the system. (Coming Soon)</p>
                 </CardContent>
             </Card>
-             <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Templates & Policies</CardTitle>
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <p className="text-xs text-muted-foreground">Manage document templates and company policies. (Coming Soon)</p>
-                </CardContent>
-            </Card>
-             <Card>
+             <Card className="opacity-60 cursor-not-allowed">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">RLS Management</CardTitle>
                     <ShieldCheck className="h-4 w-4 text-muted-foreground" />

@@ -1,6 +1,6 @@
 import { Header } from '@/components/header';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { ShieldCheck, UserCog, Workflow, Users, Clock, FileText } from 'lucide-react';
+import { ShieldCheck, UserCog, Workflow, Users, Clock, FileText, DollarSign, BrainCircuit, BarChart, GitBranch } from 'lucide-react';
 import Link from 'next/link';
 
 export default function SuperHrDashboardPage() {
@@ -37,46 +37,42 @@ export default function SuperHrDashboardPage() {
                     </CardContent>
                 </Card>
             </Link>
-            <Link href="/leaves">
-                <Card className="hover:bg-muted/50 transition-colors">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Leave Management</CardTitle>
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-xs text-muted-foreground">View org-wide leaves and absentee statistics.</p>
-                    </CardContent>
-                </Card>
-            </Link>
-             <Card>
+             <Card className="opacity-60 cursor-not-allowed">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Manage Workflows</CardTitle>
-                    <Workflow className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium">Salary Benchmarking</CardTitle>
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <p className="text-xs text-muted-foreground">Create and edit onboarding and other workflows. (Coming soon)</p>
+                    <p className="text-xs text-muted-foreground">Compare salaries to market standards. (Coming soon)</p>
                 </CardContent>
             </Card>
-            <Card>
+             <Card className="opacity-60 cursor-not-allowed">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Compliance & Policies</CardTitle>
+                    <CardTitle className="text-sm font-medium">Workforce Planning</CardTitle>
+                    <BrainCircuit className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <p className="text-xs text-muted-foreground">Predict future hiring needs. (Coming soon)</p>
+                </CardContent>
+            </Card>
+             <Card className="opacity-60 cursor-not-allowed">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Org Chart Builder</CardTitle>
+                    <GitBranch className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <p className="text-xs text-muted-foreground">Visualize and manage org structure. (Coming soon)</p>
+                </CardContent>
+            </Card>
+             <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Compliance Pulse</CardTitle>
                     <ShieldCheck className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <p className="text-xs text-muted-foreground">Configure leave/benefit policies. (Coming soon)</p>
+                    <p className="text-xs text-muted-foreground">View global compliance status. (Coming soon)</p>
                 </CardContent>
             </Card>
-             <Link href="/employee/documents">
-                <Card className="hover:bg-muted/50 transition-colors">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Docs & Reports</CardTitle>
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-xs text-muted-foreground">Access all company documents and generate reports.</p>
-                    </CardContent>
-                </Card>
-            </Link>
         </div>
       </div>
     </div>

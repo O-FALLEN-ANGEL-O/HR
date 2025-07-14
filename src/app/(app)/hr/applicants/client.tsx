@@ -43,6 +43,7 @@ import {
   Library,
   SpellCheck,
   HeartHandshake,
+  FileSearch,
 } from 'lucide-react';
 import {
   Select,
@@ -57,6 +58,16 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { AddApplicantDialog } from '@/components/add-applicant-dialog';
 import { Header } from '@/components/header';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 
 type ApplicantListProps = {
   initialApplicants: Applicant[];
@@ -69,6 +80,7 @@ const stageColors: { [key: string]: string } = {
   Interview: 'bg-purple-100 text-purple-800',
   Offer: 'bg-yellow-100 text-yellow-800',
   Hired: 'bg-green-100 text-green-800',
+  Rejected: 'bg-red-100 text-red-800',
 };
 
 export default function ApplicantList({
@@ -311,6 +323,7 @@ export default function ApplicantList({
                           <Mail className="mr-2 h-4 w-4" />
                           Send Email
                         </DropdownMenuItem>
+                         <RejectCandidateDialog applicantId={applicant.id} />
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={() => handleAssignTest(applicant.id, 'Typing Test', 'typing-test')}
@@ -351,6 +364,72 @@ export default function ApplicantList({
           </Table>
         </CardContent>
       </Card>
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><FileSearch /> Rejection Reason Log</CardTitle>
+                <CardDescription>Review why candidates were not selected to improve processes.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="text-center text-muted-foreground py-10">
+                    <p>Rejection reason log feature is coming soon.</p>
+                </div>
+            </CardContent>
+        </Card>
+         <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><User /> Talent Pool CRM</CardTitle>
+                <CardDescription>Manage high-potential candidates for future opportunities.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="text-center text-muted-foreground py-10">
+                    <p>Talent Pool CRM feature is coming soon.</p>
+                </div>
+            </CardContent>
+        </Card>
+      </div>
     </div>
+  );
+}
+
+function RejectCandidateDialog({ applicantId }: { applicantId: string }) {
+  const [open, setOpen] = React.useState(false);
+  // Add logic to handle rejection form
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <div className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-red-600">
+            <User className="mr-2 h-4 w-4" />
+            Reject Candidate
+        </div>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Reject Candidate</DialogTitle>
+          <DialogDescription>
+            Please select a reason for rejection. This will be logged for internal review.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4 space-y-4">
+            <Select>
+                <SelectTrigger>
+                    <SelectValue placeholder="Select a rejection reason" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="not-qualified">Not a good fit / Not qualified</SelectItem>
+                    <SelectItem value="salary-mismatch">Salary expectation mismatch</SelectItem>
+                    <SelectItem value="culture-fit">Not a good culture fit</SelectItem>
+                    <SelectItem value="position-filled">Position filled by another candidate</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+            </Select>
+            <Textarea placeholder="Add optional notes..." />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="destructive" onClick={() => setOpen(false)}>Confirm Rejection</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

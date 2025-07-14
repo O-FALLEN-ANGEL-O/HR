@@ -1,6 +1,6 @@
 import { Header } from '@/components/header';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Clock, Users, FileText, Award, FolderKanban, LifeBuoy, User } from 'lucide-react';
+import { Clock, Users, FileText, Award, FolderKanban, LifeBuoy, User, GitCommit, Handshake, BarChart, BadgePercent } from 'lucide-react';
 import Link from 'next/link';
 
 const features = [
@@ -13,9 +13,16 @@ const features = [
     },
     {
         title: "Leave Manager",
-        description: "View leave balances and request time off.",
+        description: "Apply for leave and view balance.",
         icon: Clock,
         href: "/leaves",
+    },
+     {
+        title: "Leave Forecast",
+        description: "AI suggests best dates for vacation.",
+        icon: GitCommit,
+        href: "/leaves",
+        comingSoon: true,
     },
     {
         title: "Employee Directory",
@@ -30,10 +37,31 @@ const features = [
         href: "/employee/payslips",
     },
     {
+        title: "Salary Breakdown",
+        description: "Interactive chart of your CTC vs in-hand.",
+        icon: BarChart,
+        href: "/leaves",
+        comingSoon: true,
+    },
+    {
         title: "Kudos",
         description: "Recognize your peers for their great work.",
         icon: Award,
         href: "/employee/kudos",
+    },
+    {
+        title: "Peer Endorsements",
+        description: "Give skill-based endorsements to peers.",
+        icon: Handshake,
+        href: "#",
+        comingSoon: true,
+    },
+    {
+        title: "Engagement Polls",
+        description: "Quick one-question polls from HR.",
+        icon: BadgePercent,
+        href: "#",
+        comingSoon: true,
     },
     {
         title: "Company Policies",

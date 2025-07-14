@@ -25,7 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
 import type { Leave, LeaveBalance, UserProfile } from '@/lib/types';
 import { format } from 'date-fns';
-import { Calendar, Check, Briefcase, User, UserCheck, Users, X, Sun, Umbrella, Loader2, Download, AlertCircle, TrendingUp } from 'lucide-react';
+import { Calendar, Check, Briefcase, User, UserCheck, Users, X, Sun, Umbrella, Loader2, Download, AlertCircle, TrendingUp, BarChart } from 'lucide-react';
 import { LeaveDialog } from '@/components/leave-dialog';
 import { updateLeaveStatus } from '@/app/actions';
 import { predictLeaveSpikes } from '@/ai/flows/predict-leave-spikes';
@@ -123,11 +123,13 @@ export function LeaveClient({
   
   const isAdmin = currentUser.role === 'admin' || currentUser.role === 'super_hr' || currentUser.role === 'hr_manager';
   const isManager = currentUser.role === 'manager' || currentUser.role === 'team_lead';
+  const isEmployee = currentUser.role === 'employee' || currentUser.role === 'intern';
 
   const renderContent = () => {
     if (isAdmin) return <AdminLeaveView leaves={leaves} stats={stats} />;
     if (isManager) return <ManagerLeaveView leaves={leaves.filter(l => l.users?.department === currentUser.department)} currentUser={currentUser}/>;
-    return <EmployeeLeaveView leaves={leaves.filter(l => l.user_id === currentUser.id)} balance={balance} user={currentUser} />;
+    if (isEmployee) return <EmployeeLeaveView leaves={leaves.filter(l => l.user_id === currentUser.id)} balance={balance} user={currentUser} />;
+    return null;
   };
 
   return <div>{renderContent()}</div>;
@@ -261,6 +263,13 @@ function ManagerLeaveView({ leaves, currentUser }: { leaves: Leave[], currentUse
                     )}
                 </CardContent>
             </Card>
+            <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Leave Overlap Warning!</AlertTitle>
+                <AlertDescription>
+                    More than 2 team members have applied for leave on the same day. Please review carefully. (This is a sample warning).
+                </AlertDescription>
+            </Alert>
             <Card>
                 <CardHeader>
                     <CardTitle>Full Team Leave History</CardTitle>
@@ -317,6 +326,31 @@ function EmployeeLeaveView({ leaves, balance, user }: { leaves: Leave[], balance
                     </Card>
                 </CardContent>
             </Card>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><BarChart /> Salary Breakdown</CardTitle>
+                        <CardDescription>Visualize your CTC vs in-hand salary.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-center text-muted-foreground py-10">
+                            <p>Salary breakdown visualizer coming soon.</p>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><TrendingUp /> Leave Forecast</CardTitle>
+                        <CardDescription>AI suggests the best dates for your next vacation.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                         <div className="text-center text-muted-foreground py-10">
+                            <p>Leave forecast tool coming soon.</p>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
 
              <Card>
                 <CardHeader>

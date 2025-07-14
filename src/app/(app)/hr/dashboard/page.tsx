@@ -16,7 +16,7 @@ export default async function HRDashboardPage() {
   const metrics: Metric[] = [
     { id: 1, title: 'Total Employees', value: String(employeeCount || 0) },
     { id: 2, title: 'Open Positions', value: String(openPositionsCount || 0) },
-    { id: 3, title: 'Leave Requests', value: String(leaveRequestsCount || 0) },
+    { id: 3, title: 'Pending Leave', value: String(leaveRequestsCount || 0) },
     { id: 4, title: 'Attrition Rate', value: '2.1%', change: '-0.2%', change_type: 'decrease' },
   ];
   

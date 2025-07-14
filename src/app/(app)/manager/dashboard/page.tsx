@@ -1,6 +1,6 @@
 import { Header } from '@/components/header';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Users, BarChart3, Clock, Award } from 'lucide-react';
+import { Users, BarChart3, Clock, Award, LineChart, Star, ListChecks } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
@@ -72,23 +72,43 @@ export default async function ManagerDashboardPage() {
         <Link href="/employee/kudos">
             <Card className="hover:bg-muted/50 transition-colors">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Team Recognition</CardTitle>
-                    <Award className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium">Weekly Award</CardTitle>
+                    <Star className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">&nbsp;</div>
-                    <p className="text-xs text-muted-foreground">Recognize your peers for their great work.</p>
+                    <p className="text-xs text-muted-foreground">Select team member for weekly award.</p>
                 </CardContent>
             </Card>
         </Link>
          <Card className="opacity-50 cursor-not-allowed">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Performance Reviews</CardTitle>
-                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">Team KPIs</CardTitle>
+                <LineChart className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
                  <div className="text-2xl font-bold">&nbsp;</div>
-                <p className="text-xs text-muted-foreground">Track performance cycles. (Coming Soon)</p>
+                <p className="text-xs text-muted-foreground">Track burn rate and attrition risk. (Coming Soon)</p>
+            </CardContent>
+        </Card>
+        <Card className="opacity-50 cursor-not-allowed">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Meeting Feedback</CardTitle>
+                <ListChecks className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                 <div className="text-2xl font-bold">&nbsp;</div>
+                <p className="text-xs text-muted-foreground">Log 1-on-1 notes and feedback. (Coming Soon)</p>
+            </CardContent>
+        </Card>
+         <Card className="opacity-50 cursor-not-allowed">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Promotion Suggestions</CardTitle>
+                <Award className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                 <div className="text-2xl font-bold">&nbsp;</div>
+                <p className="text-xs text-muted-foreground">Recommend employees for promotion. (Coming Soon)</p>
             </CardContent>
         </Card>
       </div>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -14,11 +13,12 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, CheckCircle, BrainCircuit, Keyboard, FileText, ArrowRight, Library, SpellCheck, HeartHandshake } from 'lucide-react';
+import { Loader2, CheckCircle, BrainCircuit, Keyboard, FileText, ArrowRight, Library, SpellCheck, HeartHandshake, UploadCloud, Calendar } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { Applicant } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
 
 export default function ApplicantPortalPage() {
     const params = useParams();
@@ -64,7 +64,7 @@ export default function ApplicantPortalPage() {
                 },
                 (payload) => {
                     setApplicant(payload.new as Applicant);
-                    toast({ title: 'Profile Updated', description: 'Your assessment results have been saved.' });
+                    toast({ title: 'Profile Updated', description: 'Your application status has been updated.' });
                 }
             )
             .subscribe();
@@ -114,6 +114,8 @@ export default function ApplicantPortalPage() {
         { completed: hasCompletedCustomerServiceTest, name: 'Customer Service Test', icon: HeartHandshake, description: 'Evaluate your customer-facing skills.', path: 'customer-service-test' },
     ].filter(test => !test.completed);
 
+    const isShortlisted = applicant.stage === 'Interview' || applicant.stage === 'Offer';
+
     return (
         <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
             <Card className="w-full max-w-2xl">
@@ -146,6 +148,30 @@ export default function ApplicantPortalPage() {
                             </div>
                         </CardContent>
                     </Card>
+
+                    {isShortlisted && (
+                         <Card>
+                            <CardHeader>
+                                <CardTitle className="text-lg flex items-center gap-2"><Calendar /> Interview Scheduling</CardTitle>
+                                <CardDescription>Congratulations! You have been shortlisted. Please schedule your interview or upload your documents.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <Alert>
+                                    <AlertTitle>Candidate Document Locker</AlertTitle>
+                                    <AlertDescription>Please upload your photo ID, certificates, etc.</AlertDescription>
+                                    <div className="mt-4 flex items-center gap-2">
+                                        <Input id="document-upload" type="file" className="flex-1" />
+                                        <Button size="sm"><UploadCloud className="mr-2" /> Upload</Button>
+                                    </div>
+                                </Alert>
+                                 <Alert>
+                                    <AlertTitle>Reschedule Interview</AlertTitle>
+                                    <AlertDescription>If you need to reschedule, you may do so once.</AlertDescription>
+                                    <Button className="mt-4 w-full" variant="outline">Request a New Slot</Button>
+                                </Alert>
+                            </CardContent>
+                        </Card>
+                    )}
 
                     {allTestsCompleted ? (
                          <Card>
