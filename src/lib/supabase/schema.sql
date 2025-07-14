@@ -1,5 +1,5 @@
 -- 🔁 Drop dependent functions first to avoid ENUM type dependency errors
-DROP FUNCTION IF EXISTS auth.get_user_role CASCADE;
+DROP FUNCTION IF EXISTS auth.get_user_role() CASCADE;
 
 -- 🧹 Drop tables in reverse dependency order
 DROP TABLE IF EXISTS public.ticket_comments CASCADE;
@@ -21,26 +21,23 @@ DROP TABLE IF EXISTS public.jobs CASCADE;
 DROP TABLE IF EXISTS public.onboarding_workflows CASCADE;
 DROP TABLE IF EXISTS public.leaves CASCADE;
 DROP TABLE IF EXISTS public.leave_balances CASCADE;
-DROP TABLE IF EXISTS public.performance_reviews CASCADE;
 
-
--- ❌ Drop ENUM types safely with CASCADE
-DROP TYPE IF EXISTS public.user_role CASCADE;
-DROP TYPE IF EXISTS public.job_status CASCADE;
-DROP TYPE IF EXISTS public.applicant_stage CASCADE;
-DROP TYPE IF EXISTS public.applicant_source CASCADE;
-DROP TYPE IF EXISTS public.interview_type CASCADE;
-DROP TYPE IF EXISTS public.interview_status CASCADE;
-DROP TYPE IF EXISTS public.onboarding_status CASCADE;
-DROP TYPE IF EXISTS public.leave_type CASCADE;
-DROP TYPE IF EXISTS public.leave_status CASCADE;
-DROP TYPE IF EXISTS public.college_status CASCADE;
-DROP TYPE IF EXISTS public.key_result_status CASCADE;
-DROP TYPE IF EXISTS public.expense_status CASCADE;
-DROP TYPE IF EXISTS public.ticket_status CASCADE;
-DROP TYPE IF EXISTS public.ticket_priority CASCADE;
-DROP TYPE IF EXISTS public.ticket_category CASCADE;
-DROP TYPE IF EXISTS public.review_status CASCADE;
+-- ❌ Drop ENUM types safely
+DROP TYPE IF EXISTS public.user_role;
+DROP TYPE IF EXISTS public.job_status;
+DROP TYPE IF EXISTS public.applicant_stage;
+DROP TYPE IF EXISTS public.applicant_source;
+DROP TYPE IF EXISTS public.interview_type;
+DROP TYPE IF EXISTS public.interview_status;
+DROP TYPE IF EXISTS public.onboarding_status;
+DROP TYPE IF EXISTS public.leave_type;
+DROP TYPE IF EXISTS public.leave_status;
+DROP TYPE IF EXISTS public.college_status;
+DROP TYPE IF EXISTS public.key_result_status;
+DROP TYPE IF EXISTS public.expense_status;
+DROP TYPE IF EXISTS public.ticket_status;
+DROP TYPE IF EXISTS public.ticket_priority;
+DROP TYPE IF EXISTS public.ticket_category;
 
 -- ✅ Recreate ENUM types
 CREATE TYPE public.user_role AS ENUM ('admin', 'super_hr', 'hr_manager', 'recruiter', 'interviewer', 'manager', 'team_lead', 'employee', 'intern', 'guest', 'finance', 'it_admin', 'support', 'auditor');
@@ -49,7 +46,7 @@ CREATE TYPE public.applicant_stage AS ENUM ('Sourced', 'Applied', 'Phone Screen'
 CREATE TYPE public.applicant_source AS ENUM ('walk-in', 'college', 'email', 'manual', 'referral');
 CREATE TYPE public.interview_type AS ENUM ('Video', 'Phone', 'In-person');
 CREATE TYPE public.interview_status AS ENUM ('Scheduled', 'Completed', 'Canceled');
-CREATE TYPE public.review_status AS ENUM ('Pending', 'In Progress', 'Completed');
+CREATE TYPE public.onboarding_status AS ENUM ('Not Started', 'In Progress', 'Completed');
 CREATE TYPE public.leave_type AS ENUM ('sick', 'casual', 'earned', 'unpaid');
 CREATE TYPE public.leave_status AS ENUM ('pending', 'approved', 'rejected');
 CREATE TYPE public.college_status AS ENUM ('Invited', 'Confirmed', 'Attended', 'Declined');
@@ -59,334 +56,285 @@ CREATE TYPE public.ticket_status AS ENUM ('Open', 'In Progress', 'Resolved', 'Cl
 CREATE TYPE public.ticket_priority AS ENUM ('Low', 'Medium', 'High', 'Urgent');
 CREATE TYPE public.ticket_category AS ENUM ('IT', 'HR', 'Finance', 'General');
 
--- ----------------------------------------------------------------
--- 🏢 JOBS & APPLICANTS
--- ----------------------------------------------------------------
+-- ✅ Recreate helper functions for RLS
+CREATE OR REPLACE FUNCTION auth.get_user_role()
+RETURNS text
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT nullif(current_setting('request.jwt.claims', true)::json->>'role', '')::text;
+$$;
 
-CREATE TABLE IF NOT EXISTS public.jobs (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+CREATE OR REPLACE FUNCTION public.get_user_department(user_id uuid)
+RETURNS text
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+AS $$
+  SELECT raw_user_meta_data->>'department'
+  FROM auth.users
+  WHERE id = user_id;
+$$;
+
+
+-- 🏢 1. jobs
+CREATE TABLE public.jobs (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     title text NOT NULL,
     department text NOT NULL,
     description text,
-    status job_status DEFAULT 'Open'::job_status NOT NULL,
-    posted_date timestamp with time zone DEFAULT now() NOT NULL,
-    applicants integer DEFAULT 0 NOT NULL
+    status job_status NOT NULL DEFAULT 'Open',
+    posted_date timestamp with time zone NOT NULL DEFAULT now(),
+    applicants integer NOT NULL DEFAULT 0
 );
 
-CREATE TABLE IF NOT EXISTS public.colleges (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+-- 🎓 2. colleges
+CREATE TABLE public.colleges (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     name text NOT NULL,
-    status college_status DEFAULT 'Invited'::college_status NOT NULL,
-    resumes_received integer DEFAULT 0 NOT NULL,
+    status college_status NOT NULL DEFAULT 'Invited',
+    resumes_received integer NOT NULL DEFAULT 0,
     contact_email text,
-    last_contacted timestamp with time zone DEFAULT now() NOT NULL
+    last_contacted timestamp with time zone DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS public.applicants (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+-- 🧑‍💼 3. applicants
+CREATE TABLE public.applicants (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     name text NOT NULL,
-    email text NOT NULL,
+    email text UNIQUE NOT NULL,
     phone text,
     job_id uuid REFERENCES public.jobs(id) ON DELETE SET NULL,
     college_id uuid REFERENCES public.colleges(id) ON DELETE SET NULL,
-    stage applicant_stage DEFAULT 'Applied'::applicant_stage NOT NULL,
-    source applicant_source DEFAULT 'manual'::applicant_source,
-    applied_date timestamp with time zone DEFAULT now(),
+    stage applicant_stage NOT NULL DEFAULT 'Applied',
+    source applicant_source,
+    applied_date timestamp with time zone NOT NULL DEFAULT now(),
     avatar text,
     resume_data jsonb,
-    ai_match_score integer,
+    ai_match_score numeric,
     ai_justification text,
     wpm integer,
-    accuracy integer,
-    aptitude_score integer,
-    comprehensive_score integer,
-    english_grammar_score integer,
-    customer_service_score integer,
+    accuracy numeric,
+    aptitude_score numeric,
+    comprehensive_score numeric,
+    english_grammar_score numeric,
+    customer_service_score numeric,
     rejection_reason text,
     rejection_notes text
 );
 
-CREATE TABLE IF NOT EXISTS public.applicant_notes (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+-- 📝 4. applicant_notes
+CREATE TABLE public.applicant_notes (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     applicant_id uuid NOT NULL REFERENCES public.applicants(id) ON DELETE CASCADE,
-    user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
-    author_name text NOT NULL,
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    author_name text,
     author_avatar text,
-    note text NOT NULL,
-    created_at timestamp with time zone DEFAULT now()
+    note text,
+    created_at timestamp with time zone NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS public.interviews (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+-- 🎙️ 5. interviews
+CREATE TABLE public.interviews (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     applicant_id uuid NOT NULL REFERENCES public.applicants(id) ON DELETE CASCADE,
-    interviewer_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+    interviewer_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     date date NOT NULL,
     time time without time zone NOT NULL,
     type interview_type NOT NULL,
-    status interview_status DEFAULT 'Scheduled'::interview_status,
-    candidate_name text,
+    status interview_status NOT NULL DEFAULT 'Scheduled',
+    candidate_name text NOT NULL,
     candidate_avatar text,
-    interviewer_name text,
+    interviewer_name text NOT NULL,
     interviewer_avatar text,
-    job_title text,
-    created_at timestamp with time zone DEFAULT now()
+    job_title text
 );
 
--- ----------------------------------------------------------------
--- 🌴 LEAVE MANAGEMENT
--- ----------------------------------------------------------------
+-- 📬 6. company_posts
+CREATE TABLE public.company_posts (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    content text NOT NULL,
+    image_url text,
+    created_at timestamp with time zone NOT NULL DEFAULT now()
+);
 
-CREATE TABLE IF NOT EXISTS public.leave_balances (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
+-- ✨ 7. kudos
+CREATE TABLE public.kudos (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    from_user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    to_user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    value text NOT NULL,
+    message text NOT NULL,
+    created_at timestamp with time zone NOT NULL DEFAULT now()
+);
+
+-- 🏆 8. weekly_awards
+CREATE TABLE public.weekly_awards (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    awarded_user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    awarded_by_user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    reason text NOT NULL,
+    week_of date NOT NULL
+);
+
+-- 💵 9. payslips
+CREATE TABLE public.payslips (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    month text NOT NULL,
+    year integer NOT NULL,
+    gross_salary numeric NOT NULL,
+    net_salary numeric NOT NULL,
+    download_url text
+);
+
+-- 📄 10. company_documents
+CREATE TABLE public.company_documents (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    title text NOT NULL,
+    description text,
+    category text,
+    last_updated date NOT NULL,
+    download_url text
+);
+
+-- 🎯 11. objectives
+CREATE TABLE public.objectives (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    title text NOT NULL,
+    quarter text NOT NULL
+);
+
+-- 🗝️ 12. key_results
+CREATE TABLE public.key_results (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    objective_id uuid NOT NULL REFERENCES public.objectives(id) ON DELETE CASCADE,
+    description text NOT NULL,
+    progress integer NOT NULL DEFAULT 0,
+    status key_result_status NOT NULL DEFAULT 'on_track'
+);
+
+-- 💸 13. expense_reports
+CREATE TABLE public.expense_reports (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    title text NOT NULL,
+    total_amount numeric NOT NULL,
+    status expense_status NOT NULL DEFAULT 'draft',
+    submitted_at timestamp with time zone NOT NULL DEFAULT now()
+);
+
+-- 🧾 14. expense_items
+CREATE TABLE public.expense_items (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    expense_report_id uuid NOT NULL REFERENCES public.expense_reports(id) ON DELETE CASCADE,
+    date date NOT NULL,
+    category text,
+    amount numeric NOT NULL,
+    description text
+);
+
+-- 🆘 15. helpdesk_tickets
+CREATE TABLE public.helpdesk_tickets (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    subject text NOT NULL,
+    description text NOT NULL,
+    category ticket_category NOT NULL,
+    status ticket_status NOT NULL DEFAULT 'Open',
+    priority ticket_priority NOT NULL DEFAULT 'Medium',
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    updated_at timestamp with time zone NOT NULL DEFAULT now(),
+    resolver_id uuid REFERENCES auth.users(id) ON DELETE SET NULL
+);
+
+-- 💬 16. ticket_comments
+CREATE TABLE public.ticket_comments (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    ticket_id uuid NOT NULL REFERENCES public.helpdesk_tickets(id) ON DELETE CASCADE,
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    comment text NOT NULL,
+    created_at timestamp with time zone NOT NULL DEFAULT now()
+);
+
+
+-- 🚀 17. onboarding_workflows
+CREATE TABLE public.onboarding_workflows (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    manager_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    buddy_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+    employee_name text NOT NULL,
+    employee_avatar text,
+    job_title text,
+    manager_name text,
+    buddy_name text,
+    progress integer DEFAULT 0,
+    current_step text DEFAULT 'Welcome Email Sent',
+    start_date date NOT NULL
+);
+
+-- 🏖️ 18. leave_balances
+CREATE TABLE public.leave_balances (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
     sick_leave integer DEFAULT 12,
     casual_leave integer DEFAULT 12,
     earned_leave integer DEFAULT 12,
     unpaid_leave integer DEFAULT 0
 );
 
-CREATE TABLE IF NOT EXISTS public.leaves (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+-- 🗓️ 19. leaves
+CREATE TABLE public.leaves (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     leave_type leave_type NOT NULL,
     start_date date NOT NULL,
     end_date date NOT NULL,
     reason text,
-    status leave_status DEFAULT 'pending'::leave_status,
+    status leave_status NOT NULL DEFAULT 'pending',
     approver_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
-    created_at timestamp with time zone DEFAULT now(),
-    total_days integer NOT NULL
+    total_days integer,
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    CONSTRAINT dates_check CHECK (end_date >= start_date)
 );
 
--- ----------------------------------------------------------------
--- 🚀 ONBOARDING & PERFORMANCE
--- ----------------------------------------------------------------
-
-CREATE TABLE IF NOT EXISTS public.onboarding_workflows (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    manager_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
-    buddy_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
-    employee_name text,
-    employee_avatar text,
-    job_title text,
-    manager_name text,
-    buddy_name text,
-    progress integer DEFAULT 0,
-    current_step text DEFAULT 'Initial Setup',
-    start_date date DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS public.performance_reviews (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    review_date date NOT NULL,
-    status review_status DEFAULT 'Pending'::review_status,
-    job_title text,
-    review_text text,
-    ratings jsonb,
-    goals text,
-    feedback text
-);
-
-CREATE TABLE IF NOT EXISTS public.objectives (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    owner_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    title text NOT NULL,
-    quarter text NOT NULL,
-    created_at timestamp with time zone DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS public.key_results (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    objective_id uuid NOT NULL REFERENCES public.objectives(id) ON DELETE CASCADE,
-    description text NOT NULL,
-    progress integer DEFAULT 0,
-    status key_result_status DEFAULT 'on_track'::key_result_status
-);
-
-
--- ----------------------------------------------------------------
--- 💬 COMPANY & EMPLOYEE ENGAGEMENT
--- ----------------------------------------------------------------
-
-CREATE TABLE IF NOT EXISTS public.company_posts (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
-    content text NOT NULL,
-    image_url text,
-    created_at timestamp with time zone DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS public.kudos (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    from_user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    to_user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    value text NOT NULL,
-    message text NOT NULL,
-    created_at timestamp with time zone DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS public.weekly_awards (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    awarded_user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    awarded_by_user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
-    reason text NOT NULL,
-    week_of date NOT NULL,
-    created_at timestamp with time zone DEFAULT now()
-);
-
--- ----------------------------------------------------------------
--- 📂 DOCUMENTS & FINANCIAL
--- ----------------------------------------------------------------
-
-CREATE TABLE IF NOT EXISTS public.payslips (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    month text NOT NULL,
-    year integer NOT NULL,
-    gross_salary numeric(10, 2) NOT NULL,
-    net_salary numeric(10, 2) NOT NULL,
-    download_url text
-);
-
-CREATE TABLE IF NOT EXISTS public.company_documents (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    title text NOT NULL,
-    description text,
-    category text,
-    last_updated date DEFAULT now(),
-    download_url text
-);
-
-CREATE TABLE IF NOT EXISTS public.expense_reports (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    title text NOT NULL,
-    total_amount numeric(10, 2) NOT NULL,
-    status expense_status DEFAULT 'submitted'::expense_status,
-    submitted_at timestamp with time zone DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS public.expense_items (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    expense_report_id uuid NOT NULL REFERENCES public.expense_reports(id) ON DELETE CASCADE,
-    date date NOT NULL,
-    category text NOT NULL,
-    amount numeric(10, 2) NOT NULL,
-    description text
-);
-
--- ----------------------------------------------------------------
--- 🎫 HELPDESK
--- ----------------------------------------------------------------
-
-CREATE TABLE IF NOT EXISTS public.helpdesk_tickets (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    subject text NOT NULL,
-    description text,
-    category ticket_category NOT NULL,
-    status ticket_status DEFAULT 'Open'::ticket_status,
-    priority ticket_priority DEFAULT 'Medium'::ticket_priority,
-    created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now(),
-    resolver_id uuid REFERENCES auth.users(id) ON DELETE SET NULL
-);
-
-CREATE TABLE IF NOT EXISTS public.ticket_comments (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    ticket_id uuid NOT NULL REFERENCES public.helpdesk_tickets(id) ON DELETE CASCADE,
-    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    comment text NOT NULL,
-    created_at timestamp with time zone DEFAULT now()
-);
-
--- ----------------------------------------------------------------
--- 🛡️ RLS POLICIES
--- ----------------------------------------------------------------
-
--- Enable RLS for all tables
-ALTER TABLE public.jobs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.colleges ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.applicants ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.applicant_notes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.interviews ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.leave_balances ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.leaves ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.onboarding_workflows ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.performance_reviews ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.objectives ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.key_results ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.company_posts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.kudos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.weekly_awards ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.payslips ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.company_documents ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.expense_reports ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.expense_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.helpdesk_tickets ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.ticket_comments ENABLE ROW LEVEL SECURITY;
-
--- JOBS
-CREATE POLICY "Allow read access to all authenticated users" ON public.jobs FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Allow HR/Recruiter/Admin to create jobs" ON public.jobs FOR INSERT WITH CHECK (auth.uid() IN (SELECT id FROM auth.users WHERE role IN ('admin', 'super_hr', 'hr_manager', 'recruiter')));
-CREATE POLICY "Allow HR/Recruiter/Admin to update jobs" ON public.jobs FOR UPDATE USING (auth.uid() IN (SELECT id FROM auth.users WHERE role IN ('admin', 'super_hr', 'hr_manager', 'recruiter')));
-
--- APPLICANTS
-CREATE POLICY "Allow HR/Recruiter/Admin to manage applicants" ON public.applicants FOR ALL USING (auth.uid() IN (SELECT id FROM auth.users WHERE role IN ('admin', 'super_hr', 'hr_manager', 'recruiter')));
-CREATE POLICY "Allow public insert for applicants" ON public.applicants FOR INSERT WITH CHECK (true); -- For registration form
-
--- APPLICANT NOTES
-CREATE POLICY "Allow HR/Recruiter/Admin to manage applicant notes" ON public.applicant_notes FOR ALL USING (auth.uid() IN (SELECT id FROM auth.users WHERE role IN ('admin', 'super_hr', 'hr_manager', 'recruiter', 'interviewer')));
-CREATE POLICY "Allow interviewers to read notes for their assigned applicants" ON public.applicant_notes FOR SELECT USING (
-    applicant_id IN (SELECT applicant_id FROM interviews WHERE interviewer_id = auth.uid())
-);
-
--- LEAVES
-CREATE POLICY "Users can manage their own leave requests" ON public.leaves FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Managers can read/update leave requests for their team" ON public.leaves FOR ALL USING (
-  (get_user_department(auth.uid()) IS NOT NULL) AND
-  (user_id IN (SELECT id FROM users WHERE department = get_user_department(auth.uid())))
-);
-CREATE POLICY "Admins/HR can manage all leave requests" ON public.leaves FOR ALL USING (auth.uid() IN (SELECT id FROM auth.users WHERE role IN ('admin', 'super_hr', 'hr_manager')));
-
--- HELPDESK
-CREATE POLICY "Users can manage their own tickets" ON public.helpdesk_tickets FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Support staff can manage all tickets" ON public.helpdesk_tickets FOR ALL USING (auth.uid() IN (SELECT id FROM auth.users WHERE role IN ('admin', 'it_admin', 'support')));
-CREATE POLICY "Users can read comments on their own tickets" ON public.ticket_comments FOR SELECT USING (ticket_id IN (SELECT id FROM helpdesk_tickets WHERE user_id = auth.uid()));
-CREATE POLICY "Users can insert comments on their own tickets" ON public.ticket_comments FOR INSERT WITH CHECK (ticket_id IN (SELECT id FROM helpdesk_tickets WHERE user_id = auth.uid()));
-CREATE POLICY "Support staff can manage all comments" ON public.ticket_comments FOR ALL USING (auth.uid() IN (SELECT id FROM auth.users WHERE role IN ('admin', 'it_admin', 'support')));
-
-
--- ----------------------------------------------------------------
--- 📦 HELPER FUNCTIONS
--- ----------------------------------------------------------------
-
--- Function to get a user's department
-CREATE OR REPLACE FUNCTION get_user_department(user_id uuid)
-RETURNS text
-LANGUAGE sql
-STABLE
+-- Automatically create leave balance for new user
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
 AS $$
-  SELECT department FROM public.users WHERE id = user_id;
+BEGIN
+  INSERT INTO public.leave_balances (user_id)
+  VALUES (new.id);
+  RETURN new;
+END;
 $$;
 
--- Function to get job funnel stats
-CREATE OR REPLACE FUNCTION get_job_funnel_stats()
-RETURNS TABLE(stage applicant_stage, count bigint)
-LANGUAGE sql
-AS $$
-    SELECT
-        stage,
-        COUNT(*) as count
-    FROM
-        public.applicants
-    GROUP BY
-        stage
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- Automatically get job funnel stats
+CREATE OR REPLACE FUNCTION public.get_job_funnel_stats()
+RETURNS TABLE(stage applicant_stage, count bigint) AS $$
+BEGIN
+  RETURN QUERY
+    SELECT s.stage, COALESCE(a.count, 0) as count
+    FROM (
+        SELECT unnest(enum_range(NULL::applicant_stage)) AS stage
+    ) s
+    LEFT JOIN (
+        SELECT stage, count(*) as count
+        FROM applicants
+        GROUP BY stage
+    ) a ON s.stage = a.stage
     ORDER BY
-        -- A bit of a hack to get a logical funnel order
-        CASE stage
+        CASE s.stage
             WHEN 'Sourced' THEN 1
             WHEN 'Applied' THEN 2
             WHEN 'Phone Screen' THEN 3
@@ -396,10 +344,5 @@ AS $$
             WHEN 'Rejected' THEN 7
             ELSE 8
         END;
-$$;
-
--- ----------------------------------------------------------------
--- ✨ DONE
--- ----------------------------------------------------------------
--- Final sanity check
-SELECT 'Database schema setup complete.' as status;
+END;
+$$ LANGUAGE plpgsql;
