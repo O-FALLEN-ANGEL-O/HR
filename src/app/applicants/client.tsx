@@ -70,6 +70,7 @@ const stageColors: { [key: string]: string } = {
   Interview: 'bg-purple-100 text-purple-800',
   Offer: 'bg-yellow-100 text-yellow-800',
   Hired: 'bg-green-100 text-green-800',
+  Rejected: 'bg-red-100 text-red-800',
 };
 
 export default function ApplicantList({
@@ -304,7 +305,7 @@ export default function ApplicantList({
                           <User className="mr-2 h-4 w-4" />
                           View Profile
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => router.push('/interviews')}>
+                        <DropdownMenuItem onClick={() => router.push('/interviewer/tasks')}>
                            <CalendarPlus className="mr-2 h-4 w-4" />
                            Schedule Interview
                         </DropdownMenuItem>

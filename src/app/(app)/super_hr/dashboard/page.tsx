@@ -64,7 +64,7 @@ export default function SuperHrDashboardPage() {
                     <p className="text-xs text-muted-foreground">Visualize and manage org structure. (Coming soon)</p>
                 </CardContent>
             </Card>
-             <Card>
+             <Card className="opacity-60 cursor-not-allowed">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Compliance Pulse</CardTitle>
                     <ShieldCheck className="h-4 w-4 text-muted-foreground" />
