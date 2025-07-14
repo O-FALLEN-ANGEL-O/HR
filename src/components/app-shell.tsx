@@ -65,12 +65,12 @@ import {
 
 const getNavLinks = (role: UserRole) => {
   const commonHrLinks = [
-    { href: '/applicants', label: 'Applicants', icon: Users, roles: ['super_hr', 'hr_manager', 'recruiter', 'admin'] },
-    { href: '/jobs', label: 'Job Postings', icon: Briefcase, roles: ['hr_manager', 'recruiter', 'admin', 'super_hr'] },
-    { href: '/interviews', label: 'Interviews', icon: Calendar, roles: ['interviewer', 'hr_manager', 'admin', 'super_hr'] },
-    { href: '/onboarding', label: 'Onboarding', icon: ClipboardCheck, roles: ['super_hr', 'hr_manager', 'admin', 'intern'] },
+    { href: '/hr/applicants', label: 'Applicants', icon: Users, roles: ['super_hr', 'hr_manager', 'recruiter', 'admin'] },
+    { href: '/recruiter/jobs', label: 'Job Postings', icon: Briefcase, roles: ['hr_manager', 'recruiter', 'admin', 'super_hr'] },
+    { href: '/interviewer/tasks', label: 'Interviews', icon: Calendar, roles: ['interviewer', 'hr_manager', 'admin', 'super_hr'] },
+    { href: '/hr/onboarding', label: 'Onboarding', icon: ClipboardCheck, roles: ['super_hr', 'hr_manager', 'admin', 'intern'] },
     { href: '/leaves', label: 'Leave Mgt.', icon: Clock, roles: ['admin', 'super_hr', 'hr_manager', 'employee', 'intern', 'manager', 'team_lead'] },
-    { href: '/college-drive', label: 'College Drives', icon: GraduationCap, roles: ['hr_manager', 'super_hr', 'admin'] },
+    { href: '/hr/campus', label: 'College Drives', icon: GraduationCap, roles: ['hr_manager', 'super_hr', 'admin'] },
   ];
 
   const employeeLinks = [

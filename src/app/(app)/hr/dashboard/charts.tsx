@@ -45,8 +45,8 @@ export function DashboardCharts({ employeeDistributionData, hiringPipelineData }
         <>
             <Card className="lg:col-span-3">
               <CardHeader>
-                <CardTitle>Employee Distribution</CardTitle>
-                <CardDescription>By role</CardDescription>
+                <CardTitle>Employee by Department</CardTitle>
+                <CardDescription>A breakdown of employees across different departments.</CardDescription>
               </CardHeader>
               <CardContent className="flex justify-center">
                 <ChartContainer
@@ -70,7 +70,8 @@ export function DashboardCharts({ employeeDistributionData, hiringPipelineData }
             </Card>
             <Card className="lg:col-span-4">
               <CardHeader>
-                <CardTitle>Hiring Pipeline Overview</CardTitle>
+                <CardTitle>Job Funnel</CardTitle>
+                 <CardDescription>Applicant progression through the hiring stages.</CardDescription>
               </CardHeader>
               <CardContent>
                 <ChartContainer config={barChartConfig} className="h-[280px] w-full">

@@ -150,7 +150,7 @@ export default function CollegeDriveClient({ initialColleges }: CollegeDriveClie
                           <Send className="mr-2 h-4 w-4" />
                           Send Reminder
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => router.push('/applicants')}>
+                        <DropdownMenuItem onClick={() => router.push('/hr/applicants')}>
                           <Users className="mr-2 h-4 w-4" />
                           View Applicants
                         </DropdownMenuItem>

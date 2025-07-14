@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import type { Metric, Job } from '@/lib/types';
+import type { Metric, Job, UserProfile } from '@/lib/types';
 
 import { Header } from '@/components/header';
 import {
@@ -30,38 +30,22 @@ import {
   ArrowDown,
   PlusCircle,
   Upload,
-  PlayCircle,
-  Users,
-  Calendar,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-
-const employeeDistributionData = [
-    { role: 'Engineering', count: 450, fill: 'var(--color-engineering)' },
-    { role: 'Product', count: 150, fill: 'var(--color-product)' },
-    { role: 'Design', count: 100, fill: 'var(--color-design)' },
-    { role: 'Sales', count: 250, fill: 'var(--color-sales)' },
-    { role: 'HR', count: 54, fill: 'var(--color-hr)' },
-    { role: 'Other', count: 200, fill: 'var(--color-other)' },
-];
-
-const hiringPipelineData = [
-    { stage: 'Applied', count: 125 },
-    { stage: 'Screening', count: 80 },
-    { stage: 'Interview', count: 45 },
-    { stage: 'Offer', count: 15 },
-];
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 
 type DashboardClientProps = {
     initialMetrics: Metric[];
-    initialRecentJobs: Job[];
+    initialRecentHires: Partial<UserProfile>[];
+    employeeDistributionData: any[];
+    jobFunnelData: any[];
 }
 
-export default function HrDashboardClient({ initialMetrics, initialRecentJobs }: DashboardClientProps) {
+export default function HrDashboardClient({ initialMetrics, initialRecentHires, employeeDistributionData, jobFunnelData }: DashboardClientProps) {
     const [metrics, setMetrics] = React.useState(initialMetrics);
-    const [recentJobs, setRecentJobs] = React.useState(initialRecentJobs);
+    const [recentHires, setRecentHires] = React.useState(initialRecentHires);
     const { toast } = useToast();
 
     React.useEffect(() => {
@@ -69,50 +53,30 @@ export default function HrDashboardClient({ initialMetrics, initialRecentJobs }:
     }, [initialMetrics]);
 
     React.useEffect(() => {
-        setRecentJobs(initialRecentJobs);
-    }, [initialRecentJobs]);
+        setRecentHires(initialRecentHires);
+    }, [initialRecentHires]);
 
     React.useEffect(() => {
         const supabase = createClient();
         
-        const metricsChannel = supabase
-            .channel('realtime-metrics')
+        const channel = supabase
+            .channel('realtime-hr-dashboard')
             .on(
                 'postgres_changes',
-                { event: '*', schema: 'public', table: 'metrics' },
-                async () => {
+                { event: '*', schema: 'public', table: 'users' },
+                () => {
                      toast({
-                        title: 'Metrics Updated',
-                        description: 'Dashboard metrics have been updated.',
+                        title: 'Dashboard Updated',
+                        description: 'Dashboard data has been updated.',
                     });
-                     const { data } = await supabase.from('metrics').select('*').order('id', { ascending: true });
-                     setMetrics(data || []);
+                     // In a real app, you would refetch all the data here.
+                     // For now, a reload is a simple way to see updates.
+                     window.location.reload();
                 }
             ).subscribe();
         
-        const jobsChannel = supabase
-            .channel('realtime-dashboard-jobs')
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table: 'jobs' },
-                async () => {
-                    toast({
-                        title: 'Job Postings Updated',
-                        description: 'Recent job postings have been updated.',
-                    });
-                     const { data: recentJobsData } = await supabase
-                        .from('jobs')
-                        .select('*')
-                        .eq('status', 'Open')
-                        .order('posted_date', { ascending: false })
-                        .limit(3);
-                    setRecentJobs(recentJobsData || []);
-                }
-            ).subscribe();
-
         return () => {
-            supabase.removeChannel(metricsChannel);
-            supabase.removeChannel(jobsChannel);
+            supabase.removeChannel(channel);
         }
 
     }, [toast]);
@@ -157,96 +121,43 @@ export default function HrDashboardClient({ initialMetrics, initialRecentJobs }:
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-7">
                 <DashboardCharts 
                     employeeDistributionData={employeeDistributionData} 
-                    hiringPipelineData={hiringPipelineData}
+                    hiringPipelineData={jobFunnelData}
                 />
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                <Card className="lg:col-span-4">
+                <Card className="lg:col-span-7">
                 <CardHeader>
-                    <CardTitle>Recent Job Postings</CardTitle>
+                    <CardTitle>Recently Hired Employees</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <Table>
                     <TableHeader>
                         <TableRow>
-                        <TableHead>Title</TableHead>
+                        <TableHead>Employee</TableHead>
                         <TableHead>Department</TableHead>
-                        <TableHead>Applicants</TableHead>
-                        <TableHead>Status</TableHead>
+                        <TableHead>Joined On</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {recentJobs.map((job) => (
-                        <TableRow key={job.id}>
+                        {recentHires.map((employee) => (
+                        <TableRow key={employee.email}>
                             <TableCell>
-                            <div className="font-medium">{job.title}</div>
-                            <div className="text-sm text-muted-foreground">
-                                Posted on {format(new Date(job.posted_date), 'PPP')}
-                            </div>
+                                <div className="flex items-center gap-3">
+                                <Avatar className="h-8 w-8">
+                                    <AvatarFallback>{employee.full_name?.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div className="font-medium">{employee.full_name}</div>
+                                </div>
                             </TableCell>
-                            <TableCell>{job.department}</TableCell>
-                            <TableCell>{job.applicants}</TableCell>
+                            <TableCell>{employee.department}</TableCell>
                             <TableCell>
-                            <Badge
-                                variant={job.status === 'Open' ? 'default' : 'secondary'}
-                                className={
-                                job.status === 'Open'
-                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                    : ''
-                                }
-                            >
-                                {job.status}
-                            </Badge>
+                                {format(new Date(employee.created_at!), 'PPP')}
                             </TableCell>
                         </TableRow>
                         ))}
                     </TableBody>
                     </Table>
-                </CardContent>
-                </Card>
-
-                <Card className="lg:col-span-3">
-                <CardHeader>
-                    <CardTitle>Quick Actions & Notifications</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-4">
-                    <div className="grid grid-cols-2 gap-4">
-                    <Button asChild variant="outline">
-                        <Link href="/jobs">
-                        <PlusCircle className="mr-2 h-4 w-4" /> Post Job
-                        </Link>
-                    </Button>
-                    <Button asChild variant="outline">
-                        <Link href="#">
-                        <PlayCircle className="mr-2 h-4 w-4" /> Run Compliance
-                        </Link>
-                    </Button>
-                    </div>
-                    <div className="flex flex-col gap-3">
-                    <div className="flex items-start gap-3 rounded-lg border p-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                        <Users className="h-4 w-4" />
-                        </div>
-                        <div className="flex-1">
-                        <p className="text-sm font-medium">New hire onboard</p>
-                        <p className="text-sm text-muted-foreground">
-                            Olivia Martinez has completed the initial paperwork.
-                        </p>
-                        </div>
-                    </div>
-                    <div className="flex items-start gap-3 rounded-lg border p-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/10 text-accent">
-                        <Calendar className="h-4 w-4" />
-                        </div>
-                        <div className="flex-1">
-                        <p className="text-sm font-medium">Interview Reminder</p>
-                        <p className="text-sm text-muted-foreground">
-                            Sophia Williams' final interview is tomorrow at 10 AM.
-                        </p>
-                        </div>
-                    </div>
-                    </div>
                 </CardContent>
                 </Card>
             </div>

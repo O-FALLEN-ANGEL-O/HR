@@ -134,7 +134,7 @@ export default function JobsClient({ initialJobs }: JobsClientProps) {
 
   return (
     <>
-      <Header title="Job Postings">
+      <Header title="Job Postings Management">
         <JobDialog onJobAddedOrUpdated={() => {}}>
           <Button size="sm">
             <PlusCircle className="mr-2 h-4 w-4" />

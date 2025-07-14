@@ -8,15 +8,15 @@ const authRoutes = ['/login', 'signup'];
 
 // Role-based access control matrix
 const roleAccess: Record<UserRole, string[]> = {
-  admin: ['/admin', '/super_hr', '/hr', '/recruiter', '/interviewer', '/employee', '/intern', '/manager', '/team_lead', '/applicants', '/jobs', '/interviews', '/onboarding', '/leaves', '/college-drive', '/ai-tools', '/company-feed', '/performance', '/employee/documents'],
-  super_hr: ['/super_hr', '/hr', '/recruiter', '/interviewer', '/employee', '/intern', '/manager', '/team_lead', '/applicants', '/jobs', '/interviews', '/onboarding', '/leaves', '/college-drive', '/admin/roles', '/ai-tools', '/company-feed', '/performance', '/employee/documents'],
-  hr_manager: ['/hr', '/recruiter', '/interviewer', '/employee', '/intern', '/applicants', '/jobs', '/interviews', '/onboarding', '/leaves', '/college-drive', '/ai-tools', '/company-feed', '/performance', '/employee/documents'],
-  recruiter: ['/recruiter', '/applicants', '/jobs', '/ai-tools/applicant-scoring', '/company-feed', '/employee/documents'],
-  interviewer: ['/interviewer', '/interviews', '/employee/documents'],
+  admin: ['/admin', '/super_hr', '/hr', '/recruiter', '/interviewer', '/employee', '/intern', '/manager', '/team_lead', '/hr/applicants', '/recruiter/jobs', '/interviewer/tasks', '/hr/onboarding', '/leaves', '/hr/campus', '/ai-tools', '/company-feed', '/performance', '/employee/documents'],
+  super_hr: ['/super_hr', '/hr', '/recruiter', '/interviewer', '/employee', '/intern', '/manager', '/team_lead', '/hr/applicants', '/recruiter/jobs', '/interviewer/tasks', '/hr/onboarding', '/leaves', '/hr/campus', '/admin/roles', '/ai-tools', '/company-feed', '/performance', '/employee/documents'],
+  hr_manager: ['/hr', '/recruiter', '/interviewer', '/employee', '/intern', '/hr/applicants', '/recruiter/jobs', '/interviewer/tasks', '/hr/onboarding', '/leaves', '/hr/campus', '/ai-tools', '/company-feed', '/performance', '/employee/documents'],
+  recruiter: ['/recruiter', '/hr/applicants', '/recruiter/jobs', '/ai-tools/applicant-scoring', '/company-feed', '/employee/documents'],
+  interviewer: ['/interviewer', '/interviewer/tasks', '/employee/documents'],
   manager: ['/manager', '/employee', '/leaves', '/company-feed', '/performance'],
   team_lead: ['/team-lead', '/employee', '/leaves', '/company-feed'],
   employee: ['/employee', '/leaves', '/company-feed', '/kudos', '/employee/documents', '/employee/payslips'],
-  intern: ['/intern', '/employee/dashboard', '/onboarding', '/leaves', '/company-feed', '/employee/kudos', '/employee/documents'],
+  intern: ['/intern', '/employee/dashboard', '/hr/onboarding', '/leaves', '/company-feed', '/employee/kudos', '/employee/documents'],
   guest: [],
 };
 
@@ -26,7 +26,7 @@ export function getHomePathForRole(role: UserRole): string {
     case 'super_hr': return '/super_hr/dashboard';
     case 'hr_manager': return '/hr/dashboard';
     case 'recruiter': return '/recruiter/dashboard';
-    case 'interviewer': return '/interviews';
+    case 'interviewer': return '/interviewer/tasks';
     case 'manager': return '/manager/dashboard';
     case 'team_lead': return '/team-lead/dashboard';
     case 'employee': return '/employee/dashboard';

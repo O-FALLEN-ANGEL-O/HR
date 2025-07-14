@@ -208,7 +208,7 @@ function InterviewTable({ interviews, isClient }: { interviews: Interview[], isC
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => router.push(`/applicants/${interview.applicant_id}`)}>
+                            <DropdownMenuItem onClick={() => router.push(`/hr/applicants/${interview.applicant_id}`)}>
                                 <Users className="mr-2" /> View Applicant
                             </DropdownMenuItem>
                             {interview.status === 'Scheduled' && (
