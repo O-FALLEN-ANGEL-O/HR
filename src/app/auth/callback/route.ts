@@ -17,16 +17,9 @@ export async function GET(request: Request) {
     const { data: { session }, error } = await supabase.auth.exchangeCodeForSession(code);
     
     if (!error && session) {
-      // After successfully exchanging the code for a session,
-      // get the user's role and redirect to the correct dashboard.
-      const { data: userProfile } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', session.user.id)
-        .single();
-    
-      const homePath = getHomePathForRole(userProfile?.role || 'guest');
-      return NextResponse.redirect(`${origin}${homePath}`);
+      // For OAuth logins, redirect to the root page. The middleware will handle
+      // redirecting to the correct dashboard.
+      return NextResponse.redirect(`${origin}/`);
     }
   }
 

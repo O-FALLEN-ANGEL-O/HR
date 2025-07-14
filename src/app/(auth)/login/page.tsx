@@ -24,7 +24,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { login, loginWithGoogle } from '@/app/auth/actions';
-import { Loader2, Mail, LogIn } from 'lucide-react';
+import { Loader2, LogIn, Mail } from 'lucide-react';
 
 const GoogleIcon = () => (
   <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -37,36 +37,33 @@ const GoogleIcon = () => (
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address.'),
+  password: z.string().min(1, 'Password cannot be empty.'),
 });
 
 type LoginSchema = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const { toast } = useToast();
-  const [isSubmittingMagicLink, setIsSubmittingMagicLink] = React.useState(false);
+  const [isSubmittingPassword, setIsSubmittingPassword] = React.useState(false);
   const [isSubmittingGoogle, setIsSubmittingGoogle] = React.useState(false);
 
   const form = useForm<LoginSchema>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: '' },
+    defaultValues: { email: '', password: '' },
   });
   
-  const handleMagicLinkSubmit = async (values: LoginSchema) => {
-    setIsSubmittingMagicLink(true);
-    const result = await login(values, true);
+  const handlePasswordSubmit = async (values: LoginSchema) => {
+    setIsSubmittingPassword(true);
+    const result = await login(values);
     if (result?.error) {
        toast({
         title: 'Login Failed',
         description: result.error,
         variant: 'destructive',
       });
-    } else {
-        toast({
-            title: 'Check your email',
-            description: "We've sent a magic link to your email address.",
-        })
     }
-    setIsSubmittingMagicLink(false);
+    // On success, the middleware will redirect, so no toast is needed.
+    setIsSubmittingPassword(false);
   }
 
   const handleGoogleLogin = async () => {
@@ -82,7 +79,7 @@ export default function LoginPage() {
     }
   }
 
-  const isLoading = isSubmittingMagicLink || isSubmittingGoogle;
+  const isLoading = isSubmittingPassword || isSubmittingGoogle;
 
   return (
     <Card className="w-full max-w-md">
@@ -92,7 +89,7 @@ export default function LoginPage() {
       </CardHeader>
       <CardContent className="space-y-6">
         <Form {...form}>
-             <form onSubmit={form.handleSubmit(handleMagicLinkSubmit)} className="space-y-4">
+             <form onSubmit={form.handleSubmit(handlePasswordSubmit)} className="space-y-4">
                 <FormField
                     control={form.control}
                     name="email"
@@ -106,9 +103,22 @@ export default function LoginPage() {
                         </FormItem>
                     )}
                 />
+                 <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Password</FormLabel>
+                            <FormControl>
+                                <Input type="password" placeholder="••••••••" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
                  <Button type="submit" disabled={isLoading} className="w-full">
-                    {isSubmittingMagicLink ? <Loader2 className="animate-spin mr-2" /> : <Mail className="mr-2" />}
-                    Sign in with Magic Link
+                    {isSubmittingPassword ? <Loader2 className="animate-spin mr-2" /> : <LogIn className="mr-2" />}
+                    Sign in with Password
                 </Button>
             </form>
         </Form>

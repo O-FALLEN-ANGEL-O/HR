@@ -6,25 +6,23 @@ import { headers, cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import type { UserRole } from '@/lib/types';
 
-export async function login(formData: any, isMagicLink: boolean = false) {
+export async function login(formData: any) {
   const cookieStore = cookies();
   const supabase = createClient(cookieStore);
 
-  if (isMagicLink) {
-    const { error } = await supabase.auth.signInWithOtp({
+  const { error } = await supabase.auth.signInWithPassword({
       email: formData.email,
-      options: {
-        // The redirect URL is handled by the callback route now.
-        emailRedirectTo: `${headers().get('origin')}/auth/callback`,
-      },
-    });
+      password: formData.password,
+  });
 
-    if (error) {
-        console.error('Magic Link Error:', error);
-        return { error: `Magic Link Error: ${error.message}` };
-    }
-    return { data: 'Magic link sent! Check your email.' };
+  if (error) {
+    console.error('Supabase auth error:', error);
+    return { error: `Authentication failed: ${error.message}` };
   }
+
+  // On successful login, we must revalidate the root path to ensure
+  // the middleware can correctly assess the new session and redirect.
+  redirect('/');
 }
 
 export async function loginWithGoogle() {
