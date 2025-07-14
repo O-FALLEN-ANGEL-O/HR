@@ -230,7 +230,7 @@ export async function addApplicantNote(formData: FormData) {
     throw new Error('Could not add note. You may not have the required permissions.');
   }
 
-  revalidatePath(`/applicants/${applicant_id}`);
+  revalidatePath(`/hr/applicants/${applicant_id}`);
 }
 
 export async function updateInterviewStatus(interviewId: string, status: 'Completed' | 'Canceled') {
@@ -252,7 +252,7 @@ export async function updateInterviewStatus(interviewId: string, status: 'Comple
         throw new Error('Could not update interview.');
     }
 
-    revalidatePath('/interviews');
+    revalidatePath('/interviewer/tasks');
 }
 
 
@@ -302,5 +302,5 @@ export async function generateAiMatchScore(applicantId: string) {
         throw new Error("Could not save AI score to the database.");
     }
     
-    revalidatePath(`/applicants/${applicantId}`);
+    revalidatePath(`/hr/applicants/${applicantId}`);
 }
