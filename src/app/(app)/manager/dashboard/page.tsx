@@ -76,7 +76,8 @@ export default async function ManagerDashboardPage() {
                     <Award className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <p className="text-xs text-muted-foreground">View your team's latest kudos.</p>
+                    <div className="text-2xl font-bold">&nbsp;</div>
+                    <p className="text-xs text-muted-foreground">Recognize your peers for their great work.</p>
                 </CardContent>
             </Card>
         </Link>
@@ -86,6 +87,7 @@ export default async function ManagerDashboardPage() {
                 <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
+                 <div className="text-2xl font-bold">&nbsp;</div>
                 <p className="text-xs text-muted-foreground">Track performance cycles. (Coming Soon)</p>
             </CardContent>
         </Card>

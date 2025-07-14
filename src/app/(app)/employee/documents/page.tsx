@@ -51,7 +51,7 @@ export default async function CompanyDocumentsPage() {
                 Updated: {format(new Date(doc.last_updated), 'PPP')}
               </p>
               <Button asChild variant="secondary" size="sm">
-                <a href={doc.download_url}>
+                <a href={doc.download_url} target="_blank" rel="noopener noreferrer">
                   <Download className="mr-2" />
                   Download
                 </a>

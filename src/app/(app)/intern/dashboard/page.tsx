@@ -1,6 +1,6 @@
 import { Header } from '@/components/header';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { ClipboardCheck, BookOpen, Clock } from 'lucide-react';
+import { ClipboardCheck, BookOpen, Clock, Award } from 'lucide-react';
 import Link from 'next/link';
 
 export default function InternDashboardPage() {
@@ -15,7 +15,7 @@ export default function InternDashboardPage() {
             </CardHeader>
         </Card>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Link href="/onboarding">
+            <Link href="/hr/onboarding">
                 <Card className="hover:bg-muted/50 transition-colors">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Onboarding Tasks</CardTitle>
@@ -37,15 +37,28 @@ export default function InternDashboardPage() {
                     </CardContent>
                 </Card>
             </Link>
-             <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Learning Materials</CardTitle>
-                    <BookOpen className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <p className="text-xs text-muted-foreground">Access training documents and project briefs. (Coming Soon)</p>
-                </CardContent>
-            </Card>
+            <Link href="/employee/documents">
+              <Card className="hover:bg-muted/50 transition-colors">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Learning Materials</CardTitle>
+                      <BookOpen className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                      <p className="text-xs text-muted-foreground">Access training documents and project briefs.</p>
+                  </CardContent>
+              </Card>
+            </Link>
+            <Link href="/employee/kudos">
+              <Card className="hover:bg-muted/50 transition-colors">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Kudos</CardTitle>
+                      <Award className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                      <p className="text-xs text-muted-foreground">Give and receive recognition.</p>
+                  </CardContent>
+              </Card>
+            </Link>
         </div>
       </div>
     </div>

@@ -92,7 +92,7 @@ export default async function TeamLeadDashboardPage() {
                   </CardContent>
               </Card>
             </Link>
-            <Link href="/jobs">
+            <Link href="/recruiter/jobs">
                 <Card className="hover:bg-muted/50 transition-colors">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Open Team Positions</CardTitle>
