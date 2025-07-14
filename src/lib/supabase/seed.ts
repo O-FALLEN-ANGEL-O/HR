@@ -2,14 +2,15 @@
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import path from 'path';
+import { faker } from '@faker-js/faker';
+import type { UserRole } from '@/lib/types';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 async function main() {
-  // The seed script will only run if the FORCE_DB_SEED environment variable is true
   if (process.env.FORCE_DB_SEED !== 'true') {
-    console.log('🌱 SKIPPING DB SEED: FORCE_DB_SEED is not "true".');
+    console.log('🌱 SKIPPING DB SEED: To run the seed script, set FORCE_DB_SEED=true in your environment.');
     return;
   }
   
@@ -20,18 +21,62 @@ async function main() {
 
   if (!supabaseUrl || !supabaseServiceKey) {
     console.error('🔴 ERROR: Supabase URL or service key is missing. Skipping seeding.');
-    // In a CI/CD environment, we might not want to fail the build, just skip seeding.
-    // If running locally with FORCE_DB_SEED, this would be a hard failure.
     process.exit(0); 
   }
 
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
-  
-  // All data creation logic has been removed to prevent interfering with existing data.
-  // This script now primarily serves as a placeholder for local development seeding
-  // when run with `npm run seed:force`.
+  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+  console.log('✅ Supabase admin client initialized.');
 
-  console.log('✅ Database seeding process completed (or was intentionally skipped).');
+  // --- 1. Clean up existing auth users for a fresh seed ---
+  console.log('🧹 Deleting existing auth users...');
+  const { data: { users: existingUsers }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+  if (listError) {
+    console.error('🔴 Error listing users:', listError.message);
+  } else {
+    for (const user of existingUsers) {
+      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
+      if (deleteError) {
+        console.warn(`🔴 Could not delete user ${user.email}: ${deleteError.message}`);
+      }
+    }
+    console.log(`✅ Deleted ${existingUsers.length} auth users.`);
+  }
+
+  // --- 2. Create sample users with passwords and roles ---
+  const usersToCreate: { email: string; role: UserRole; fullName: string, department: string }[] = [
+    { email: 'admin@hrplus.com', role: 'admin', fullName: 'Admin User', department: 'Management' },
+    { email: 'hr@hrplus.com', role: 'hr_manager', fullName: 'HR Manager', department: 'Human Resources' },
+    { email: 'recruiter@hrplus.com', role: 'recruiter', fullName: 'Recruiter Sam', department: 'Human Resources' },
+    { email: 'interviewer@hrplus.com', role: 'interviewer', fullName: 'Interviewer Ingrid', department: 'Engineering' },
+    { email: 'manager@hrplus.com', role: 'manager', fullName: 'Manager Mike', department: 'Engineering' },
+    { email: 'teamlead@hrplus.com', role: 'team_lead', fullName: 'Lead Laura', department: 'Engineering' },
+    { email: 'employee@hrplus.com', role: 'employee', fullName: 'Employee Eric', department: 'Engineering' },
+    { email: 'intern@hrplus.com', role: 'intern', fullName: 'Intern Ian', department: 'Engineering' },
+    { email: 'superhr@hrplus.com', role: 'super_hr', fullName: 'Super HR Susan', department: 'Human Resources' },
+  ];
+
+  console.log('👤 Creating sample users...');
+  for (const userData of usersToCreate) {
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
+      email: userData.email,
+      password: 'password', // Set a default password
+      email_confirm: true,  // Mark email as confirmed to allow password login
+      user_metadata: {
+        full_name: userData.fullName,
+        role: userData.role,
+        department: userData.department,
+        avatar_url: faker.image.avatar(),
+      },
+    });
+
+    if (error) {
+      console.error(`🔴 Error creating user ${userData.email}: ${error.message}`);
+    } else {
+      console.log(`✅ Successfully created user: ${data.user?.email}`);
+    }
+  }
+
+  console.log('✅ Database seeding process completed.');
 }
 
 main().catch(error => {
