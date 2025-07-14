@@ -72,7 +72,7 @@ export async function addWeeklyAward(formData: FormData) {
   const supabase = createClient(cookieStore);
   const user = await getUser(cookieStore);
 
-  if (!user || !['admin', 'hr_manager', 'super_hr'].includes(user.role)) {
+  if (!user || !['admin', 'hr_manager', 'super_hr', 'manager'].includes(user.role)) {
     throw new Error('You do not have permission to give weekly awards.');
   }
 
