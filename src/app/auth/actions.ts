@@ -40,8 +40,6 @@ export async function login(formData: any, isMagicLink: boolean = false) {
     const { error } = await supabase.auth.signInWithOtp({
       email: formData.email,
       options: {
-        // This is required for Supabase to confirm the user's email.
-        // It's safe to disable this in the Supabase dashboard for this app.
         emailRedirectTo: `${headers().get('origin')}/auth/callback`,
       },
     });
@@ -63,7 +61,6 @@ export async function login(formData: any, isMagicLink: boolean = false) {
   }
 
   // On successful login, Supabase provides user metadata. We use this directly.
-  // This is more reliable than a separate DB query right after login.
   const userRole = data.user.user_metadata?.role as UserRole | undefined;
 
   if (!userRole) {
@@ -89,7 +86,6 @@ export async function loginWithGoogle() {
   });
 
   if (error) {
-    // This will now return a structured error object.
     return { error: `Could not authenticate with Google: ${error.message}` };
   }
   

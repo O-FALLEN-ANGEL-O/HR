@@ -66,18 +66,14 @@ export default function LoginPage() {
     setIsSubmittingLogin(true);
     const result = await login(values);
 
-    // This code only runs if the server action returns a value (i.e., an error).
-    // On success, the server action redirects, and this component unmounts.
     if (result?.error) {
       toast({
         title: 'Login Failed',
-        description: result.error, // Display the detailed error from the server action
+        description: result.error,
         variant: 'destructive',
       });
     }
     
-    // This will only be reached if the server action returns a value,
-    // which indicates the redirect did not happen.
     setIsSubmittingLogin(false);
   };
   
