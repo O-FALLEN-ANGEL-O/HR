@@ -4,10 +4,9 @@ export type UserRole =
   | 'admin'
   | 'super_hr'
   | 'hr_manager'
-  | 'manager'
-  | 'team_lead'
   | 'recruiter'
   | 'interviewer'
+  | 'manager'
   | 'employee'
   | 'intern'
   | 'guest';

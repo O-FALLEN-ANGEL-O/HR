@@ -43,10 +43,6 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
-  SidebarInset,
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
   SidebarClose,
 } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -64,58 +60,44 @@ import {
 
 
 const getNavLinks = (role: UserRole) => {
-  const commonHrLinks = [
-    { href: '/hr/applicants', label: 'Applicants', icon: Users, roles: ['super_hr', 'hr_manager', 'recruiter', 'admin'] },
-    { href: '/recruiter/jobs', label: 'Job Postings', icon: Briefcase, roles: ['hr_manager', 'recruiter', 'admin', 'super_hr'] },
-    { href: '/interviewer/tasks', label: 'Interviews', icon: Calendar, roles: ['interviewer', 'hr_manager', 'admin', 'super_hr'] },
-    { href: '/hr/onboarding', label: 'Onboarding', icon: ClipboardCheck, roles: ['super_hr', 'hr_manager', 'admin', 'intern'] },
-    { href: '/leaves', label: 'Leave Mgt.', icon: Clock, roles: ['admin', 'super_hr', 'hr_manager', 'employee', 'intern', 'manager', 'team_lead'] },
-    { href: '/hr/campus', label: 'College Drives', icon: GraduationCap, roles: ['hr_manager', 'super_hr', 'admin'] },
-  ];
-
-  const employeeLinks = [
-     { href: '/company-feed', label: 'Company Feed', icon: Newspaper, roles: ['employee', 'intern', 'hr_manager', 'super_hr', 'admin', 'recruiter', 'manager', 'team_lead'] },
-     { href: '/employee/directory', label: 'Directory', icon: Users, roles: ['employee', 'hr_manager', 'super_hr', 'admin', 'manager', 'team_lead'] },
-     { href: '/employee/payslips', label: 'Payslips', icon: WalletCards, roles: ['employee'] },
-     { href: '/employee/kudos', label: 'Kudos', icon: Award, roles: ['employee', 'intern', 'hr_manager'] },
-     { href: '/employee/documents', label: 'Documents', icon: FolderKanban, roles: ['admin', 'super_hr', 'hr_manager', 'recruiter', 'interviewer', 'employee', 'intern', 'manager', 'team_lead'] },
-  ];
-  
-  const aiTools = {
-    group: 'AI Tools',
-    links: [
-        { href: '/ai-tools/applicant-scoring', label: 'Applicant Scoring', icon: ScanSearch, roles: ['hr_manager', 'recruiter', 'admin', 'super_hr'] },
-        { href: '/ai-tools/review-analyzer', label: 'Review Analyzer', icon: PenSquare, roles: ['super_hr', 'hr_manager', 'admin'] },
-        { href: '/ai-tools/chatbot', label: 'AI Chatbot', icon: Bot, roles: ['employee', 'intern', 'hr_manager', 'admin', 'super_hr'] },
-    ]
-  };
-
   const allLinks = [
     // Dashboards
-    { href: '/admin/dashboard', label: 'Admin Dashboard', icon: ShieldCheck, roles: ['admin'] },
-    { href: '/super_hr/dashboard', label: 'Super HR Dashboard', icon: UserCog, roles: ['super_hr'] },
-    { href: '/hr/dashboard', label: 'HR Dashboard', icon: LayoutDashboard, roles: ['hr_manager', 'admin', 'super_hr'] },
-    { href: '/recruiter/dashboard', label: 'Recruiter Dashboard', icon: LayoutDashboard, roles: ['recruiter'] },
-    { href: '/manager/dashboard', label: 'Manager Dashboard', icon: LayoutDashboard, roles: ['manager'] },
-    { href: '/team-lead/dashboard', label: 'Team Lead Dashboard', icon: LayoutDashboard, roles: ['team_lead'] },
-    { href: '/employee/dashboard', label: 'My Dashboard', icon: LayoutDashboard, roles: ['employee', 'intern'] },
-    { href: '/interviewer/tasks', label: 'Interviewer Tasks', icon: UserCheck, roles: ['interviewer']},
-
-    // Other Links
-    ...commonHrLinks,
-    ...employeeLinks,
+    { href: '/admin/dashboard', label: 'Dashboard', icon: ShieldCheck, roles: ['admin'] },
+    { href: '/super_hr/dashboard', label: 'Dashboard', icon: UserCog, roles: ['super_hr'] },
+    { href: '/hr/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['hr_manager'] },
+    { href: '/recruiter/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['recruiter'] },
+    { href: '/manager/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['manager'] },
+    { href: '/employee/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['employee', 'intern'] },
     
-    // Admin specific
-    { href: '/admin/roles', label: 'Role Management', icon: Settings, roles: ['admin', 'super_hr'] },
+    // Admin
+    { href: '/admin/roles', label: 'Users & Roles', icon: Users, roles: ['admin'] },
+    { href: '/admin/settings', label: 'System Settings', icon: Settings, roles: ['admin'] },
+    { href: '/admin/logs', label: 'RLS Logs', icon: FileText, roles: ['admin'] },
+    { href: '/admin/templates', label: 'Templates', icon: FolderKanban, roles: ['admin'] },
+    { href: '/admin/audit', label: 'Audit Trail', icon: ScanSearch, roles: ['admin'] },
+    
+    // Super HR
+    { href: '/hr/applicants', label: 'Applicants', icon: Users, roles: ['super_hr'] },
+    { href: '/leaves', label: 'Leave System', icon: Clock, roles: ['super_hr', 'hr_manager', 'manager', 'employee', 'intern'] },
+    { href: '/employee/documents', label: 'Docs & Reports', icon: FileText, roles: ['super_hr', 'hr_manager', 'employee', 'intern'] },
+    { href: '/ai-tools/review-analyzer', label: 'Performance AI', icon: Sparkles, roles: ['super_hr'] },
+
+    // HR Manager
+    { href: '/recruiter/jobs', label: 'Job Postings', icon: Briefcase, roles: ['hr_manager', 'recruiter'] },
+    { href: '/hr/campus', label: 'Campus', icon: GraduationCap, roles: ['hr_manager', 'recruiter'] },
+    { href: '/interviewer/tasks', label: 'Interviews', icon: Calendar, roles: ['hr_manager', 'interviewer'] },
+    { href: '/hr/onboarding', label: 'Onboarding', icon: ClipboardCheck, roles: ['hr_manager'] },
+    { href: '/employee/payslips', label: 'Payslips', icon: WalletCards, roles: ['hr_manager', 'employee'] },
+    { href: '/admin/policies', label: 'Policies', icon: ShieldCheck, roles: ['hr_manager'] },
+
+    // Employee
+    { href: '/employee/kudos', label: 'Kudos', icon: Award, roles: ['employee', 'intern', 'hr_manager'] },
+    { href: '/employee/directory', label: 'Directory', icon: Users, roles: ['employee', 'hr_manager'] },
+    { href: '/employee/grievances', label: 'Grievances', icon: PenSquare, roles: ['employee'] },
+
   ];
 
-  const filteredLinks = allLinks.filter(link => link.roles.includes(role));
-  const filteredAiTools = {
-      ...aiTools,
-      links: aiTools.links.filter(link => link.roles.includes(role))
-  };
-
-  return { navLinks: filteredLinks, aiTools: filteredAiTools };
+  return allLinks.filter(link => link.roles.includes(role));
 };
 
 
@@ -127,31 +109,11 @@ export default function AppShell({
   user: UserProfile | null;
 }) {
   const pathname = usePathname();
-  const [openAiSubMenu, setOpenAiSubMenu] = React.useState(false);
 
   const isActive = (path: string) => pathname === path;
-  const isSubActive = (paths: string[]) => paths.some((path) => pathname.startsWith(path));
-
+  
   const role = user?.role || 'guest';
-  const { navLinks, aiTools } = getNavLinks(role);
-
-  React.useEffect(() => {
-    if (isSubActive(['/ai-tools'])) {
-        setOpenAiSubMenu(true);
-    }
-  }, [pathname, isSubActive])
-
-  const AiToolsSubMenu = () => (
-    <SidebarMenuSub>
-        {aiTools.links.map(link => (
-            <SidebarMenuSubItem key={link.href}>
-                <SidebarMenuSubButton asChild isActive={isActive(link.href)}>
-                    <Link href={link.href}><link.icon />{link.label}</Link>
-                </SidebarMenuSubButton>
-            </SidebarMenuSubItem>
-        ))}
-    </SidebarMenuSub>
-  );
+  const navLinks = getNavLinks(role);
 
   return (
     <SidebarProvider>
@@ -172,14 +134,6 @@ export default function AppShell({
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
-            {aiTools.links.length > 0 && (
-                <SidebarMenuItem>
-                    <Button variant="ghost" className="w-full justify-start gap-2 p-2" onClick={() => setOpenAiSubMenu(!openAiSubMenu)} aria-expanded={openAiSubMenu} data-active={isSubActive(['/ai-tools'])}>
-                        <Sparkles />AI Tools
-                    </Button>
-                    {openAiSubMenu && <AiToolsSubMenu />}
-                </SidebarMenuItem>
-            )}
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter className="flex-col items-center gap-4">
@@ -200,14 +154,9 @@ export default function AppShell({
               <DropdownMenuContent side="top" align="start" className="w-56">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {role === 'admin' && (
+                {(role === 'admin' || role === 'super_hr') && (
                     <DropdownMenuItem asChild>
-                        <Link href="/admin/roles"><Settings className="mr-2"/>Admin Settings</Link>
-                    </DropdownMenuItem>
-                )}
-                 {role === 'super_hr' && (
-                    <DropdownMenuItem asChild>
-                        <Link href="/admin/roles"><UserCog className="mr-2"/>Assign Roles</Link>
+                        <Link href="/admin/roles"><Settings className="mr-2"/>Manage Roles</Link>
                     </DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={() => logout()}>
