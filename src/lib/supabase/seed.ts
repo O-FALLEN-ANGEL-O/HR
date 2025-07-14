@@ -42,20 +42,20 @@ async function main() {
     console.log(`✅ Deleted ${existingUsers.length} auth users.`);
   }
 
-  // --- 2. Create sample users with passwords and roles ---
+  // --- 2. Create one simple user for each role ---
   const usersToCreate: { email: string; role: UserRole; fullName: string, department: string }[] = [
     { email: 'admin@hrplus.com', role: 'admin', fullName: 'Admin User', department: 'Management' },
-    { email: 'hr@hrplus.com', role: 'hr_manager', fullName: 'HR Manager', department: 'Human Resources' },
-    { email: 'recruiter@hrplus.com', role: 'recruiter', fullName: 'Recruiter Sam', department: 'Human Resources' },
-    { email: 'interviewer@hrplus.com', role: 'interviewer', fullName: 'Interviewer Ingrid', department: 'Engineering' },
+    { email: 'super_hr@hrplus.com', role: 'super_hr', fullName: 'Super HR Susan', department: 'Human Resources' },
+    { email: 'hr_manager@hrplus.com', role: 'hr_manager', fullName: 'HR Manager Harry', department: 'Human Resources' },
     { email: 'manager@hrplus.com', role: 'manager', fullName: 'Manager Mike', department: 'Engineering' },
-    { email: 'teamlead@hrplus.com', role: 'team_lead', fullName: 'Lead Laura', department: 'Engineering' },
+    { email: 'team_lead@hrplus.com', role: 'team_lead', fullName: 'Team Lead Tina', department: 'Engineering' },
+    { email: 'recruiter@hrplus.com', role: 'recruiter', fullName: 'Recruiter Rick', department: 'Human Resources' },
+    { email: 'interviewer@hrplus.com', role: 'interviewer', fullName: 'Interviewer Ingrid', department: 'Engineering' },
     { email: 'employee@hrplus.com', role: 'employee', fullName: 'Employee Eric', department: 'Engineering' },
     { email: 'intern@hrplus.com', role: 'intern', fullName: 'Intern Ian', department: 'Engineering' },
-    { email: 'superhr@hrplus.com', role: 'super_hr', fullName: 'Super HR Susan', department: 'Human Resources' },
   ];
 
-  console.log('👤 Creating sample users...');
+  console.log('👤 Creating one user for each role...');
   for (const userData of usersToCreate) {
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email: userData.email,
