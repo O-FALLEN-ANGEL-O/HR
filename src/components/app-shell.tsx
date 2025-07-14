@@ -44,6 +44,7 @@ import {
   SidebarMenuButton,
   SidebarFooter,
   SidebarClose,
+  SidebarInset,
 } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
