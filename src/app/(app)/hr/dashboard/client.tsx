@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
-import type { Metric, Job, UserProfile } from '@/lib/types';
+import type { Metric, UserProfile } from '@/lib/types';
+import dynamic from 'next/dynamic';
 
 import { Header } from '@/components/header';
 import {
@@ -20,9 +20,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { DashboardCharts } from './charts';
+import { Skeleton } from '@/components/ui/skeleton';
 
 import { format } from 'date-fns';
 import {
@@ -34,6 +33,32 @@ import {
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+
+const DashboardCharts = dynamic(() => import('./charts').then(mod => mod.DashboardCharts), {
+    ssr: false,
+    loading: () => (
+        <>
+            <Card className="lg:col-span-3">
+                <CardHeader>
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                </CardHeader>
+                <CardContent className="flex justify-center">
+                    <Skeleton className="h-[250px] w-[250px] rounded-full" />
+                </CardContent>
+            </Card>
+            <Card className="lg:col-span-4">
+                <CardHeader>
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-[280px] w-full" />
+                </CardContent>
+            </Card>
+        </>
+    )
+});
 
 
 type DashboardClientProps = {
