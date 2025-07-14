@@ -29,17 +29,21 @@ async function main() {
 
   // --- 1. Clean up existing auth users for a fresh seed ---
   console.log('🧹 Deleting existing auth users...');
-  const { data: { users: existingUsers }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+  const { data: { users: existingUsers }, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+    page: 1,
+    perPage: 1000,
+  });
+
   if (listError) {
     console.error('🔴 Error listing users:', listError.message);
-  } else {
-    for (const user of existingUsers) {
-      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
-      if (deleteError) {
-        console.warn(`🔴 Could not delete user ${user.email}: ${deleteError.message}`);
-      }
-    }
+  } else if (existingUsers.length > 0) {
+    const deletePromises = existingUsers.map(user => 
+        supabaseAdmin.auth.admin.deleteUser(user.id)
+    );
+    await Promise.all(deletePromises);
     console.log(`✅ Deleted ${existingUsers.length} auth users.`);
+  } else {
+    console.log('✅ No existing users to delete.');
   }
 
   // --- 2. Create one simple user for each role ---
@@ -55,7 +59,7 @@ async function main() {
     { email: 'intern@hrplus.com', role: 'intern', fullName: 'Intern Ian', department: 'Engineering' },
   ];
 
-  console.log('👤 Creating one user for each role...');
+  console.log('👤 Creating one user for each role with password "password"...');
   for (const userData of usersToCreate) {
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email: userData.email,

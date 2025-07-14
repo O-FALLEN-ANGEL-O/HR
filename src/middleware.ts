@@ -1,3 +1,4 @@
+
 import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 import type { UserRole } from './lib/types';
@@ -20,7 +21,7 @@ const roleAccess: Record<UserRole, string[]> = {
   guest: [],
 };
 
-function getHomePathForRole(role: UserRole): string {
+export function getHomePathForRole(role: UserRole): string {
   switch (role) {
     case 'admin': return '/admin/dashboard';
     case 'super_hr': return '/super_hr/dashboard';
