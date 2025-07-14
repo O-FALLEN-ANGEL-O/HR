@@ -47,9 +47,10 @@ export async function login(formData: any, isMagicLink: boolean = false) {
       });
 
       if (error) {
+          console.error('Magic Link Error:', error);
           return { error: `Magic Link Error: ${error.message}` };
       }
-      return { data: 'Magic link sent' };
+      return { data: 'Magic link sent! Check your email.' };
     } 
     
     // Standard password login
@@ -83,6 +84,7 @@ export async function login(formData: any, isMagicLink: boolean = false) {
 
   } catch (e: any) {
     // This will catch any other unexpected errors during the process, including redirection errors.
+    console.error('Unexpected login error:', e);
     return { error: `An unexpected error occurred: ${e.message}` };
   }
 }

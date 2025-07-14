@@ -37,33 +37,36 @@ const GoogleIcon = () => (
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address.'),
-  password: z.string().min(1, 'Password cannot be empty.'),
 });
 
 type LoginSchema = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const { toast } = useToast();
-  const [isSubmittingPassword, setIsSubmittingPassword] = React.useState(false);
+  const [isSubmittingMagicLink, setIsSubmittingMagicLink] = React.useState(false);
   const [isSubmittingGoogle, setIsSubmittingGoogle] = React.useState(false);
 
   const form = useForm<LoginSchema>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: '' },
   });
   
-  const handlePasswordSubmit = async (values: LoginSchema) => {
-    setIsSubmittingPassword(true);
-    const result = await login(values, false);
+  const handleMagicLinkSubmit = async (values: LoginSchema) => {
+    setIsSubmittingMagicLink(true);
+    const result = await login(values, true);
     if (result?.error) {
        toast({
         title: 'Login Failed',
         description: result.error,
         variant: 'destructive',
       });
+    } else {
+        toast({
+            title: 'Check your email',
+            description: "We've sent a magic link to your email address.",
+        })
     }
-    // On success, the action redirects, so no 'else' block is needed.
-    setIsSubmittingPassword(false);
+    setIsSubmittingMagicLink(false);
   }
 
   const handleGoogleLogin = async () => {
@@ -79,7 +82,7 @@ export default function LoginPage() {
     }
   }
 
-  const isLoading = isSubmittingPassword || isSubmittingGoogle;
+  const isLoading = isSubmittingMagicLink || isSubmittingGoogle;
 
   return (
     <Card className="w-full max-w-md">
@@ -89,7 +92,7 @@ export default function LoginPage() {
       </CardHeader>
       <CardContent className="space-y-6">
         <Form {...form}>
-             <form onSubmit={form.handleSubmit(handlePasswordSubmit)} className="space-y-4">
+             <form onSubmit={form.handleSubmit(handleMagicLinkSubmit)} className="space-y-4">
                 <FormField
                     control={form.control}
                     name="email"
@@ -103,22 +106,9 @@ export default function LoginPage() {
                         </FormItem>
                     )}
                 />
-                 <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Password</FormLabel>
-                            <FormControl>
-                                <Input type="password" placeholder="••••••••" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
                  <Button type="submit" disabled={isLoading} className="w-full">
-                    {isSubmittingPassword ? <Loader2 className="animate-spin mr-2" /> : <LogIn className="mr-2" />}
-                    Sign In
+                    {isSubmittingMagicLink ? <Loader2 className="animate-spin mr-2" /> : <Mail className="mr-2" />}
+                    Sign in with Magic Link
                 </Button>
             </form>
         </Form>
