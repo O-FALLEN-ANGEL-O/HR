@@ -12,7 +12,8 @@ const roleAccess: Record<UserRole, string[]> = {
   hr_manager: ['/hr', '/recruiter', '/interviewer', '/manager', '/employee', '/intern', '/ai-tools', '/leaves', '/company-feed', '/performance', '/employee/documents'],
   recruiter: ['/recruiter', '/hr/applicants', '/recruiter/jobs', '/ai-tools/applicant-scoring', '/hr/campus', '/interviewer/tasks'],
   interviewer: ['/interviewer', '/interviewer/tasks'],
-  manager: ['/manager', '/employee', '/leaves', '/company-feed', '/performance', '/employee/directory'],
+  manager: ['/manager', '/employee', '/leaves', '/company-feed', '/performance', '/employee/directory', '/team-lead'],
+  team_lead: ['/team-lead', '/manager', '/employee', '/leaves', '/company-feed', '/performance', '/employee/directory'],
   employee: ['/employee', '/leaves', '/company-feed', '/kudos', '/employee/documents', '/employee/payslips', '/employee/directory', '/ai-tools/chatbot'],
   intern: ['/intern', '/leaves', '/employee/documents', '/kudos', '/ai-tools/chatbot'],
   guest: [], // Guests have no access to app routes, handled by publicRoutes
@@ -26,6 +27,7 @@ function getHomePathForRole(role: UserRole): string {
     case 'recruiter': return '/recruiter/dashboard';
     case 'interviewer': return '/interviewer/tasks';
     case 'manager': return '/manager/dashboard';
+    case 'team_lead': return '/team-lead/dashboard';
     case 'employee': return '/employee/dashboard';
     case 'intern': return '/intern/dashboard';
     default: return '/login';
