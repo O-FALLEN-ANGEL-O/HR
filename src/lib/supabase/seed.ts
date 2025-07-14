@@ -38,7 +38,7 @@ async function main() {
     console.error('🔴 Error listing users:', listError.message);
   } else if (existingUsers.length > 0) {
     const deletePromises = existingUsers.map(user => 
-        supabaseAdmin.auth.admin.deleteUser(user.id)
+        supabaseAdmin.auth.admin.deleteUser(user.id, true) // true to hard-delete
     );
     await Promise.all(deletePromises);
     console.log(`✅ Deleted ${existingUsers.length} auth users.`);
