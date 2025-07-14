@@ -1,3 +1,4 @@
+
 import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 import type { UserRole } from './lib/types';
@@ -7,7 +8,7 @@ const authRoutes = ['/login', 'signup'];
 
 // Role-based access control matrix based on the new plan
 const roleAccess: Record<UserRole, string[]> = {
-  admin: ['/admin', '/(app)'], // Full access
+  admin: ['/admin', '/app'], // Full access
   super_hr: ['/super_hr', '/hr', '/recruiter', '/interviewer', '/manager', '/employee', '/intern', '/ai-tools', '/leaves', '/company-feed', '/performance', '/employee/documents', '/admin/roles', '/employee/kudos'],
   hr_manager: ['/hr', '/recruiter', '/interviewer', '/manager', '/employee', '/intern', '/ai-tools', '/leaves', '/company-feed', '/performance', '/employee/documents', '/employee/kudos'],
   recruiter: ['/recruiter', '/hr/applicants', '/recruiter/jobs', '/ai-tools/applicant-scoring', '/hr/campus', '/interviewer/tasks'],
