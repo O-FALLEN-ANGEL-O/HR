@@ -26,7 +26,7 @@ async function getData(user: UserProfile | null) {
     const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 }); // Monday
     const weeklyAwardQuery = supabase
         .from('weekly_awards')
-        .select('*, users(full_name, avatar_url), awarded_by:users!awarded_by_user_id(full_name)')
+        .select('*, users:awarded_user_id(full_name, avatar_url), awarded_by:awarded_by_user_id(full_name)')
         .gte('week_of', weekStart.toISOString().split('T')[0])
         .order('week_of', { ascending: false })
         .limit(1);
@@ -56,7 +56,7 @@ export default async function KudosPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-      <Header title="Kudos & Recognition" />
+      <Header title="Kudos &amp; Recognition" />
       <KudosClient
         currentUser={user}
         initialKudos={kudos}

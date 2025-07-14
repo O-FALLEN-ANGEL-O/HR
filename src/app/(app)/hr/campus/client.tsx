@@ -92,7 +92,7 @@ export default function CollegeDriveClient({ initialColleges }: CollegeDriveClie
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-      <Header title="College Drives & Internships">
+      <Header title="College Drives &amp; Internships">
         <Button size="sm">
           <PlusCircle className="mr-2 h-4 w-4" />
           Invite College

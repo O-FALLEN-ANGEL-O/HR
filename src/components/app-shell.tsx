@@ -31,6 +31,7 @@ import {
   ShieldCheck,
   UserCog,
   WalletCards,
+  MessageSquare,
 } from 'lucide-react';
 
 import {
@@ -71,24 +72,28 @@ const getNavLinks = (role: UserRole) => {
     { href: '/intern/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['intern'] },
     
     // Admin
-    { href: '/admin/roles', label: 'Users & Roles', icon: Users, roles: ['admin', 'super_hr'] },
+    { href: '/admin/roles', label: 'Users &amp; Roles', icon: Users, roles: ['admin', 'super_hr'] },
     
     // HR / Recruiter
     { href: '/hr/applicants', label: 'Applicants', icon: Users, roles: ['hr_manager', 'recruiter', 'super_hr'] },
     { href: '/recruiter/jobs', label: 'Job Postings', icon: Briefcase, roles: ['hr_manager', 'recruiter', 'super_hr'] },
     { href: '/hr/campus', label: 'Campus Drives', icon: GraduationCap, roles: ['hr_manager', 'recruiter', 'super_hr'] },
     { href: '/hr/onboarding', label: 'Onboarding', icon: ClipboardCheck, roles: ['hr_manager', 'super_hr'] },
+    { href: '/interviewer/tasks', label: 'Interviews', icon: MessageSquare, roles: ['interviewer', 'hr_manager', 'recruiter', 'super_hr', 'manager'] },
+
 
     // Manager / Team Lead
     { href: '/manager/team', label: 'My Team', icon: Users, roles: ['manager', 'team_lead'], comingSoon: true },
 
     // Company Wide
     { href: '/leaves', label: 'Leave System', icon: Clock, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern'] },
+    { href: '/expenses', label: 'Expenses', icon: WalletCards, roles: ['employee', 'manager', 'team_lead', 'hr_manager', 'super_hr', 'admin'] },
     { href: '/company-feed', label: 'Company Feed', icon: Newspaper, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern'] },
-    { href: '/performance', label: 'Performance', icon: BarChart3, roles: ['admin', 'super_hr', 'hr_manager', 'manager'] },
+    { href: '/performance', label: 'Performance', icon: BarChart3, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'employee'] },
+    { href: '/performance/okrs', label: 'OKRs', icon: BarChart3, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'employee'] },
     { href: '/employee/directory', label: 'Directory', icon: Users, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern'] },
     { href: '/employee/documents', label: 'Documents', icon: FileText, roles: ['admin', 'super_hr', 'hr_manager', 'employee', 'intern'] },
-    { href: '/employee/payslips', label: 'Payslips', icon: WalletCards, roles: ['hr_manager', 'employee'] },
+    { href: '/employee/payslips', label: 'Payslips', icon: WalletCards, roles: ['hr_manager', 'super_hr', 'employee'] },
     { href: '/employee/kudos', label: 'Kudos', icon: Award, roles: ['super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern'] },
 
     // AI Tools
@@ -111,7 +116,10 @@ export default function AppShell({
 }) {
   const pathname = usePathname();
 
-  const isActive = (path: string) => pathname === path;
+  const isActive = (path: string) => {
+    if (path === '/performance' && pathname.startsWith('/performance')) return true;
+    return pathname === path;
+  }
   
   const role = user?.role || 'guest';
   const navLinks = getNavLinks(role);

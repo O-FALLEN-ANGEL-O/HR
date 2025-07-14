@@ -2,36 +2,33 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 import type { UserRole } from './lib/types';
 
-const publicRoutes = ['/login', '/signup', '/auth/callback', '/register', '/403'];
-
-// This should now be a flat list of all possible application routes
-const allAppRoutes = [
-    '/admin/dashboard', '/admin/roles',
-    '/super_hr/dashboard',
-    '/hr/dashboard', '/hr/applicants', '/hr/campus', '/hr/onboarding',
-    '/recruiter/dashboard', '/recruiter/jobs',
-    '/manager/dashboard',
-    '/team-lead/dashboard',
-    '/employee/dashboard', '/employee/directory', '/employee/documents', '/employee/payslips', '/employee/kudos',
-    '/intern/dashboard',
-    '/leaves',
-    '/company-feed',
-    '/performance',
-    '/ai-tools/applicant-scoring', '/ai-tools/review-analyzer', '/ai-tools/chatbot',
+// Centralized list of all public-facing routes
+const publicRoutes = [
+  '/login', 
+  '/signup', 
+  '/auth/callback', 
+  '/register', 
+  '/403',
+  '/portal', // Portal root for applicants
+  '/typing-test',
+  '/aptitude-test',
+  '/comprehensive-test',
+  '/english-grammar-test',
+  '/customer-service-test'
 ];
 
 const roleAccess: Record<UserRole, string[]> = {
-  admin: ['/admin', '/(app)'], // Simplified for now
-  super_hr: ['/super_hr', '/hr', '/recruiter', '/manager', '/employee', '/intern', '/ai-tools', '/leaves', '/company-feed', '/performance', '/employee/documents', '/admin/roles', '/employee/kudos'],
-  hr_manager: ['/hr', '/recruiter', '/manager', '/employee', '/intern', '/ai-tools', '/leaves', '/company-feed', '/performance', '/employee/documents', '/employee/kudos'],
-  recruiter: ['/recruiter', '/hr/applicants', '/recruiter/jobs', '/ai-tools/applicant-scoring', '/hr/campus'],
-  interviewer: [], // To be defined
-  manager: ['/manager', '/employee', '/leaves', '/company-feed', '/performance', '/employee/directory', '/team-lead', '/employee/kudos'],
-  team_lead: ['/team-lead', '/manager', '/employee', '/leaves', '/company-feed', '/performance', '/employee/directory', '/employee/kudos'],
-  employee: ['/employee', '/leaves', '/company-feed', '/kudos', '/employee/documents', '/employee/payslips', '/employee/directory', '/ai-tools/chatbot'],
+  admin: ['/'], // Admin can access everything
+  super_hr: ['/super_hr', '/hr', '/recruiter', '/interviewer', '/manager', '/employee', '/intern', '/ai-tools', '/leaves', '/company-feed', '/performance', '/expenses', '/admin/roles'],
+  hr_manager: ['/hr', '/recruiter', '/interviewer', '/manager', '/employee', '/intern', '/ai-tools', '/leaves', '/company-feed', '/performance', '/expenses'],
+  recruiter: ['/recruiter', '/hr/applicants', '/recruiter/jobs', '/interviewer', '/ai-tools/applicant-scoring', '/hr/campus'],
+  interviewer: ['/interviewer', '/hr/applicants'],
+  manager: ['/manager', '/employee', '/leaves', '/company-feed', '/performance', '/employee/directory', '/team-lead', '/employee/kudos', '/expenses', '/interviewer'],
+  team_lead: ['/team-lead', '/manager', '/employee', '/leaves', '/company-feed', '/performance', '/employee/directory', '/employee/kudos', '/expenses'],
+  employee: ['/employee', '/leaves', '/company-feed', '/kudos', '/employee/documents', '/employee/payslips', '/employee/directory', '/ai-tools/chatbot', '/performance', '/expenses'],
   intern: ['/intern', '/leaves', '/employee/documents', '/kudos', '/ai-tools/chatbot'],
   guest: [],
-  finance: [],
+  finance: ['/expenses'],
   it_admin: [],
   support: [],
   auditor: [],
@@ -43,6 +40,7 @@ function getHomePathForRole(role: UserRole): string {
     case 'super_hr': return '/super_hr/dashboard';
     case 'hr_manager': return '/hr/dashboard';
     case 'recruiter': return '/recruiter/dashboard';
+    case 'interviewer': return '/interviewer/tasks';
     case 'manager': return '/manager/dashboard';
     case 'team_lead': return '/team-lead/dashboard';
     case 'employee': return '/employee/dashboard';
@@ -53,47 +51,61 @@ function getHomePathForRole(role: UserRole): string {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
-  // Exclude portal routes from auth checks
-  if (pathname.startsWith('/portal/')) {
-      return NextResponse.next();
-  }
 
-  const { response, user } = await updateSession(request);
+  // Check if the current route is public
   const isPublic = publicRoutes.some(route => pathname.startsWith(route));
 
+  const { response, user } = await updateSession(request);
+
   if (!user && !isPublic) {
+    // No user and not a public route, redirect to login
     return NextResponse.redirect(new URL('/login', request.url));
   }
   
   if (user) {
     const role = user.role;
-
+    
+    // If user is on the root path, redirect to their designated dashboard
     if (pathname === '/') {
        return NextResponse.redirect(new URL(getHomePathForRole(role), request.url));
     }
 
-    const isAuthRoute = pathname === '/login' || pathname === '/signup';
+    // If user is logged in, prevent access to login/signup pages
+    const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/signup');
     if (isAuthRoute) {
         return NextResponse.redirect(new URL(getHomePathForRole(role), request.url));
     }
     
+    // For non-public routes, check role-based access
     if (!isPublic) {
+      if (role === 'admin') {
+        // Admin has access to everything, proceed
+        return response;
+      }
+      
       const allowedPaths = roleAccess[role] || [];
-      // A simple check to see if the user's role grants them access.
       const isAuthorized = allowedPaths.some(path => pathname.startsWith(path));
       
-      if (!isAuthorized && role !== 'admin') { // Let admin access everything for now
+      if (!isAuthorized) {
+        // If not authorized, redirect to the forbidden page
         return NextResponse.redirect(new URL('/403', request.url));
       }
     }
   }
 
+  // For all other cases, continue with the request
   return response;
 }
 
 export const config = {
   matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - anything with a file extension
+     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

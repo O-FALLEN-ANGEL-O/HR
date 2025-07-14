@@ -21,7 +21,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -198,7 +197,7 @@ function InterviewTable({ interviews, isClient }: { interviews: Interview[], isC
                 <TableRow>
                     <TableHead>Candidate</TableHead>
                     <TableHead>Interviewer</TableHead>
-                    <TableHead>Date & Time</TableHead>
+                    <TableHead>Date &amp; Time</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Actions</TableHead>
@@ -210,7 +209,7 @@ function InterviewTable({ interviews, isClient }: { interviews: Interview[], isC
                     <TableCell>
                         <div className="flex items-center gap-3">
                         <Avatar>
-                            <AvatarImage src={interview.candidate_avatar} />
+                            <AvatarImage src={interview.candidate_avatar || undefined} />
                             <AvatarFallback>
                             {interview.candidate_name.charAt(0)}
                             </AvatarFallback>
@@ -226,7 +225,7 @@ function InterviewTable({ interviews, isClient }: { interviews: Interview[], isC
                     <TableCell>
                         <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
-                            <AvatarImage src={interview.interviewer_avatar} />
+                            <AvatarImage src={interview.interviewer_avatar || undefined} />
                             <AvatarFallback>
                             {interview.interviewer_name.charAt(0)}
                             </AvatarFallback>
@@ -329,7 +328,7 @@ function FeedbackDialog({ interviewId, applicantId }: { interviewId: string, app
                             <Mic className="mr-2" /> Record Voice Note (soon)
                         </Button>
                         <Button type="submit" disabled={isSubmitting}>
-                            {isSubmitting ? <Loader2 className="animate-spin mr-2"/> : <Check className="mr-2"/>} Submit & Complete
+                            {isSubmitting ? <Loader2 className="animate-spin mr-2"/> : <Check className="mr-2"/>} Submit &amp; Complete
                         </Button>
                     </DialogFooter>
                 </form>
