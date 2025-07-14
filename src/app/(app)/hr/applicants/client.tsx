@@ -332,31 +332,31 @@ export default function ApplicantList({
                          <RejectCandidateDialog applicantId={applicant.id} />
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                          onClick={() => handleAssignTest(applicant.id, 'Typing Test', 'typing-test')}
+                          onClick={() => handleAssignTest(applicant.id, 'Typing Test', '/typing-test')}
                         >
                           <Keyboard className="mr-2 h-4 w-4" />
                           Assign Typing Test
                         </DropdownMenuItem>
                          <DropdownMenuItem
-                          onClick={() => handleAssignTest(applicant.id, 'Aptitude Test', 'aptitude-test')}
+                          onClick={() => handleAssignTest(applicant.id, 'Aptitude Test', '/aptitude-test')}
                         >
                           <BrainCircuit className="mr-2 h-4 w-4" />
                           Assign Aptitude Test
                         </DropdownMenuItem>
                          <DropdownMenuItem
-                          onClick={() => handleAssignTest(applicant.id, 'Comprehensive Test', 'comprehensive-test')}
+                          onClick={() => handleAssignTest(applicant.id, 'Comprehensive Test', '/comprehensive-test')}
                         >
                           <Library className="mr-2 h-4 w-4" />
                           Assign Comprehensive Test
                         </DropdownMenuItem>
                          <DropdownMenuItem
-                          onClick={() => handleAssignTest(applicant.id, 'English Grammar Test', 'english-grammar-test')}
+                          onClick={() => handleAssignTest(applicant.id, 'English Grammar Test', '/english-grammar-test')}
                         >
                           <SpellCheck className="mr-2 h-4 w-4" />
                           Assign English Grammar Test
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => handleAssignTest(applicant.id, 'Customer Service Test', 'customer-service-test')}
+                          onClick={() => handleAssignTest(applicant.id, 'Customer Service Test', '/customer-service-test')}
                         >
                           <HeartHandshake className="mr-2 h-4 w-4" />
                           Assign Customer Service Test
