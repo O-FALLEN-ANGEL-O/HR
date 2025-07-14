@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import dynamic from 'next/dynamic';
 import {
   Table,
   TableBody,
@@ -17,7 +18,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -26,7 +26,6 @@ import { createClient } from '@/lib/supabase/client';
 import type { Leave, LeaveBalance, UserProfile } from '@/lib/types';
 import { format } from 'date-fns';
 import { Calendar, Check, Briefcase, User, UserCheck, Users, X, Sun, Umbrella, Loader2, Download, AlertCircle, TrendingUp, BarChart } from 'lucide-react';
-import { LeaveDialog } from '@/components/leave-dialog';
 import { updateLeaveStatus } from '@/app/actions';
 import { predictLeaveSpikes } from '@/ai/flows/predict-leave-spikes';
 import type { PredictLeaveSpikesOutput } from '@/ai/flows/predict-leave-spikes';
@@ -42,7 +41,11 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
 
+const LeaveDialog = dynamic(() => import('@/components/leave-dialog').then(mod => mod.LeaveDialog), {
+    loading: () => <Button disabled><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Apply for Leave</Button>
+});
 
 type LeaveClientProps = {
   currentUser: UserProfile;
