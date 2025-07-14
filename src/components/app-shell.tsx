@@ -72,7 +72,7 @@ const getNavLinks = (role: UserRole) => {
     { href: '/intern/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['intern'] },
     
     // Admin
-    { href: '/admin/roles', label: 'Users &amp; Roles', icon: Users, roles: ['admin', 'super_hr'] },
+    { href: '/admin/roles', label: 'Users & Roles', icon: Users, roles: ['admin', 'super_hr'] },
     
     // HR / Recruiter
     { href: '/hr/applicants', label: 'Applicants', icon: Users, roles: ['hr_manager', 'recruiter', 'super_hr'] },
