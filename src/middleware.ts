@@ -4,10 +4,10 @@ import { updateSession } from '@/lib/supabase/middleware';
 import type { UserRole } from './lib/types';
 
 const publicRoutes = [
-  '/login', 
-  '/signup', 
-  '/auth/callback', 
-  '/register', 
+  '/login',
+  '/signup',
+  '/auth/callback',
+  '/register',
   '/403',
   '/portal',
   '/typing-test',
