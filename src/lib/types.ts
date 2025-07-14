@@ -65,6 +65,8 @@ export type Applicant = {
   comprehensive_score?: number;
   english_grammar_score?: number;
   customer_service_score?: number;
+  rejection_reason?: string;
+  rejection_notes?: string;
 };
 
 export type Onboarding = {

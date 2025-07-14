@@ -1,6 +1,6 @@
 import { Header } from '@/components/header';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Users, Settings, Workflow, ScanSearch, FileText, ShieldCheck, History, HeartPulse, FileArchive } from 'lucide-react';
+import { Users, Settings, Workflow, ScanSearch, FileText, ShieldCheck, History, HeartPulse, FileArchive, LayoutDashboard, FileLock2, BarChart, GitBranch, KeyRound } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AdminDashboardPage() {
@@ -26,6 +26,17 @@ export default function AdminDashboardPage() {
                     </CardContent>
                 </Card>
             </Link>
+             <Link href="/hr/dashboard">
+                <Card className="hover:bg-muted/50 transition-colors">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Global HR Dashboard</CardTitle>
+                        <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-xs text-muted-foreground">View attrition, department strength, and more.</p>
+                    </CardContent>
+                </Card>
+            </Link>
              <Card className="opacity-60 cursor-not-allowed">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Role Audit History</CardTitle>
@@ -47,7 +58,7 @@ export default function AdminDashboardPage() {
              <Card className="opacity-60 cursor-not-allowed">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Access Control Templates</CardTitle>
-                    <FileArchive className="h-4 w-4 text-muted-foreground" />
+                    <FileLock2 className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                     <p className="text-xs text-muted-foreground">Predefined access sets for faster role setup. (Coming Soon)</p>

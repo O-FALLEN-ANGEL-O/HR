@@ -21,7 +21,7 @@ const features = [
         title: "Leave Forecast",
         description: "AI suggests best dates for vacation.",
         icon: GitCommit,
-        href: "/leaves",
+        href: "#",
         comingSoon: true,
     },
     {
@@ -40,7 +40,7 @@ const features = [
         title: "Salary Breakdown",
         description: "Interactive chart of your CTC vs in-hand.",
         icon: BarChart,
-        href: "/leaves",
+        href: "#",
         comingSoon: true,
     },
     {

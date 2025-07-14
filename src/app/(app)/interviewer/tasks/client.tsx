@@ -38,7 +38,7 @@ import { format } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Calendar, Clock, MoreHorizontal, Phone, Users, Video, Edit, MessageSquare, Trash2, Check, Loader2, Mic, MessagesSquare, Send } from 'lucide-react';
-import { Tabs, TabsList, TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsContent, TabsTrigger } from '@/components/ui/tabs';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { addApplicantNote, updateInterviewStatus } from '@/app/actions';
@@ -83,22 +83,13 @@ export default function InterviewList({ initialInterviews }: InterviewListProps)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'interviews' },
-        (payload) => {
+        async (payload) => {
           toast({
             title: 'Interview Data Updated',
             description: 'The list of interviews has been updated.',
           });
-           if (payload.eventType === 'INSERT') {
-            setInterviews((prev) => [payload.new as Interview, ...prev].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-          } else if (payload.eventType === 'UPDATE') {
-            setInterviews((prev) =>
-              prev.map((interview) =>
-                interview.id === payload.new.id ? { ...interview, ...(payload.new as Interview) } : interview
-              )
-            );
-          } else if (payload.eventType === 'DELETE') {
-            setInterviews((prev) => prev.filter((interview) => interview.id !== (payload.old as Interview).id));
-          }
+          const { data } = await supabase.from('interviews').select('*').order('date', { ascending: false });
+          setInterviews((data as Interview[]) || []);
         }
       )
       .subscribe();

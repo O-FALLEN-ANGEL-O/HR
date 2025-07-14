@@ -1,3 +1,4 @@
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -219,7 +220,7 @@ export async function scheduleInterview(formData: FormData) {
 
   const [{ data: applicant }, { data: interviewer }] = await Promise.all([
     supabase.from('applicants').select('name, email, jobs(title)').eq('id', applicantId).single(),
-    supabase.from('users').select('full_name, email').eq('id', interviewerId).single(),
+    supabase.from('users').select('full_name, email, avatar_url').eq('id', interviewerId).single(),
   ]);
 
   if (!applicant || !interviewer) {
@@ -236,7 +237,7 @@ export async function scheduleInterview(formData: FormData) {
     candidate_name: applicant.name,
     candidate_avatar: '', 
     interviewer_name: interviewer.full_name || 'Interviewer',
-    interviewer_avatar: '',
+    interviewer_avatar: interviewer.avatar_url || '',
     job_title: applicant.jobs?.title || 'N/A',
   });
 
@@ -250,12 +251,14 @@ export async function scheduleInterview(formData: FormData) {
   startDateTime.setHours(hours, minutes);
 
   try {
-      await createCalendarEvent({
-          summary: `Interview: ${applicant.name} for ${applicant.jobs?.title || 'a position'}`,
-          description: `Interview with ${applicant.name} for the ${applicant.jobs?.title || 'a position'}. Interviewer: ${interviewer.full_name}.`,
-          start: startDateTime,
-          attendees: [{ email: interviewer.email! }, { email: applicant.email }],
-      });
+      if (interviewer.email && applicant.email) {
+        await createCalendarEvent({
+            summary: `Interview: ${applicant.name} for ${applicant.jobs?.title || 'a position'}`,
+            description: `Interview with ${applicant.name} for the ${applicant.jobs?.title || 'a position'}. Interviewer: ${interviewer.full_name}.`,
+            start: startDateTime,
+            attendees: [{ email: interviewer.email }, { email: applicant.email }],
+        });
+      }
   } catch(calendarError) {
       console.warn("Could not create calendar event, but interview was scheduled in the database.", calendarError);
   }
