@@ -59,6 +59,7 @@ export async function login(formData: any, isMagicLink: boolean = false) {
     });
       
     if (error) {
+      console.error('Supabase auth error:', error);
       // This will now catch auth-specific errors like "Invalid login credentials"
       return { error: `Authentication Error: ${error.message}` };
     }
