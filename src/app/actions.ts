@@ -304,3 +304,30 @@ export async function generateAiMatchScore(applicantId: string) {
     
     revalidatePath(`/hr/applicants/${applicantId}`);
 }
+
+export async function rejectApplicant(applicantId: string, reason: string, notes?: string) {
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+  const user = await getUser(cookieStore);
+
+  if (!user || !['admin', 'hr_manager', 'super_hr', 'recruiter'].includes(user.role)) {
+    throw new Error('You do not have permission to perform this action.');
+  }
+
+  const { error } = await supabase
+    .from('applicants')
+    .update({ 
+        stage: 'Rejected',
+        rejection_reason: reason,
+        rejection_notes: notes,
+     })
+    .eq('id', applicantId);
+
+  if (error) {
+    console.error('Error rejecting applicant:', error);
+    throw new Error(`Could not update applicant status: ${error.message}`);
+  }
+
+  revalidatePath('/hr/applicants');
+}
+    

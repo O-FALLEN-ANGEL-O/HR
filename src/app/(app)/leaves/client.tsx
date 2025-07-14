@@ -54,6 +54,7 @@ type LeaveClientProps = {
     absentToday: number;
     pendingRequests: number;
   };
+  leaveOverlap: boolean;
 };
 
 const leaveTypeDetails = {
@@ -88,6 +89,7 @@ export function LeaveClient({
   initialLeaves,
   initialBalance,
   initialStats,
+  leaveOverlap,
 }: LeaveClientProps) {
   const [leaves, setLeaves] = React.useState(initialLeaves);
   const [balance, setBalance] = React.useState(initialBalance);
@@ -123,13 +125,11 @@ export function LeaveClient({
   
   const isAdmin = currentUser.role === 'admin' || currentUser.role === 'super_hr' || currentUser.role === 'hr_manager';
   const isManager = currentUser.role === 'manager' || currentUser.role === 'team_lead';
-  const isEmployee = currentUser.role === 'employee' || currentUser.role === 'intern';
 
   const renderContent = () => {
     if (isAdmin) return <AdminLeaveView leaves={leaves} stats={stats} />;
-    if (isManager) return <ManagerLeaveView leaves={leaves.filter(l => l.users?.department === currentUser.department)} currentUser={currentUser}/>;
-    if (isEmployee) return <EmployeeLeaveView leaves={leaves.filter(l => l.user_id === currentUser.id)} balance={balance} user={currentUser} />;
-    return null;
+    if (isManager) return <ManagerLeaveView leaves={leaves.filter(l => l.users?.department === currentUser.department)} currentUser={currentUser} leaveOverlap={leaveOverlap}/>;
+    return <EmployeeLeaveView leaves={leaves.filter(l => l.user_id === currentUser.id)} balance={balance} user={currentUser} />;
   };
 
   return <div>{renderContent()}</div>;
@@ -216,7 +216,7 @@ function AdminLeaveView({ leaves, stats }: { leaves: Leave[], stats: LeaveClient
     )
 }
 
-function ManagerLeaveView({ leaves, currentUser }: { leaves: Leave[], currentUser: UserProfile }) {
+function ManagerLeaveView({ leaves, currentUser, leaveOverlap }: { leaves: Leave[], currentUser: UserProfile, leaveOverlap: boolean }) {
     const pendingRequests = leaves.filter(l => l.status === 'pending');
     
     return (
@@ -263,13 +263,15 @@ function ManagerLeaveView({ leaves, currentUser }: { leaves: Leave[], currentUse
                     )}
                 </CardContent>
             </Card>
-            <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Leave Overlap Warning!</AlertTitle>
-                <AlertDescription>
-                    More than 2 team members have applied for leave on the same day. Please review carefully. (This is a sample warning).
-                </AlertDescription>
-            </Alert>
+            {leaveOverlap && (
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Leave Overlap Warning!</AlertTitle>
+                    <AlertDescription>
+                        More than 2 team members have applied for leave on the same day. Please review carefully.
+                    </AlertDescription>
+                </Alert>
+            )}
             <Card>
                 <CardHeader>
                     <CardTitle>Full Team Leave History</CardTitle>
@@ -416,3 +418,4 @@ function LeaveTable({ leaves, isEmployeeView = false }: { leaves: Leave[], isEmp
     </Table>
   );
 }
+    

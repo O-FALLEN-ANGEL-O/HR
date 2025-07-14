@@ -44,6 +44,7 @@ import {
   SpellCheck,
   HeartHandshake,
   FileSearch,
+  UserX,
 } from 'lucide-react';
 import {
   Select,
@@ -68,6 +69,11 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { rejectApplicant } from '@/app/actions';
+import { Loader2 } from 'lucide-react';
 
 type ApplicantListProps = {
   initialApplicants: Applicant[];
@@ -392,44 +398,94 @@ export default function ApplicantList({
   );
 }
 
+const rejectionSchema = z.object({
+  rejection_reason: z.string().min(1, { message: 'Please select a reason.' }),
+  rejection_notes: z.string().optional(),
+});
+
 function RejectCandidateDialog({ applicantId }: { applicantId: string }) {
   const [open, setOpen] = React.useState(false);
-  // Add logic to handle rejection form
+  const { toast } = useToast();
+  const form = useForm<z.infer<typeof rejectionSchema>>({
+    resolver: zodResolver(rejectionSchema),
+  });
+
+  const { formState: { isSubmitting }, handleSubmit, control, reset } = form;
+
+  const handleFormSubmit = async (data: z.infer<typeof rejectionSchema>) => {
+    try {
+      await rejectApplicant(applicantId, data.rejection_reason, data.rejection_notes);
+      toast({
+        title: 'Candidate Rejected',
+        description: 'The candidate has been marked as rejected and the reason has been logged.',
+      });
+      setOpen(false);
+      reset();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Could not reject the candidate.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <div className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-red-600">
-            <User className="mr-2 h-4 w-4" />
+        <div className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-red-600 hover:bg-accent">
+            <UserX className="mr-2 h-4 w-4" />
             Reject Candidate
         </div>
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Reject Candidate</DialogTitle>
-          <DialogDescription>
-            Please select a reason for rejection. This will be logged for internal review.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="py-4 space-y-4">
-            <Select>
-                <SelectTrigger>
-                    <SelectValue placeholder="Select a rejection reason" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="not-qualified">Not a good fit / Not qualified</SelectItem>
-                    <SelectItem value="salary-mismatch">Salary expectation mismatch</SelectItem>
-                    <SelectItem value="culture-fit">Not a good culture fit</SelectItem>
-                    <SelectItem value="position-filled">Position filled by another candidate</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-            </Select>
-            <Textarea placeholder="Add optional notes..." />
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button variant="destructive" onClick={() => setOpen(false)}>Confirm Rejection</Button>
-        </DialogFooter>
+        <form onSubmit={handleSubmit(handleFormSubmit)}>
+            <DialogHeader>
+            <DialogTitle>Reject Candidate</DialogTitle>
+            <DialogDescription>
+                Please select a reason for rejection. This will be logged for internal review.
+            </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+                <Controller
+                    name="rejection_reason"
+                    control={control}
+                    render={({ field, fieldState }) => (
+                        <div className="space-y-1">
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a rejection reason" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="not-qualified">Not a good fit / Not qualified</SelectItem>
+                                    <SelectItem value="salary-mismatch">Salary expectation mismatch</SelectItem>
+                                    <SelectItem value="culture-fit">Not a good culture fit</SelectItem>
+                                    <SelectItem value="position-filled">Position filled by another candidate</SelectItem>
+                                    <SelectItem value="other">Other</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            {fieldState.error && <p className="text-sm text-destructive">{fieldState.error.message}</p>}
+                        </div>
+                    )}
+                />
+                <Controller
+                    name="rejection_notes"
+                    control={control}
+                    render={({ field }) => (
+                         <Textarea placeholder="Add optional notes..." {...field} />
+                    )}
+                />
+            </div>
+            <DialogFooter>
+            <Button variant="outline" type="button" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button variant="destructive" type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 animate-spin"/>}
+                Confirm Rejection
+            </Button>
+            </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
 }
+    

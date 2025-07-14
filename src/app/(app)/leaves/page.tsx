@@ -9,6 +9,7 @@ import { startOfToday, endOfToday, parseISO } from 'date-fns';
 async function getLeaveData(user: UserProfile) {
     const supabase = createClient(cookies());
     let leavesQuery = supabase.from('leaves').select('*, users(full_name, avatar_url, department)');
+    let teamMemberIds: string[] = [];
     
     if (user.role === 'manager' || user.role === 'team_lead') {
         // Fetch leaves for users in the same department
@@ -17,7 +18,7 @@ async function getLeaveData(user: UserProfile) {
             if (teamError) {
                 console.error('Error fetching team members:', teamError.message);
             }
-            const teamMemberIds = teamMembers?.map(tm => tm.id) || [user.id]; // Default to own ID if no team members found
+            teamMemberIds = teamMembers?.map(tm => tm.id) || [user.id]; // Default to own ID if no team members found
             leavesQuery = leavesQuery.in('user_id', teamMemberIds);
         } else {
             // If manager has no department, only show their own leaves
@@ -63,12 +64,41 @@ async function getLeaveData(user: UserProfile) {
         const { count: pendingCount } = await supabase.from('leaves').select('id', { count: 'exact' }).eq('status', 'pending');
         stats.pendingRequests = pendingCount || 0;
     }
+    
+    // Check for leave overlap for managers
+    let leaveOverlap = false;
+    if ((user.role === 'manager' || user.role === 'team_lead') && teamMemberIds.length > 0) {
+        const { data: pendingLeaves } = await supabase
+            .from('leaves')
+            .select('start_date, end_date')
+            .in('user_id', teamMemberIds)
+            .eq('status', 'pending');
+
+        if (pendingLeaves) {
+            const dateCounts: Record<string, number> = {};
+            for (const leave of pendingLeaves) {
+                let currentDate = new Date(leave.start_date);
+                const endDate = new Date(leave.end_date);
+                while (currentDate <= endDate) {
+                    const dateString = currentDate.toISOString().split('T')[0];
+                    dateCounts[dateString] = (dateCounts[dateString] || 0) + 1;
+                    if (dateCounts[dateString] > 2) {
+                        leaveOverlap = true;
+                        break;
+                    }
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+                if (leaveOverlap) break;
+            }
+        }
+    }
 
 
     return {
         leaves: (leaves as Leave[]) || [],
         balance: (balances as LeaveBalance) || null,
         stats,
+        leaveOverlap,
     };
 }
 
@@ -80,7 +110,7 @@ export default async function LeaveManagementPage() {
         return <p>You must be logged in to view this page.</p>;
     }
     
-    const { leaves, balance, stats } = await getLeaveData(user);
+    const { leaves, balance, stats, leaveOverlap } = await getLeaveData(user);
 
     return (
         <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
@@ -90,7 +120,9 @@ export default async function LeaveManagementPage() {
                 initialLeaves={leaves}
                 initialBalance={balance}
                 initialStats={stats}
+                leaveOverlap={leaveOverlap}
             />
         </div>
     );
 }
+    

@@ -7,6 +7,7 @@ export type UserRole =
   | 'recruiter'
   | 'interviewer'
   | 'manager'
+  | 'team_lead'
   | 'employee'
   | 'intern'
   | 'guest';
@@ -46,7 +47,7 @@ export type Applicant = {
   phone: string;
   job_id?: string;
   jobs?: { title: string } | null; // For joined data
-  stage: 'Sourced' | 'Applied' | 'Phone Screen' | 'Interview' | 'Offer' | 'Hired';
+  stage: 'Sourced' | 'Applied' | 'Phone Screen' | 'Interview' | 'Offer' | 'Hired' | 'Rejected';
   applied_date: string;
   avatar?: string;
   source?: 'walk-in' | 'college' | 'email' | 'manual';
@@ -60,6 +61,8 @@ export type Applicant = {
   resume_data?: ProcessResumeOutput;
   ai_match_score?: number;
   ai_justification?: string;
+  rejection_reason?: string;
+  rejection_notes?: string;
 };
 
 export type Interview = {
@@ -205,3 +208,4 @@ export type WeeklyAward = {
     users: { full_name: string | null, avatar_url: string | null } | null;
     awarded_by: { full_name: string | null } | null;
 }
+    
