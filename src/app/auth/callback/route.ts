@@ -2,31 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import type { UserRole } from '@/lib/types';
-
-function getHomePathForRole(role: UserRole): string {
-    switch (role) {
-      case 'admin':
-        return '/admin/dashboard';
-      case 'super_hr':
-        return '/super_hr/dashboard';
-      case 'hr_manager':
-        return '/hr/dashboard';
-      case 'manager':
-        return '/manager/dashboard';
-      case 'team_lead':
-        return '/team-lead/dashboard';
-      case 'recruiter':
-        return '/recruiter/dashboard';
-      case 'interviewer':
-        return '/interviews';
-      case 'employee':
-        return '/employee/dashboard';
-      case 'intern':
-        return '/intern/dashboard';
-      default:
-        return '/login';
-    }
-}
+import { getHomePathForRole } from '@/middleware';
 
 
 export async function GET(request: Request) {
