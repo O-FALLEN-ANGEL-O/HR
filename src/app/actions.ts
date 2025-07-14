@@ -6,7 +6,7 @@ import { cookies } from 'next/headers';
 import { applicantMatchScoring } from '@/ai/flows/applicant-match-scoring';
 import { createClient } from '@/lib/supabase/server';
 import { getUser } from '@/lib/supabase/user';
-import type { Kudo, LeaveBalance, Interview, UserRole } from '@/lib/types';
+import type { Kudo, LeaveBalance, Interview, UserRole, WeeklyAward } from '@/lib/types';
 import { differenceInDays } from 'date-fns';
 
 export async function addCompanyPost(formData: FormData) {
@@ -72,7 +72,7 @@ export async function addWeeklyAward(formData: FormData) {
   const supabase = createClient(cookieStore);
   const user = await getUser(cookieStore);
 
-  if (!user || !['admin', 'hr_manager', 'super_hr', 'manager'].includes(user.role)) {
+  if (!user || !['admin', 'hr_manager', 'super_hr', 'manager', 'team_lead'].includes(user.role)) {
     throw new Error('You do not have permission to give weekly awards.');
   }
 
@@ -85,11 +85,14 @@ export async function addWeeklyAward(formData: FormData) {
 
   // First, delete any existing awards for the week to ensure only one.
   const weekStart = new Date();
+  // Adjust to the start of the week (Sunday)
   weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+
   const { error: deleteError } = await supabase
     .from('weekly_awards')
     .delete()
-    .gte('week_of', weekStart.toISOString());
+    .gte('week_of', weekStart.toISOString().split('T')[0]);
   
   if (deleteError) {
     console.error('Error clearing old weekly awards:', deleteError);
@@ -109,6 +112,7 @@ export async function addWeeklyAward(formData: FormData) {
 
   revalidatePath('/employee/kudos');
 }
+
 
 export async function applyForLeave(formData: FormData) {
     const cookieStore = cookies();
@@ -141,12 +145,14 @@ export async function applyForLeave(formData: FormData) {
     }
     
     // Deduct from balance
-    const { error: updateBalanceError } = await supabase
-        .from('leave_balances')
-        .update({ [leaveType]: balance[leaveType] - totalDays })
-        .eq('user_id', user.id);
-        
-    if (updateBalanceError) throw new Error('Could not update leave balance.');
+    if (leaveType !== 'unpaid_leave') {
+        const { error: updateBalanceError } = await supabase
+            .from('leave_balances')
+            .update({ [leaveType]: balance[leaveType] - totalDays })
+            .eq('user_id', user.id);
+            
+        if (updateBalanceError) throw new Error('Could not update leave balance.');
+    }
 
     const { error: insertError } = await supabase.from('leaves').insert({
         user_id: user.id,
@@ -160,7 +166,9 @@ export async function applyForLeave(formData: FormData) {
 
     if (insertError) {
         // Rollback balance deduction
-        await supabase.from('leave_balances').update({ [leaveType]: balance[leaveType] }).eq('user_id', user.id);
+        if (leaveType !== 'unpaid_leave') {
+            await supabase.from('leave_balances').update({ [leaveType]: balance[leaveType] }).eq('user_id', user.id);
+        }
         throw new Error(`Could not submit leave request: ${insertError.message}`);
     }
 
@@ -191,7 +199,7 @@ export async function updateLeaveStatus(leaveId: string, status: 'approved' | 'r
         if (balanceError || !balance) throw new Error('Could not find user balance to refund.');
 
         const leaveTypeKey = `${leave.leave_type}_leave` as keyof LeaveBalance;
-        if (leaveTypeKey in balance) {
+        if (leaveTypeKey in balance && leaveTypeKey !== 'unpaid_leave') {
             const currentBalance = balance[leaveTypeKey] as number;
             const newBalance = currentBalance + leave.total_days;
             await supabase.from('leave_balances').update({ [leaveTypeKey]: newBalance }).eq('user_id', leave.user_id);
@@ -416,7 +424,7 @@ export async function addEmployee(formData: FormData) {
         full_name: fullName,
         role: role,
         department: department,
-        avatar_url: `https://api.pravatar.cc/150?u=${email}`
+        avatar_url: `https://placehold.co/150x150.png`
       },
   });
 

@@ -44,7 +44,7 @@ export default function KudosClient({
   const kudosFormRef = React.useRef<HTMLFormElement>(null);
   const awardFormRef = React.useRef<HTMLFormElement>(null);
 
-  const canGiveAward = currentUser?.role === 'admin' || currentUser?.role === 'super_hr' || currentUser?.role === 'hr_manager' || currentUser?.role === 'manager';
+  const canGiveAward = currentUser?.role === 'admin' || currentUser?.role === 'super_hr' || currentUser?.role === 'hr_manager' || currentUser?.role === 'manager' || currentUser?.role === 'team_lead';
 
   const handleGiveKudos = async (formData: FormData) => {
     setIsKudoSubmitting(true);

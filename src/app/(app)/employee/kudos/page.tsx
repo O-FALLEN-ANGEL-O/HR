@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import type { Kudo, UserProfile, WeeklyAward } from '@/lib/types';
 import { getUser } from '@/lib/supabase/user';
+import { startOfWeek } from 'date-fns';
 
 async function getData(user: UserProfile | null) {
     if (!user) return { kudos: [], users: [], weeklyAward: null };
@@ -14,7 +15,7 @@ async function getData(user: UserProfile | null) {
         .from('kudos')
         .select('*, users_from:users!from_user_id(full_name, avatar_url), users_to:users!to_user_id(full_name, avatar_url)')
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(20);
 
     const usersQuery = supabase
         .from('users')
@@ -22,9 +23,11 @@ async function getData(user: UserProfile | null) {
         .neq('id', user.id) // Exclude current user from list
         .order('full_name');
 
+    const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 }); // Monday
     const weeklyAwardQuery = supabase
         .from('weekly_awards')
         .select('*, users(full_name, avatar_url), awarded_by:users!awarded_by_user_id(full_name)')
+        .gte('week_of', weekStart.toISOString().split('T')[0])
         .order('week_of', { ascending: false })
         .limit(1);
 

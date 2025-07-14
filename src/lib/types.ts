@@ -70,10 +70,10 @@ export type Interview = {
   applicant_id: string;
   interviewer_id: string;
   candidate_name: string;
-  candidate_avatar: string;
+  candidate_avatar: string | null;
   job_title: string;
-  interviewer_name: string;
-  interviewer_avatar: string;
+  interviewer_name: string | null;
+  interviewer_avatar: string | null;
   date: string;
   time: string;
   type: 'Video' | 'Phone' | 'In-person';
