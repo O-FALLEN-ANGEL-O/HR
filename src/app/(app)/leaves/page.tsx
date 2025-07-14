@@ -33,7 +33,7 @@ async function getLeaveData(user: UserProfile) {
 
     if (leavesError) console.error('Error fetching leaves:', leavesError.message);
     if (balanceError && balanceError.code !== 'PGRST116') { // Ignore "No rows found" for new users
-        console.error('Error fetching leave balances:', balanceError.message);
+        // console.error('Error fetching leave balances:', balanceError.message);
     }
 
     // Calculate stats for admin/HR

@@ -37,17 +37,15 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
-
-  const userRole = user?.user_metadata?.role || 'guest';
+  const { data: { user } } = await supabase.auth.getUser();
 
   const userProfile: UserProfile | null = user ? {
     id: user.id,
-    full_name: user.user_metadata.full_name || null,
-    email: user.email || null,
-    avatar_url: user.user_metadata.avatar_url || null,
-    role: userRole,
-    department: user.user_metadata.department || null,
+    full_name: user.user_metadata.full_name,
+    email: user.email,
+    avatar_url: user.user_metadata.avatar_url,
+    role: user.user_metadata.role || 'guest',
+    department: user.user_metadata.department,
     created_at: user.created_at,
   } : null;
 
