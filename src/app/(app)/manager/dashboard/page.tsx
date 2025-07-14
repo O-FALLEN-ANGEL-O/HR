@@ -55,7 +55,7 @@ export default async function ManagerDashboardPage() {
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <Header title="Manager's Dashboard" />
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="lg:col-span-1">
+        <Card className="md:col-span-2 lg:col-span-1">
           <CardHeader>
               <CardTitle className="flex items-center gap-2"><Users /> My Team</CardTitle>
           </CardHeader>
@@ -80,7 +80,7 @@ export default async function ManagerDashboardPage() {
           </CardContent>
         </Card>
 
-        <div className="flex flex-col gap-6 lg:col-span-1">
+        <div className="flex flex-col gap-6 md:col-span-2 lg:col-span-1">
           <Link href="/recruiter/jobs">
               <Card className="hover:bg-muted/50 transition-colors">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -106,7 +106,7 @@ export default async function ManagerDashboardPage() {
           </Link>
         </div>
 
-        <Card className="lg:col-span-1">
+        <Card className="md:col-span-2 lg:col-span-1">
           <CardHeader>
               <CardTitle className="flex items-center gap-2"><Clock /> Team Leave</CardTitle>
               <CardDescription>Upcoming and current leave for your team.</CardDescription>

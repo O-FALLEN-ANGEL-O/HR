@@ -53,6 +53,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { AddApplicantDialog } from '@/components/add-applicant-dialog';
 import { Header } from '@/components/header';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 type ApplicantListProps = {
   initialApplicants: Applicant[];
@@ -171,20 +172,22 @@ export default function ApplicantList({
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <Header title="Applicants">
-        <Button variant="outline" size="sm" onClick={handleCopyLink}>
-          <ClipboardCopy className="mr-2 h-4 w-4" />
-          Copy Walk-in Link
-        </Button>
-        <Button variant="outline" size="sm" onClick={handleExport}>
-          <Upload className="mr-2 h-4 w-4" />
-          Export
-        </Button>
-        <AddApplicantDialog onApplicantAdded={() => {}}>
-          <Button size="sm">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Add Applicant
-          </Button>
-        </AddApplicantDialog>
+        <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={handleCopyLink}>
+            <ClipboardCopy className="mr-2 h-4 w-4" />
+            Copy Walk-in Link
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExport}>
+            <Upload className="mr-2 h-4 w-4" />
+            Export
+            </Button>
+            <AddApplicantDialog onApplicantAdded={() => {}}>
+            <Button size="sm">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add Applicant
+            </Button>
+            </AddApplicantDialog>
+        </div>
       </Header>
 
       <Card>
@@ -194,15 +197,15 @@ export default function ApplicantList({
             Search, filter, and manage all job applicants. Now with live
             updates.
           </CardDescription>
-          <div className="mt-4 flex flex-wrap items-center gap-4">
+          <div className="mt-4 flex flex-col sm:flex-row flex-wrap items-center gap-2">
             <Input
               placeholder="Search by name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
+              className="w-full sm:w-auto sm:max-w-xs"
             />
             <Select value={stageFilter} onValueChange={setStageFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by stage" />
               </SelectTrigger>
               <SelectContent>
@@ -215,7 +218,7 @@ export default function ApplicantList({
               </SelectContent>
             </Select>
             <Select value={sourceFilter} onValueChange={setSourceFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by source" />
               </SelectTrigger>
               <SelectContent>
@@ -240,88 +243,90 @@ export default function ApplicantList({
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Candidate</TableHead>
-                <TableHead>Applied For</TableHead>
-                <TableHead>Applied Date</TableHead>
-                <TableHead>Stage</TableHead>
-                <TableHead>Source</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredApplicants.map((applicant) => (
-                <TableRow key={applicant.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage src={applicant.avatar || undefined} />
-                        <AvatarFallback>
-                          {applicant.name.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-medium">{applicant.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {applicant.email}
+          <ScrollArea className="w-full">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Candidate</TableHead>
+                  <TableHead>Applied For</TableHead>
+                  <TableHead>Applied Date</TableHead>
+                  <TableHead>Stage</TableHead>
+                  <TableHead>Source</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredApplicants.map((applicant) => (
+                  <TableRow key={applicant.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarImage src={applicant.avatar || undefined} />
+                          <AvatarFallback>
+                            {applicant.name.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-medium whitespace-nowrap">{applicant.name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {applicant.email}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{applicant.jobs?.title || 'Walk-in'}</TableCell>
-                  <TableCell>
-                    {isClient ? format(new Date(applicant.applied_date), 'PPP') : ''}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="secondary"
-                      className={stageColors[applicant.stage]}
-                    >
-                      {applicant.stage}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="capitalize">
-                      {applicant.source || 'N/A'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => router.push(`/hr/applicants/${applicant.id}`)}>
-                          <User className="mr-2 h-4 w-4" />
-                          View Profile
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                           <CalendarPlus className="mr-2 h-4 w-4" />
-                           Schedule Interview
-                        </DropdownMenuItem>
-                         <DropdownMenuItem>
-                          <Mail className="mr-2 h-4 w-4" />
-                          Send Email
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => handleAssignTest(applicant.id)}
-                        >
-                          <Keyboard className="mr-2 h-4 w-4" />
-                          Assign Typing Test
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                    </TableCell>
+                    <TableCell>{applicant.jobs?.title || 'Walk-in'}</TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {isClient ? format(new Date(applicant.applied_date), 'PPP') : ''}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="secondary"
+                        className={`${stageColors[applicant.stage]} whitespace-nowrap`}
+                      >
+                        {applicant.stage}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="capitalize">
+                        {applicant.source || 'N/A'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => router.push(`/hr/applicants/${applicant.id}`)}>
+                            <User className="mr-2 h-4 w-4" />
+                            View Profile
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <CalendarPlus className="mr-2 h-4 w-4" />
+                            Schedule Interview
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Mail className="mr-2 h-4 w-4" />
+                            Send Email
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => handleAssignTest(applicant.id)}
+                          >
+                            <Keyboard className="mr-2 h-4 w-4" />
+                            Assign Typing Test
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
         </CardContent>
       </Card>
     </div>

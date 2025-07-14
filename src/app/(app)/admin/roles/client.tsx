@@ -24,6 +24,7 @@ import { createClient } from '@/lib/supabase/client';
 import { type UserProfile, type UserRole } from '@/lib/types';
 import { updateUserRole } from '../actions';
 import { History } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const roleOptions: UserRole[] = [
   'admin',
@@ -104,59 +105,61 @@ export default function RoleManagerClient({ users: initialUsers }: { users: User
 
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
       <Card>
         <CardHeader>
           <CardTitle>User Role Management</CardTitle>
           <CardDescription>View and manage user roles across the application.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Joined</TableHead>
-                <TableHead>Role</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage src={user.avatar_url || undefined} />
-                        <AvatarFallback>{user.full_name?.charAt(0) || 'U'}</AvatarFallback>
-                      </Avatar>
-                      <span className="font-medium">{user.full_name || 'N/A'}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.department || 'N/A'}</TableCell>
-                  <TableCell>{isClient ? format(new Date(user.created_at), 'PPP') : ''}</TableCell>
-                  <TableCell>
-                    <Select
-                      defaultValue={user.role}
-                      onValueChange={(value) => handleRoleChange(user.id, value as UserRole)}
-                    >
-                      <SelectTrigger className="w-[180px] capitalize">
-                        <SelectValue placeholder="Select a role" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {roleOptions.map((role) => (
-                          <SelectItem key={role} value={role} className="capitalize">
-                            {role.replace(/_/g, ' ')}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
+          <ScrollArea className="w-full">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Department</TableHead>
+                  <TableHead>Joined</TableHead>
+                  <TableHead>Role</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarImage src={user.avatar_url || undefined} />
+                          <AvatarFallback>{user.full_name?.charAt(0) || 'U'}</AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium whitespace-nowrap">{user.full_name || 'N/A'}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">{user.email}</TableCell>
+                    <TableCell>{user.department || 'N/A'}</TableCell>
+                    <TableCell className="whitespace-nowrap">{isClient ? format(new Date(user.created_at), 'PPP') : ''}</TableCell>
+                    <TableCell>
+                      <Select
+                        defaultValue={user.role}
+                        onValueChange={(value) => handleRoleChange(user.id, value as UserRole)}
+                      >
+                        <SelectTrigger className="w-[180px] capitalize">
+                          <SelectValue placeholder="Select a role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {roleOptions.map((role) => (
+                            <SelectItem key={role} value={role} className="capitalize">
+                              {role.replace(/_/g, ' ')}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
         </CardContent>
       </Card>
       <Card>

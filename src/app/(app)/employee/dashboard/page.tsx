@@ -88,7 +88,7 @@ export default function EmployeeDashboardPage() {
                 <CardDescription>This is your personal employee dashboard. Access all your tools and information from here.</CardDescription>
             </CardHeader>
         </Card>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {features.map((feature) => {
                  const cardContent = (
                     <Card className={`${!feature.comingSoon && 'hover:bg-muted/50 transition-colors'} h-full`}>

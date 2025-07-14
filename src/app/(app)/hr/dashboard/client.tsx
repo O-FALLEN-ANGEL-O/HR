@@ -34,6 +34,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { AddEmployeeDialog } from '@/components/add-employee-dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const DashboardCharts = dynamic(() => import('./charts').then(mod => mod.DashboardCharts), {
     ssr: false,
@@ -111,16 +112,18 @@ export default function HrDashboardClient({ initialMetrics, initialRecentHires, 
     return (
         <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
             <Header title="HR Dashboard">
-                <Button variant="outline" size="sm">
-                <Upload className="mr-2 h-4 w-4" />
-                Export
-                </Button>
-                <AddEmployeeDialog onEmployeeAdded={() => window.location.reload()}>
-                    <Button size="sm">
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Add Employee
+               <div className="flex flex-wrap gap-2">
+                 <Button variant="outline" size="sm">
+                    <Upload className="mr-2 h-4 w-4" />
+                    Export
                     </Button>
-                </AddEmployeeDialog>
+                    <AddEmployeeDialog onEmployeeAdded={() => window.location.reload()}>
+                        <Button size="sm">
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Add Employee
+                        </Button>
+                    </AddEmployeeDialog>
+               </div>
             </Header>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -159,33 +162,35 @@ export default function HrDashboardClient({ initialMetrics, initialRecentHires, 
                     <CardTitle>Recently Hired Employees</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                    <TableHeader>
-                        <TableRow>
-                        <TableHead>Employee</TableHead>
-                        <TableHead>Department</TableHead>
-                        <TableHead>Joined On</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {recentHires.map((employee) => (
-                        <TableRow key={employee.email}>
-                            <TableCell>
-                                <div className="flex items-center gap-3">
-                                <Avatar className="h-8 w-8">
-                                    <AvatarFallback>{employee.full_name?.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <div className="font-medium">{employee.full_name}</div>
-                                </div>
-                            </TableCell>
-                            <TableCell>{employee.department}</TableCell>
-                            <TableCell>
-                                {format(new Date(employee.created_at!), 'PPP')}
-                            </TableCell>
-                        </TableRow>
-                        ))}
-                    </TableBody>
-                    </Table>
+                    <ScrollArea className="w-full">
+                        <Table>
+                        <TableHeader>
+                            <TableRow>
+                            <TableHead>Employee</TableHead>
+                            <TableHead>Department</TableHead>
+                            <TableHead>Joined On</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {recentHires.map((employee) => (
+                            <TableRow key={employee.email}>
+                                <TableCell>
+                                    <div className="flex items-center gap-3">
+                                    <Avatar className="h-8 w-8">
+                                        <AvatarFallback>{employee.full_name?.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="font-medium whitespace-nowrap">{employee.full_name}</div>
+                                    </div>
+                                </TableCell>
+                                <TableCell>{employee.department}</TableCell>
+                                <TableCell className="whitespace-nowrap">
+                                    {format(new Date(employee.created_at!), 'PPP')}
+                                </TableCell>
+                            </TableRow>
+                            ))}
+                        </TableBody>
+                        </Table>
+                    </ScrollArea>
                 </CardContent>
                 </Card>
             </div>

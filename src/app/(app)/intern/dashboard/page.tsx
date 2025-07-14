@@ -14,7 +14,7 @@ export default function InternDashboardPage() {
                 <CardDescription>This is your portal for your internship journey.</CardDescription>
             </CardHeader>
         </Card>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Link href="/hr/onboarding">
                 <Card className="hover:bg-muted/50 transition-colors">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

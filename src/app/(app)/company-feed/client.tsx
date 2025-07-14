@@ -123,7 +123,7 @@ export default function CompanyFeedClient({ user, initialPosts }: CompanyFeedCli
         </ScrollArea>
       </div>
       <div className="md:col-span-1">
-        <Card className="sticky top-20">
+        <Card className="sticky top-4 md:top-20">
           <CardHeader>
             <CardTitle>About The Feed</CardTitle>
             <CardDescription>This is your place for all official company announcements and updates.</CardDescription>
