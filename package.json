@@ -11,7 +11,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "db:seed": "tsx src/lib/supabase/seed.ts",
+    "db:seed": "tsx --env-file .env.local src/lib/supabase/seed.ts",
     "seed:force": "FORCE_DB_SEED=true npm run db:seed"
   },
   "dependencies": {
@@ -49,6 +49,7 @@
     "embla-carousel-react": "^8.6.0",
     "firebase": "^11.9.1",
     "genkit": "^1.13.0",
+    "googleapis": "^140.0.1",
     "lucide-react": "^0.475.0",
     "next": "15.3.3",
     "next-themes": "^0.3.0",

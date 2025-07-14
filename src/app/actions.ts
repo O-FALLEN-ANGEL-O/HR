@@ -1,3 +1,4 @@
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -7,7 +8,8 @@ import { applicantMatchScoring } from '@/ai/flows/applicant-match-scoring';
 import { createClient } from '@/lib/supabase/server';
 import { getUser } from '@/lib/supabase/user';
 import type { Kudo, LeaveBalance, Interview, UserRole, WeeklyAward } from '@/lib/types';
-import { differenceInDays } from 'date-fns';
+import { differenceInDays, parseISO, format as formatTz } from 'date-fns';
+import { createCalendarEvent } from '@/services/google-calendar';
 
 export async function addCompanyPost(formData: FormData) {
   const cookieStore = cookies();
@@ -358,8 +360,8 @@ export async function scheduleInterview(formData: FormData) {
     throw new Error('All fields are required to schedule an interview.');
   }
 
-  const { data: applicant, error: applicantError } = await supabase.from('applicants').select('name, avatar, job_id').eq('id', applicantId).single();
-  const { data: interviewer, error: interviewerError } = await supabase.from('users').select('full_name, avatar_url').eq('id', interviewerId).single();
+  const { data: applicant, error: applicantError } = await supabase.from('applicants').select('name, avatar, email, job_id').eq('id', applicantId).single();
+  const { data: interviewer, error: interviewerError } = await supabase.from('users').select('full_name, email, avatar_url').eq('id', interviewerId).single();
   
   if (applicantError || interviewerError) {
     throw new Error('Could not retrieve applicant or interviewer details.');
@@ -388,6 +390,26 @@ export async function scheduleInterview(formData: FormData) {
   if (insertError) {
     console.error('Error scheduling interview:', insertError);
     throw new Error('Could not schedule interview.');
+  }
+
+  // Google Calendar Integration
+  try {
+    const eventDateTime = new Date(`${date}T${time}`);
+    if (isNaN(eventDateTime.getTime())) {
+      throw new Error('Invalid date or time format for calendar event.');
+    }
+    await createCalendarEvent({
+        summary: `Interview: ${applicant.name} for ${job.title}`,
+        description: `Type: ${type} Interview`,
+        start: eventDateTime,
+        attendees: [
+            { email: interviewer.email! },
+            { email: applicant.email! }
+        ]
+    });
+  } catch(e: any) {
+    // Log the error but don't fail the entire operation, as the interview is already in the DB
+    console.error(`Failed to create Google Calendar event: ${e.message}`);
   }
 
   // Update applicant stage to 'Interview'
