@@ -1,6 +1,6 @@
 import { Header } from '@/components/header';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Users, Settings, Workflow, ScanSearch, FileText, ShieldCheck, History, HeartPulse, FileArchive, LayoutDashboard } from 'lucide-react';
+import { Users, Settings, Workflow, ScanSearch, FileText, ShieldCheck, History, HeartPulse, FileArchive, LayoutDashboard, FileLock2, BarChart, GitBranch, KeyRound } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AdminDashboardPage() {
@@ -53,6 +53,15 @@ export default function AdminDashboardPage() {
                 </CardHeader>
                 <CardContent>
                     <p className="text-xs text-muted-foreground">Track API health and integration logs. (Coming Soon)</p>
+                </CardContent>
+            </Card>
+             <Card className="opacity-60 cursor-not-allowed">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Access Control Templates</CardTitle>
+                    <FileLock2 className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <p className="text-xs text-muted-foreground">Predefined access sets for faster role setup. (Coming Soon)</p>
                 </CardContent>
             </Card>
              <Card className="opacity-60 cursor-not-allowed">

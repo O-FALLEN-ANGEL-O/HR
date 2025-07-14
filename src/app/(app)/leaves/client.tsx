@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -336,7 +335,7 @@ function EmployeeLeaveView({ leaves, balance, user }: { leaves: Leave[], balance
             </Card>
             
             <div className="grid md:grid-cols-2 gap-6">
-                <Card>
+                <Card className="opacity-60 cursor-not-allowed">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><BarChart /> Salary Breakdown</CardTitle>
                         <CardDescription>Visualize your CTC vs in-hand salary.</CardDescription>
@@ -347,7 +346,7 @@ function EmployeeLeaveView({ leaves, balance, user }: { leaves: Leave[], balance
                         </div>
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className="opacity-60 cursor-not-allowed">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><TrendingUp /> Leave Forecast</CardTitle>
                         <CardDescription>AI suggests the best dates for your next vacation.</CardDescription>
