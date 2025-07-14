@@ -5,8 +5,8 @@ import path from 'path';
 import { faker } from '@faker-js/faker';
 import type { UserRole } from '@/lib/types';
 
+// Configure dotenv to load variables from .env.local
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 async function main() {
   if (process.env.FORCE_DB_SEED !== 'true') {
@@ -20,7 +20,7 @@ async function main() {
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !supabaseServiceKey) {
-    console.error('🔴 ERROR: Supabase URL or service key is missing. Skipping seeding.');
+    console.error('🔴 ERROR: Supabase URL or service key is missing. Make sure they are set in your .env.local file. Skipping seeding.');
     process.exit(0); 
   }
 
