@@ -6,7 +6,7 @@ import { cookies } from 'next/headers';
 import { applicantMatchScoring } from '@/ai/flows/applicant-match-scoring';
 import { createClient } from '@/lib/supabase/server';
 import { getUser } from '@/lib/supabase/user';
-import type { LeaveBalance, UserProfile } from '@/lib/types';
+import type { LeaveBalance, UserProfile, HelpdeskTicket } from '@/lib/types';
 import { createCalendarEvent } from '@/services/google-calendar';
 
 export async function applyForLeave(formData: FormData) {
@@ -368,4 +368,51 @@ export async function addWeeklyAward(formData: FormData) {
   }
 
   revalidatePath('/employee/kudos');
+}
+
+export async function createHelpdeskTicket(data: Omit<HelpdeskTicket, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'users' | 'ticket_comments'>) {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const user = await getUser(cookieStore);
+
+    if (!user) {
+        throw new Error('You must be logged in.');
+    }
+
+    const { error } = await supabase.from('helpdesk_tickets').insert({
+        ...data,
+        user_id: user.id,
+    });
+
+    if (error) {
+        throw new Error(`Failed to create ticket: ${error.message}`);
+    }
+
+    revalidatePath('/helpdesk');
+}
+
+export async function addTicketComment(ticketId: string, comment: string) {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const user = await getUser(cookieStore);
+
+    if (!user) {
+        throw new Error('You must be logged in.');
+    }
+
+    const { error } = await supabase.from('ticket_comments').insert({
+        ticket_id: ticketId,
+        user_id: user.id,
+        comment,
+    });
+    
+    if (error) {
+        throw new Error(`Failed to add comment: ${error.message}`);
+    }
+
+    // Also update the ticket's updated_at timestamp
+    await supabase.from('helpdesk_tickets').update({ updated_at: new Date().toISOString() }).eq('id', ticketId);
+
+
+    revalidatePath('/helpdesk');
 }

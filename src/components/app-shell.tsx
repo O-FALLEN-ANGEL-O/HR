@@ -32,6 +32,7 @@ import {
   UserCog,
   WalletCards,
   MessageSquare,
+  LifeBuoy,
 } from 'lucide-react';
 
 import {
@@ -95,6 +96,7 @@ const getNavLinks = (role: UserRole) => {
     { href: '/employee/documents', label: 'Documents', icon: FileText, roles: ['admin', 'super_hr', 'hr_manager', 'employee', 'intern'] },
     { href: '/employee/payslips', label: 'Payslips', icon: WalletCards, roles: ['hr_manager', 'super_hr', 'employee'] },
     { href: '/employee/kudos', label: 'Kudos', icon: Award, roles: ['super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern'] },
+    { href: '/helpdesk', label: 'Helpdesk', icon: LifeBuoy, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern', 'support', 'it_admin'] },
 
     // AI Tools
     { href: '/ai-tools/applicant-scoring', label: 'AI Applicant Scoring', icon: Sparkles, roles: ['hr_manager', 'recruiter', 'super_hr'] },

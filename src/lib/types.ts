@@ -244,3 +244,27 @@ export type ExpenseReport = {
     users: Pick<UserProfile, 'full_name' | 'avatar_url'> | null;
     expense_items: ExpenseItem[];
 };
+
+export type TicketComment = {
+  id: string;
+  ticket_id: string;
+  user_id: string;
+  comment: string;
+  created_at: string;
+  users: Pick<UserProfile, 'full_name' | 'avatar_url'> | null;
+};
+
+export type HelpdeskTicket = {
+  id: string;
+  user_id: string;
+  subject: string;
+  description: string;
+  category: 'IT' | 'HR' | 'Finance' | 'General';
+  status: 'Open' | 'In Progress' | 'Resolved' | 'Closed';
+  priority: 'Low' | 'Medium' | 'High' | 'Urgent';
+  created_at: string;
+  updated_at: string;
+  resolver_id?: string;
+  users: Pick<UserProfile, 'full_name' | 'avatar_url'> | null;
+  ticket_comments: TicketComment[];
+};

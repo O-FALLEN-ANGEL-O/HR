@@ -73,8 +73,7 @@ const features = [
         title: "Helpdesk",
         description: "Submit a ticket to IT or HR for assistance.",
         icon: LifeBuoy,
-        href: "#",
-        comingSoon: true,
+        href: "/helpdesk",
     },
 ]
 
