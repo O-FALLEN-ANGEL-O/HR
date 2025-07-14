@@ -10,7 +10,11 @@ export type UserRole =
   | 'team_lead'
   | 'employee'
   | 'intern'
-  | 'guest';
+  | 'guest'
+  | 'finance'
+  | 'it_admin'
+  | 'support'
+  | 'auditor';
 
 export type UserProfile = {
   id: string;
@@ -47,7 +51,7 @@ export type Applicant = {
   phone: string;
   job_id?: string;
   jobs?: { title: string } | null; // For joined data
-  stage: 'Sourced' | 'Applied' | 'Phone Screen' | 'Interview' | 'Offer' | 'Hired' | 'Rejected';
+  stage: 'Sourced' | 'Applied' | 'Phone Screen' | 'Interview' | 'Offer' | 'Joined' | 'Rejected';
   applied_date: string;
   avatar?: string;
   source?: 'walk-in' | 'college' | 'email' | 'manual';
@@ -207,4 +211,47 @@ export type WeeklyAward = {
     week_of: string;
     users: { full_name: string | null, avatar_url: string | null } | null;
     awarded_by: { full_name: string | null } | null;
+}
+
+export type Objective = {
+  id: string;
+  title: string;
+  owner_id: string;
+  users: {
+    full_name: string | null;
+    avatar_url: string | null;
+  } | null;
+  key_results: KeyResult[];
+  progress: number;
+  quarter: string;
+};
+
+export type KeyResult = {
+  id: string;
+  description: string;
+  status: 'on_track' | 'at_risk' | 'off_track';
+  progress: number;
+};
+
+export type ExpenseReport = {
+  id: string;
+  user_id: string;
+  users: {
+    full_name: string | null;
+    avatar_url: string | null;
+  } | null;
+  title: string;
+  total_amount: number;
+  status: 'draft' | 'submitted' | 'approved' | 'rejected' | 'reimbursed';
+  submitted_at: string;
+  items: ExpenseItem[];
+}
+
+export type ExpenseItem = {
+  id: string;
+  date: string;
+  category: string;
+  amount: number;
+  description: string;
+  receipt_url?: string;
 }

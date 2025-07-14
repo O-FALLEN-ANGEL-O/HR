@@ -8,15 +8,19 @@ const authRoutes = ['/login', 'signup'];
 // Role-based access control matrix based on the new plan
 const roleAccess: Record<UserRole, string[]> = {
   admin: ['/admin', '/(app)'], // Full access
-  super_hr: ['/super_hr', '/hr', '/recruiter', '/interviewer', '/manager', '/employee', '/intern', '/ai-tools', '/leaves', '/company-feed', '/performance', '/employee/documents', '/admin/roles', '/employee/kudos'],
-  hr_manager: ['/hr', '/recruiter', '/interviewer', '/manager', '/employee', '/intern', '/ai-tools', '/leaves', '/company-feed', '/performance', '/employee/documents', '/employee/kudos'],
+  super_hr: ['/super_hr', '/hr', '/recruiter', '/interviewer', '/manager', '/employee', '/intern', '/ai-tools', '/leaves', '/company-feed', '/performance', '/employee/documents', '/admin/roles', '/employee/kudos', '/expenses'],
+  hr_manager: ['/hr', '/recruiter', '/interviewer', '/manager', '/employee', '/intern', '/ai-tools', '/leaves', '/company-feed', '/performance', '/employee/documents', '/employee/kudos', '/expenses'],
   recruiter: ['/recruiter', '/hr/applicants', '/recruiter/jobs', '/ai-tools/applicant-scoring', '/hr/campus', '/interviewer/tasks'],
   interviewer: ['/interviewer', '/interviewer/tasks'],
-  manager: ['/manager', '/employee', '/leaves', '/company-feed', '/performance', '/employee/directory', '/team-lead', '/employee/kudos'],
-  team_lead: ['/team-lead', '/manager', '/employee', '/leaves', '/company-feed', '/performance', '/employee/directory', '/employee/kudos'],
-  employee: ['/employee', '/leaves', '/company-feed', '/kudos', '/employee/documents', '/employee/payslips', '/employee/directory', '/ai-tools/chatbot'],
-  intern: ['/intern', '/leaves', '/employee/documents', '/kudos', '/ai-tools/chatbot'],
+  manager: ['/manager', '/employee', '/leaves', '/company-feed', '/performance', '/employee/directory', '/team-lead', '/employee/kudos', '/expenses'],
+  team_lead: ['/team-lead', '/manager', '/employee', '/leaves', '/company-feed', '/performance', '/employee/directory', '/employee/kudos', '/expenses'],
+  employee: ['/employee', '/leaves', '/company-feed', '/kudos', '/employee/documents', '/employee/payslips', '/employee/directory', '/ai-tools/chatbot', '/performance/okrs', '/expenses'],
+  intern: ['/intern', '/leaves', '/employee/documents', '/kudos', '/ai-tools/chatbot', '/performance/okrs', '/expenses'],
   guest: [], // Guests have no access to app routes, handled by publicRoutes
+  finance: ['/expenses'],
+  it_admin: [],
+  support: [],
+  auditor: [],
 };
 
 function getHomePathForRole(role: UserRole): string {
@@ -30,6 +34,7 @@ function getHomePathForRole(role: UserRole): string {
     case 'team_lead': return '/team-lead/dashboard';
     case 'employee': return '/employee/dashboard';
     case 'intern': return '/intern/dashboard';
+    case 'finance': return '/expenses';
     default: return '/login';
   }
 }
