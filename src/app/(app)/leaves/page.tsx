@@ -3,36 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { getUser } from '@/lib/supabase/user';
 import type { Leave, LeaveBalance, UserProfile } from '@/lib/types';
-import dynamic from 'next/dynamic';
-import { Skeleton } from '@/components/ui/skeleton';
-
-const LeaveClient = dynamic(() => import('./client').then(mod => mod.LeaveClient), {
-    ssr: false,
-    loading: () => (
-        <div className="space-y-6">
-            <Card>
-                <CardHeader>
-                    <Skeleton className="h-8 w-1/4" />
-                    <Skeleton className="h-4 w-1/2" />
-                </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-4">
-                    <Skeleton className="h-24 w-full" />
-                    <Skeleton className="h-24 w-full" />
-                    <Skeleton className="h-24 w-full" />
-                    <Skeleton className="h-24 w-full" />
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader>
-                    <Skeleton className="h-8 w-1/4" />
-                </CardHeader>
-                <CardContent>
-                    <Skeleton className="h-40 w-full" />
-                </CardContent>
-            </Card>
-        </div>
-    )
-});
+import { LeaveClient } from './client';
 
 async function getLeaveData(user: UserProfile) {
     const supabase = createClient(cookies());
