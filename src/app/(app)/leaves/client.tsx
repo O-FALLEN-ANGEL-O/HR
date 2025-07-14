@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -225,6 +226,15 @@ function ManagerLeaveView({ leaves, currentUser, leaveOverlap }: { leaves: Leave
     
     return (
         <div className="space-y-6">
+            {leaveOverlap && (
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Leave Overlap Warning!</AlertTitle>
+                    <AlertDescription>
+                        More than 2 team members have applied for leave on the same day. Please review carefully.
+                    </AlertDescription>
+                </Alert>
+            )}
             <Card>
                 <CardHeader>
                     <CardTitle>Team Leave Requests</CardTitle>
@@ -267,15 +277,7 @@ function ManagerLeaveView({ leaves, currentUser, leaveOverlap }: { leaves: Leave
                     )}
                 </CardContent>
             </Card>
-            {leaveOverlap && (
-                <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Leave Overlap Warning!</AlertTitle>
-                    <AlertDescription>
-                        More than 2 team members have applied for leave on the same day. Please review carefully.
-                    </AlertDescription>
-                </Alert>
-            )}
+            
             <Card>
                 <CardHeader>
                     <CardTitle>Full Team Leave History</CardTitle>
@@ -422,4 +424,6 @@ function LeaveTable({ leaves, isEmployeeView = false }: { leaves: Leave[], isEmp
     </Table>
   );
 }
+    
+
     
