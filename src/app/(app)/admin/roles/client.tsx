@@ -32,6 +32,7 @@ const roleOptions: UserRole[] = [
   'recruiter',
   'interviewer',
   'manager',
+  'team_lead',
   'employee',
   'intern',
   'guest',
@@ -146,7 +147,7 @@ export default function RoleManagerClient({ users: initialUsers }: { users: User
                       <SelectContent>
                         {roleOptions.map((role) => (
                           <SelectItem key={role} value={role} className="capitalize">
-                            {role.replace('_', ' ')}
+                            {role.replace(/_/g, ' ')}
                           </SelectItem>
                         ))}
                       </SelectContent>

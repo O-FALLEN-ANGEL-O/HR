@@ -33,6 +33,7 @@ export default async function ApplicantProfilePage({ params }: ApplicantProfileP
 
   if (notesError) {
     // We can still render the page without notes
+    console.error("Error fetching notes:", notesError);
   }
 
   const applicant: Applicant = applicantData;
