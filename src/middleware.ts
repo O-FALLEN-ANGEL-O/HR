@@ -1,23 +1,22 @@
-
 import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 import type { UserRole } from './lib/types';
 
 // Define public and authentication routes
 const publicRoutes = ['/login', '/signup', '/auth/callback', '/register', '/aptitude-test', '/comprehensive-test', '/customer-service-test', '/english-grammar-test', '/typing-test', '/403'];
-const authRoutes = ['/login', '/signup'];
+const authRoutes = ['/login', 'signup'];
 
 // Role-based access control matrix
 const roleAccess: Record<UserRole, string[]> = {
-  admin: ['/admin', '/hr', '/super_hr', '/recruiter', '/applicants', '/jobs', '/interviews', '/college-drive', '/onboarding', '/ai-tools', '/employee', '/intern', '/leaves', '/company-feed', '/performance', '/manager', '/team-lead'],
-  super_hr: ['/super_hr', '/hr', '/applicants', '/jobs', '/interviews', '/college-drive', '/onboarding', '/ai-tools', '/employee', '/intern', '/leaves', '/admin/roles', '/company-feed', '/performance'],
-  hr_manager: ['/hr', '/applicants', '/jobs', '/interviews', '/college-drive', '/onboarding', '/ai-tools', '/employee', '/intern', '/leaves', '/company-feed', '/performance'],
+  admin: ['/admin', '/super_hr', '/hr', '/recruiter', '/interviewer', '/employee', '/intern', '/manager', '/team_lead', '/applicants', '/jobs', '/interviews', '/onboarding', '/leaves', '/college-drive', '/ai-tools', '/company-feed', '/performance', '/employee/documents'],
+  super_hr: ['/super_hr', '/hr', '/recruiter', '/interviewer', '/employee', '/intern', '/manager', '/team_lead', '/applicants', '/jobs', '/interviews', '/onboarding', '/leaves', '/college-drive', '/admin/roles', '/ai-tools', '/company-feed', '/performance', '/employee/documents'],
+  hr_manager: ['/hr', '/recruiter', '/interviewer', '/employee', '/intern', '/applicants', '/jobs', '/interviews', '/onboarding', '/leaves', '/college-drive', '/ai-tools', '/company-feed', '/performance', '/employee/documents'],
+  recruiter: ['/recruiter', '/applicants', '/jobs', '/ai-tools/applicant-scoring', '/company-feed', '/employee/documents'],
+  interviewer: ['/interviewer', '/interviews', '/employee/documents'],
   manager: ['/manager', '/employee', '/leaves', '/company-feed', '/performance'],
   team_lead: ['/team-lead', '/employee', '/leaves', '/company-feed'],
-  recruiter: ['/recruiter', '/hr/dashboard', '/applicants', '/jobs', '/ai-tools/applicant-scoring', '/company-feed'],
-  interviewer: ['/interviews'],
   employee: ['/employee', '/leaves', '/company-feed', '/kudos', '/employee/documents', '/employee/payslips'],
-  intern: ['/intern', '/onboarding', '/company-feed', '/leaves'],
+  intern: ['/intern', '/employee/dashboard', '/onboarding', '/leaves', '/company-feed', '/employee/kudos', '/employee/documents'],
   guest: [],
 };
 
@@ -26,10 +25,10 @@ export function getHomePathForRole(role: UserRole): string {
     case 'admin': return '/admin/dashboard';
     case 'super_hr': return '/super_hr/dashboard';
     case 'hr_manager': return '/hr/dashboard';
-    case 'manager': return '/manager/dashboard';
-    case 'team_lead': return '/team-lead/dashboard';
     case 'recruiter': return '/recruiter/dashboard';
     case 'interviewer': return '/interviews';
+    case 'manager': return '/manager/dashboard';
+    case 'team_lead': return '/team-lead/dashboard';
     case 'employee': return '/employee/dashboard';
     case 'intern': return '/intern/dashboard';
     default: return '/login';
