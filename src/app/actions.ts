@@ -7,8 +7,116 @@ import { cookies } from 'next/headers';
 import { applicantMatchScoring } from '@/ai/flows/applicant-match-scoring';
 import { createClient } from '@/lib/supabase/server';
 import { getUser } from '@/lib/supabase/user';
-import type { LeaveBalance, UserProfile, HelpdeskTicket } from '@/lib/types';
+import type { LeaveBalance, UserProfile, HelpdeskTicket, College, Onboarding } from '@/lib/types';
 import { createCalendarEvent } from '@/services/google-calendar';
+
+export async function addCollege(formData: FormData) {
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+  const user = await getUser(cookieStore);
+
+  if (!user || !['admin', 'super_hr', 'hr_manager', 'recruiter'].includes(user.role)) {
+    throw new Error('You do not have permission to invite colleges.');
+  }
+  
+  const name = formData.get('name') as string;
+  const contact_email = formData.get('contact_email') as string;
+
+  if (!name || !contact_email) {
+    throw new Error('All fields are required.');
+  }
+
+  const { error } = await supabase.from('colleges').insert({
+    name,
+    contact_email,
+    status: 'Invited',
+    last_contacted: new Date().toISOString(),
+    resumes_received: 0,
+  });
+
+  if (error) {
+    throw new Error(`Failed to add college: ${error.message}`);
+  }
+
+  revalidatePath('/hr/campus');
+}
+
+export async function addExpenseReport(formData: FormData) {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const user = await getUser(cookieStore);
+
+    if (!user) {
+        throw new Error('You must be logged in to submit an expense report.');
+    }
+
+    const title = formData.get('title') as string;
+    const total_amount = Number(formData.get('total_amount'));
+    const description = formData.get('description') as string | undefined;
+
+    if (!title || !total_amount) {
+        throw new Error('Title and amount are required.');
+    }
+
+    const { data: report, error } = await supabase
+        .from('expense_reports')
+        .insert({
+            user_id: user.id,
+            title,
+            total_amount,
+            status: 'submitted',
+            submitted_at: new Date().toISOString(),
+        }).select().single();
+
+    if (error) {
+        throw new Error(`Could not submit expense report: ${error.message}`);
+    }
+    
+    if (description) {
+        await supabase.from('expense_items').insert({
+            expense_report_id: report.id,
+            date: new Date().toISOString(),
+            category: 'General',
+            amount: total_amount,
+            description: description,
+        });
+    }
+
+    revalidatePath('/expenses');
+}
+
+export async function startOnboardingWorkflow(formData: FormData) {
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+
+  const user_id = formData.get('user_id') as string;
+  const manager_id = formData.get('manager_id') as string;
+  const buddy_id = formData.get('buddy_id') as string | undefined;
+
+  const { data: employee } = await supabase.from('users').select('full_name, avatar_url, department').eq('id', user_id).single();
+  const { data: manager } = await supabase.from('users').select('full_name').eq('id', manager_id).single();
+  const { data: buddy } = buddy_id ? await supabase.from('users').select('full_name').eq('id', buddy_id).single() : { data: null };
+
+
+  const workflowData: Omit<Onboarding, 'id' | 'progress' | 'current_step'> = {
+    user_id,
+    manager_id,
+    buddy_id: buddy_id || null,
+    employee_name: employee?.full_name || 'N/A',
+    employee_avatar: employee?.avatar_url || '',
+    job_title: employee?.department || 'N/A',
+    manager_name: manager?.full_name || 'N/A',
+    buddy_name: buddy?.full_name || 'N/A',
+    start_date: new Date().toISOString(),
+  };
+
+  const { error } = await supabase.from('onboarding_workflows').insert(workflowData);
+  if (error) {
+    throw new Error(`Could not start onboarding: ${error.message}`);
+  }
+
+  revalidatePath('/hr/onboarding');
+}
 
 export async function applyForLeave(formData: FormData) {
     const cookieStore = cookies();

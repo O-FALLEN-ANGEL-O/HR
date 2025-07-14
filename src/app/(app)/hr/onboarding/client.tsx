@@ -20,17 +20,19 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { PlusCircle, Upload } from 'lucide-react';
 import { format } from 'date-fns';
-import type { Onboarding } from '@/lib/types';
+import type { Onboarding, UserProfile } from '@/lib/types';
 import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { StartOnboardingDialog } from '@/components/start-onboarding-dialog';
 
 type OnboardingClientProps = {
   initialWorkflows: Onboarding[];
+  users: UserProfile[];
 };
 
-export default function OnboardingClient({ initialWorkflows }: OnboardingClientProps) {
+export default function OnboardingClient({ initialWorkflows, users }: OnboardingClientProps) {
   const [workflows, setWorkflows] = React.useState(initialWorkflows);
   const { toast } = useToast();
   const [isClient, setIsClient] = React.useState(false);
@@ -82,10 +84,12 @@ export default function OnboardingClient({ initialWorkflows }: OnboardingClientP
           <Upload className="mr-2 h-4 w-4" />
           Export Report
         </Button>
-        <Button size="sm">
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Start Onboarding
-        </Button>
+        <StartOnboardingDialog users={users} onWorkflowAdded={() => window.location.reload()}>
+            <Button size="sm">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Start Onboarding
+            </Button>
+        </StartOnboardingDialog>
       </Header>
 
       <Card>
@@ -112,7 +116,7 @@ export default function OnboardingClient({ initialWorkflows }: OnboardingClientP
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar>
-                        <AvatarImage src={workflow.employee_avatar} />
+                        <AvatarImage src={workflow.employee_avatar || undefined} />
                         <AvatarFallback>
                           {workflow.employee_name.charAt(0)}
                         </AvatarFallback>

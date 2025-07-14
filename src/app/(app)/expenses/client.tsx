@@ -29,6 +29,7 @@ import type { ExpenseReport } from '@/lib/types';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
+import { NewExpenseDialog } from '@/components/new-expense-dialog';
 
 const statusColors: { [key: string]: string } = {
   draft: 'bg-gray-100 text-gray-800',
@@ -77,7 +78,9 @@ export default function ExpensesClient({ initialReports }: { initialReports: Exp
                 <CardTitle>My Expense Reports</CardTitle>
                 <CardDescription>Submit and track your expense reports.</CardDescription>
             </div>
-            <Button><PlusCircle className="mr-2"/> New Report</Button>
+            <NewExpenseDialog onReportAdded={() => window.location.reload()}>
+              <Button><PlusCircle className="mr-2"/> New Report</Button>
+            </NewExpenseDialog>
         </CardHeader>
         <CardContent>
             <Table>

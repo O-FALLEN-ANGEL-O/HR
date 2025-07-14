@@ -148,7 +148,19 @@ function AdminLeaveView({ leaves, stats }: { leaves: Leave[], stats: LeaveClient
         setIsPredicting(true);
         setPrediction(null);
         try {
-            const records = leaves.map(l => ({
+            // Filter leaves to include only future or pending leaves for more accurate prediction
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); 
+            
+            const relevantLeaves = leaves.filter(l => new Date(l.end_date) >= today || l.status === 'pending');
+
+            if (relevantLeaves.length === 0) {
+              toast({ title: "No Data", description: "There are no upcoming or pending leaves to analyze." });
+              setIsPredicting(false);
+              return;
+            }
+
+            const records = relevantLeaves.map(l => ({
                 leave_type: l.leave_type,
                 start_date: l.start_date,
                 end_date: l.end_date,
@@ -185,7 +197,7 @@ function AdminLeaveView({ leaves, stats }: { leaves: Leave[], stats: LeaveClient
                     <div className="flex justify-between items-start">
                         <div>
                             <CardTitle>AI-Powered Leave Analysis</CardTitle>
-                            <CardDescription>Predict absenteeism spikes and analyze trends.</CardDescription>
+                            <CardDescription>Predict absenteeism spikes and analyze trends for upcoming leaves.</CardDescription>
                         </div>
                         <Button onClick={handlePredict} disabled={isPredicting}>
                             {isPredicting ? <Loader2 className="mr-2 animate-spin"/> : <TrendingUp className="mr-2" />}

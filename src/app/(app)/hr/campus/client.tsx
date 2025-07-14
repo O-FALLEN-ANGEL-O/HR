@@ -31,6 +31,7 @@ import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { NewCollegeDialog } from '@/components/new-college-dialog';
 
 const statusColors: { [key: string]: string } = {
   Invited: 'bg-yellow-100 text-yellow-800',
@@ -93,10 +94,12 @@ export default function CollegeDriveClient({ initialColleges }: CollegeDriveClie
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <Header title="College Drives &amp; Internships">
-        <Button size="sm">
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Invite College
-        </Button>
+        <NewCollegeDialog onCollegeAdded={() => window.location.reload()}>
+          <Button size="sm">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Invite College
+          </Button>
+        </NewCollegeDialog>
       </Header>
 
       <Card>
