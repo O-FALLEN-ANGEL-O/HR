@@ -9,83 +9,21 @@ import type { UserRole } from '@/lib/types';
 export async function login(formData: any, isMagicLink: boolean = false) {
   const cookieStore = cookies();
   const supabase = createClient(cookieStore);
-  const email = formData.email;
 
-  // Helper function isolated within the action for clarity
-  function getHomePathForRole(role: UserRole): string {
-    switch (role) {
-      case 'admin':
-        return '/admin/dashboard';
-      case 'super_hr':
-        return '/super_hr/dashboard';
-      case 'hr_manager':
-        return '/hr/dashboard';
-      case 'manager':
-        return '/manager/dashboard';
-      case 'team_lead':
-        return '/team-lead/dashboard';
-      case 'recruiter':
-        return '/recruiter/dashboard';
-      case 'interviewer':
-        return '/interviews';
-      case 'employee':
-        return '/employee/dashboard';
-      case 'intern':
-        return '/intern/dashboard';
-      default:
-        return '/login';
-    }
-  }
-
-  try {
-    if (isMagicLink) {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: formData.email,
-        options: {
-          emailRedirectTo: `${headers().get('origin')}/auth/callback`,
-        },
-      });
-
-      if (error) {
-          console.error('Magic Link Error:', error);
-          return { error: `Magic Link Error: ${error.message}` };
-      }
-      return { data: 'Magic link sent! Check your email.' };
-    } 
-    
-    // Standard password login
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password: formData.password
+  if (isMagicLink) {
+    const { error } = await supabase.auth.signInWithOtp({
+      email: formData.email,
+      options: {
+        // The redirect URL is handled by the callback route now.
+        emailRedirectTo: `${headers().get('origin')}/auth/callback`,
+      },
     });
-      
+
     if (error) {
-      console.error('Supabase auth error:', error);
-      // This will now catch auth-specific errors like "Invalid login credentials"
-      return { error: `Authentication Error: ${error.message}` };
+        console.error('Magic Link Error:', error);
+        return { error: `Magic Link Error: ${error.message}` };
     }
-
-    if (!data.user) {
-      // This case should ideally not be reached if error is null, but as a safeguard:
-      return { error: 'Login failed: User object not found after successful sign in.' };
-    }
-
-    // Directly use the user object from the successful auth response.
-    const userRole = data.user.user_metadata?.role as UserRole | undefined;
-
-    if (!userRole) {
-      await supabase.auth.signOut(); // Log them out for safety.
-      return { error: `Configuration Error: Login was successful, but your user role is not configured. Please contact an administrator.` };
-    }
-      
-    const homePath = getHomePathForRole(userRole);
-    // The redirect needs to be outside the try...catch block as it throws an error
-    redirect(homePath);
-
-  } catch (e: any) {
-    // This will catch any other unexpected errors during the process, including redirection errors.
-    console.error('Unexpected login error:', e);
-    return { error: `An unexpected error occurred: ${e.message}` };
+    return { data: 'Magic link sent! Check your email.' };
   }
 }
 
