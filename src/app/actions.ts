@@ -5,10 +5,134 @@ import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 
 import { applicantMatchScoring } from '@/ai/flows/applicant-match-scoring';
+import { createClient as createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { getUser } from '@/lib/supabase/user';
-import type { LeaveBalance, UserProfile, HelpdeskTicket, College, Onboarding } from '@/lib/types';
+import type { LeaveBalance, UserProfile, HelpdeskTicket, College, Onboarding, Job } from '@/lib/types';
 import { createCalendarEvent } from '@/services/google-calendar';
+
+export async function addEmployee(formData: FormData) {
+  const cookieStore = cookies();
+  const supabaseAdmin = createAdminClient();
+  const user = await getUser(cookieStore);
+
+  if (!user || !['admin', 'super_hr', 'hr_manager'].includes(user.role)) {
+    throw new Error('You do not have permission to add employees.');
+  }
+  
+  const fullName = formData.get('fullName') as string;
+  const email = formData.get('email') as string;
+  const department = formData.get('department') as string;
+  const role = formData.get('role') as UserProfile['role'];
+
+  if (!fullName || !email || !department || !role) {
+    throw new Error('All fields are required.');
+  }
+
+  // 1. Create the user in Supabase Auth
+  const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    email,
+    email_confirm: true,
+    user_metadata: {
+      full_name: fullName,
+      role: role,
+      department: department,
+    },
+  });
+
+  if (authError) {
+    throw new Error(`Could not create user: ${authError.message}`);
+  }
+  if (!authData.user) {
+    throw new Error('User was not created in the authentication system.');
+  }
+  
+  // The public.users table is now populated by a trigger, so we don't need to insert here.
+  // We just need to generate the setup link.
+
+  // 2. Generate a password recovery link for the new user
+  const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+    type: 'recovery',
+    email: email,
+  });
+
+  if (linkError) {
+    // If link generation fails, we should probably delete the user we just created to avoid orphans.
+    await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+    throw new Error(`Could not generate password setup link: ${linkError.message}`);
+  }
+
+  // NOTE: In a real application, you would now email `linkData.properties.action_link` to the new user.
+  // For this demo, we will return it so the dialog can display it.
+  console.log("Password Setup Link (for demo):", linkData.properties.action_link)
+  
+  revalidatePath('/hr/dashboard');
+  
+  return {
+    setupLink: linkData.properties.action_link,
+    userName: fullName
+  };
+}
+
+export async function addJob(formData: FormData) {
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+  
+  const title = formData.get('title') as string;
+  const department = formData.get('department') as string;
+  const description = formData.get('description') as string;
+  const status = formData.get('status') as Job['status'];
+
+  if (!title || !department || !status) {
+    throw new Error('Title, Department, and Status are required.');
+  }
+
+  const { error } = await supabase.from('jobs').insert({
+    title,
+    department,
+    description: description || '',
+    status,
+    posted_date: new Date().toISOString(),
+    applicants: 0,
+  });
+
+  if (error) {
+    throw new Error(`Failed to add job: ${error.message}`);
+  }
+
+  revalidatePath('/recruiter/jobs');
+}
+
+export async function updateJob(jobId: string, formData: FormData) {
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+  
+  const title = formData.get('title') as string;
+  const department = formData.get('department') as string;
+  const description = formData.get('description') as string;
+  const status = formData.get('status') as Job['status'];
+
+  if (!title || !department || !status) {
+    throw new Error('Title, Department, and Status are required.');
+  }
+
+  const { error } = await supabase
+    .from('jobs')
+    .update({
+      title,
+      department,
+      description: description || '',
+      status,
+    })
+    .eq('id', jobId);
+
+  if (error) {
+    throw new Error(`Failed to update job: ${error.message}`);
+  }
+
+  revalidatePath('/recruiter/jobs');
+}
+
 
 export async function addCollege(formData: FormData) {
   const cookieStore = cookies();

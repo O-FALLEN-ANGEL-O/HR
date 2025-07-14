@@ -25,6 +25,8 @@ export type UserProfile = {
   role: UserRole;
   department: string | null;
   created_at: string;
+  phone?: string | null;
+  profile_setup_complete?: boolean;
 }
 
 export type Metric = {
