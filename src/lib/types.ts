@@ -208,4 +208,3 @@ export type WeeklyAward = {
     users: { full_name: string | null, avatar_url: string | null } | null;
     awarded_by: { full_name: string | null } | null;
 }
-    
