@@ -30,6 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { CompanyPost, UserProfile } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { addCompanyPost } from '@/app/actions';
+import { createClient } from '@/lib/supabase/client';
 
 type CompanyFeedClientProps = {
   user: UserProfile | null;
@@ -46,6 +47,27 @@ export default function CompanyFeedClient({ user, initialPosts }: CompanyFeedCli
   React.useEffect(() => {
     setPosts(initialPosts);
   }, [initialPosts]);
+
+  React.useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel('realtime-company-posts')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'company_posts' },
+        async () => {
+          const { data } = await supabase
+            .from('company_posts')
+            .select('*, users (full_name, avatar_url)')
+            .order('created_at', { ascending: false });
+          setPosts(data || []);
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const handleNewPost = async (formData: FormData) => {
     setIsSubmitting(true);

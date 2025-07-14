@@ -86,7 +86,7 @@ const getNavLinks = (role: UserRole) => {
 
     // Company Wide
     { href: '/leaves', label: 'Leave System', icon: Clock, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern'] },
-    { href: '/company-feed', label: 'Company Feed', icon: Newspaper, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern'], comingSoon: true },
+    { href: '/company-feed', label: 'Company Feed', icon: Newspaper, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern'] },
     { href: '/performance', label: 'Performance', icon: BarChart3, roles: ['admin', 'super_hr', 'hr_manager', 'manager'] },
     { href: '/employee/directory', label: 'Directory', icon: Users, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern'] },
     { href: '/employee/documents', label: 'Documents', icon: FileText, roles: ['admin', 'super_hr', 'hr_manager', 'employee', 'intern'] },
