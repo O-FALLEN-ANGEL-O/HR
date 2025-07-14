@@ -227,7 +227,6 @@ export default function ApplicantList({
                 <SelectValue placeholder="Filter by stage" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Stages</SelectItem>
                 {Object.keys(stageColors).map((stage) => (
                   <SelectItem key={stage} value={stage}>
                     {stage}
@@ -488,4 +487,3 @@ function RejectCandidateDialog({ applicantId }: { applicantId: string }) {
     </Dialog>
   );
 }
-    
