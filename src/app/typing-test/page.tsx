@@ -60,7 +60,7 @@ export default function TypingTestPage() {
     
     let correctChars = 0;
     finalInput.split('').forEach((char, index) => {
-        if (char === textToType[index]) {
+        if (index < textToType.length && char === textToType[index]) {
             correctChars++;
         }
     });
@@ -101,52 +101,50 @@ export default function TypingTestPage() {
   }, [isFinished]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
-      <Card className="w-full max-w-3xl">
-        <CardHeader>
-          <CardTitle>Typing Speed & Accuracy Test</CardTitle>
-          <CardDescription>
-            Type the text below as quickly and accurately as possible. The test will end automatically.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="rounded-md border bg-secondary/30 p-4 font-mono text-muted-foreground">
-            {textToType.map((char, index) => {
-              let color = 'text-muted-foreground';
-              if (index < userInput.length) {
-                color = char === userInput[index] ? 'text-green-500' : 'text-red-500 bg-red-500/10';
-              }
-              return <span key={index} className={color}>{char}</span>;
-            })}
-          </div>
-          <Textarea
-            ref={inputRef}
-            value={userInput}
-            onChange={handleInputChange}
-            className="font-mono h-32"
-            placeholder="Start typing here..."
-            disabled={isFinished}
-          />
-        </CardContent>
-        {isFinished && (
-            <CardFooter className="flex-col items-start gap-4">
-                 <div className="w-full rounded-lg border p-4 grid grid-cols-2 gap-4">
-                    <div>
-                        <p className="text-sm text-muted-foreground">Words Per Minute (WPM)</p>
-                        <p className="text-3xl font-bold text-primary">{results.wpm}</p>
-                    </div>
-                    <div>
-                        <p className="text-sm text-muted-foreground">Accuracy</p>
-                        <p className="text-3xl font-bold text-primary">{results.accuracy}%</p>
-                    </div>
-                 </div>
-                 <Button onClick={submitResults} disabled={isSubmitting} className="w-full">
-                    {isSubmitting ? <Loader2 className="mr-2 animate-spin"/> : <ArrowRight className="mr-2"/>}
-                    Submit Results and Continue
-                 </Button>
-            </CardFooter>
-        )}
-      </Card>
-    </div>
+    <Card className="w-full max-w-3xl">
+    <CardHeader>
+        <CardTitle>Typing Speed & Accuracy Test</CardTitle>
+        <CardDescription>
+        Type the text below as quickly and accurately as possible. The test will end automatically.
+        </CardDescription>
+    </CardHeader>
+    <CardContent className="space-y-4">
+        <div className="rounded-md border bg-secondary/30 p-4 font-mono text-muted-foreground">
+        {textToType.map((char, index) => {
+            let color = 'text-muted-foreground';
+            if (index < userInput.length) {
+            color = char === userInput[index] ? 'text-green-500' : 'text-red-500 bg-red-500/10';
+            }
+            return <span key={index} className={color}>{char}</span>;
+        })}
+        </div>
+        <Textarea
+        ref={inputRef}
+        value={userInput}
+        onChange={handleInputChange}
+        className="font-mono h-32"
+        placeholder="Start typing here..."
+        disabled={isFinished}
+        />
+    </CardContent>
+    {isFinished && (
+        <CardFooter className="flex-col items-start gap-4">
+                <div className="w-full rounded-lg border p-4 grid grid-cols-2 gap-4">
+                <div>
+                    <p className="text-sm text-muted-foreground">Words Per Minute (WPM)</p>
+                    <p className="text-3xl font-bold text-primary">{results.wpm}</p>
+                </div>
+                <div>
+                    <p className="text-sm text-muted-foreground">Accuracy</p>
+                    <p className="text-3xl font-bold text-primary">{results.accuracy}%</p>
+                </div>
+                </div>
+                <Button onClick={submitResults} disabled={isSubmitting} className="w-full">
+                {isSubmitting ? <Loader2 className="mr-2 animate-spin"/> : <ArrowRight className="mr-2"/>}
+                Submit Results and Continue
+                </Button>
+        </CardFooter>
+    )}
+    </Card>
   );
 }

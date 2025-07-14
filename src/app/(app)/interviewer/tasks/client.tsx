@@ -154,6 +154,14 @@ function InterviewTable({ interviews, isClient }: { interviews: Interview[], isC
         return <div className="text-center text-muted-foreground p-8">No interviews to display.</div>
     }
     
+    const handleCancelInterview = async (interviewId: string) => {
+        try {
+            await updateInterviewStatus(interviewId, 'Canceled');
+        } catch (error: any) {
+            console.error(error);
+        }
+    }
+    
     return (
         <Card>
             <CardContent className="p-0">
@@ -234,7 +242,7 @@ function InterviewTable({ interviews, isClient }: { interviews: Interview[], isC
                             {interview.status === 'Scheduled' && (
                                 <>
                                  <FeedbackDialog interviewId={interview.id} applicantId={interview.applicant_id} />
-                                 <DropdownMenuItem onClick={() => updateInterviewStatus(interview.id, 'Canceled')} className="text-red-500">
+                                 <DropdownMenuItem onClick={() => handleCancelInterview(interview.id)} className="text-red-500">
                                     <Trash2 className="mr-2" /> Cancel Interview
                                  </DropdownMenuItem>
                                 </>
@@ -275,8 +283,8 @@ function FeedbackDialog({ interviewId, applicantId }: { interviewId: string, app
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <div className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50">
-                    <MessageSquare className="mr-2"/> Submit Feedback
+                 <div className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50">
+                    <MessageSquare className="mr-2 h-4 w-4" /> Submit Feedback
                 </div>
             </DialogTrigger>
             <DialogContent>
@@ -289,7 +297,7 @@ function FeedbackDialog({ interviewId, applicantId }: { interviewId: string, app
                 <form action={handleFormSubmit} ref={formRef}>
                     <Textarea name="note" placeholder="Enter your feedback here... Your notes will be auto-saved." className="min-h-[120px]" required />
                     <DialogFooter className="mt-4 flex justify-between w-full">
-                        <Button variant="outline" type="button"><Mic className="mr-2" /> Record Voice Note</Button>
+                        <Button variant="outline" type="button" disabled><Mic className="mr-2" /> Record Voice Note (soon)</Button>
                         <Button type="submit" disabled={isSubmitting}>
                             {isSubmitting ? <Loader2 className="animate-spin mr-2"/> : <Check className="mr-2"/>} Submit & Complete
                         </Button>

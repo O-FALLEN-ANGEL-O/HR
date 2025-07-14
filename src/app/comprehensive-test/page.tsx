@@ -106,7 +106,7 @@ export default function ComprehensiveTestPage() {
   const renderContent = () => {
     if (isFinished) {
       return (
-        <div className="text-center">
+         <CardContent className="text-center p-6">
             <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
             <CardTitle>Test Complete!</CardTitle>
             <CardDescription className="my-2">Your final score is:</CardDescription>
@@ -115,13 +115,13 @@ export default function ComprehensiveTestPage() {
                 {isSubmitting ? <Loader2 className="mr-2 animate-spin"/> : <ArrowRight className="mr-2"/>}
                 Submit and Return to Portal
             </Button>
-        </div>
+        </CardContent>
       );
     }
     
     const currentQuestion = TEST_QUESTIONS[currentQuestionIndex];
     return (
-        <>
+        <div className="border-t pt-6">
             <CardHeader>
                 <CardTitle>Question {currentQuestionIndex + 1} of {TEST_QUESTIONS.length}</CardTitle>
             </CardHeader>
@@ -142,27 +142,23 @@ export default function ComprehensiveTestPage() {
                     <ArrowRight className="ml-2" />
                  </Button>
             </CardFooter>
-        </>
+        </div>
     )
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
-      <Card className="w-full max-w-2xl">
-        <CardHeader>
-            <div className="flex justify-center mb-4"><Library className="h-10 w-10 text-primary" /></div>
-            <CardTitle className="text-2xl text-center">Comprehensive Test</CardTitle>
-            <CardDescription className="text-center">Read the passage and answer the questions.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <div className="rounded-lg border bg-muted/50 p-4 mb-6">
-                <p className="text-sm leading-relaxed">{TEST_PASSAGE}</p>
-            </div>
-            <div className="border-t pt-6">
-                {renderContent()}
-            </div>
-        </CardContent>
-      </Card>
-    </div>
+    <Card className="w-full max-w-2xl">
+    <CardHeader>
+        <div className="flex justify-center mb-4"><Library className="h-10 w-10 text-primary" /></div>
+        <CardTitle className="text-2xl text-center">Comprehensive Test</CardTitle>
+        <CardDescription className="text-center">Read the passage and answer the questions.</CardDescription>
+    </CardHeader>
+    <CardContent>
+        <div className="rounded-lg border bg-muted/50 p-4 mb-6">
+            <p className="text-sm leading-relaxed">{TEST_PASSAGE}</p>
+        </div>
+        {renderContent()}
+    </CardContent>
+    </Card>
   );
 }

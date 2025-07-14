@@ -6,7 +6,7 @@ import { cookies } from 'next/headers';
 import { applicantMatchScoring } from '@/ai/flows/applicant-match-scoring';
 import { createClient } from '@/lib/supabase/server';
 import { getUser } from '@/lib/supabase/user';
-import type { Kudo, LeaveBalance } from '@/lib/types';
+import type { Kudo, LeaveBalance, Interview } from '@/lib/types';
 import { differenceInDays } from 'date-fns';
 
 export async function addCompanyPost(formData: FormData) {
@@ -330,4 +330,61 @@ export async function rejectApplicant(applicantId: string, reason: string, notes
 
   revalidatePath('/hr/applicants');
 }
-    
+
+export async function scheduleInterview(formData: FormData) {
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+  const user = await getUser(cookieStore);
+
+  if (!user || !['admin', 'hr_manager', 'super_hr', 'recruiter'].includes(user.role)) {
+    throw new Error('You do not have permission to perform this action.');
+  }
+
+  const applicantId = formData.get('applicant_id') as string;
+  const interviewerId = formData.get('interviewer_id') as string;
+  const date = formData.get('date') as string;
+  const time = formData.get('time') as string;
+  const type = formData.get('type') as Interview['type'];
+
+  if (!applicantId || !interviewerId || !date || !time || !type) {
+    throw new Error('All fields are required to schedule an interview.');
+  }
+
+  const { data: applicant, error: applicantError } = await supabase.from('applicants').select('name, avatar, job_id').eq('id', applicantId).single();
+  const { data: interviewer, error: interviewerError } = await supabase.from('users').select('full_name, avatar_url').eq('id', interviewerId).single();
+  
+  if (applicantError || interviewerError) {
+    throw new Error('Could not retrieve applicant or interviewer details.');
+  }
+  
+  const { data: job, error: jobError } = await supabase.from('jobs').select('title').eq('id', applicant.job_id!).single();
+
+  if (jobError) {
+    throw new Error('Could not retrieve job details.');
+  }
+
+  const { error: insertError } = await supabase.from('interviews').insert({
+    applicant_id: applicantId,
+    interviewer_id: interviewerId,
+    candidate_name: applicant.name,
+    candidate_avatar: applicant.avatar,
+    job_title: job.title,
+    interviewer_name: interviewer.full_name,
+    interviewer_avatar: interviewer.avatar_url,
+    date,
+    time,
+    type,
+    status: 'Scheduled',
+  });
+  
+  if (insertError) {
+    console.error('Error scheduling interview:', insertError);
+    throw new Error('Could not schedule interview.');
+  }
+
+  // Update applicant stage to 'Interview'
+  await supabase.from('applicants').update({ stage: 'Interview' }).eq('id', applicantId);
+  
+  revalidatePath('/interviewer/tasks');
+  revalidatePath('/hr/applicants');
+}

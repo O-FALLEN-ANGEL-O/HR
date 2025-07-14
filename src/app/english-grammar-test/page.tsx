@@ -116,17 +116,17 @@ export default function EnglishGrammarTestPage() {
   const renderContent = () => {
     if (testState === 'not-started') {
       return (
-        <div className="text-center p-6">
+        <CardContent className="text-center p-6">
             <SpellCheck className="mx-auto h-16 w-16 text-primary mb-4" />
             <p className="text-muted-foreground mb-6">You will have 5 questions to answer. The test will start as soon as you click the button below.</p>
             <Button onClick={startTest} size="lg">Start Grammar Test</Button>
-        </div>
+        </CardContent>
       );
     }
 
     if (testState === 'finished') {
       return (
-        <div className="text-center p-6">
+        <CardContent className="text-center p-6">
             <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
             <CardTitle>Test Complete!</CardTitle>
             <CardDescription className="my-2">Your final score is:</CardDescription>
@@ -135,7 +135,7 @@ export default function EnglishGrammarTestPage() {
                 {isSubmitting ? <Loader2 className="mr-2 animate-spin"/> : <ArrowRight className="mr-2"/>}
                 Submit and Return to Portal
             </Button>
-        </div>
+        </CardContent>
       );
     }
     
@@ -169,16 +169,12 @@ export default function EnglishGrammarTestPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
-      <Card className="w-full max-w-2xl">
+    <Card className="w-full max-w-2xl">
         <CardHeader className="text-center">
             <CardTitle className="text-2xl">English Grammar Test</CardTitle>
             <CardDescription>Assess your command of the English language.</CardDescription>
         </CardHeader>
-        <CardContent className="p-0">
-         {renderContent()}
-        </CardContent>
-      </Card>
-    </div>
+        {renderContent()}
+    </Card>
   );
 }
