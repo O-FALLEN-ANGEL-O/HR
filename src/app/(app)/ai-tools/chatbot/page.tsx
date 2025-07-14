@@ -53,15 +53,26 @@ export default function AIChatbotPage() {
   }, []);
 
   React.useEffect(() => {
-    setMessages([
-      {
-        id: 'init',
-        role: 'assistant',
-        content: "Hello! I'm the HR+ AI Assistant. How can I help you today?",
-        timestamp: Date.now(),
-      },
-    ]);
-  }, []);
+    if (currentUser) {
+        setMessages([
+          {
+            id: 'init',
+            role: 'assistant',
+            content: `Hello ${currentUser.full_name?.split(' ')[0]}! I'm the HR+ AI Assistant. How can I help you today?`,
+            timestamp: Date.now(),
+          },
+        ]);
+    } else {
+         setMessages([
+          {
+            id: 'init',
+            role: 'assistant',
+            content: "Hello! I'm the HR+ AI Assistant. How can I help you today?",
+            timestamp: Date.now(),
+          },
+        ]);
+    }
+  }, [currentUser]);
 
   React.useEffect(() => {
     if (scrollAreaRef.current) {
@@ -84,7 +95,13 @@ export default function AIChatbotPage() {
     setIsLoading(true);
 
     try {
-      const response = await aiChatbot({ query: data.query });
+      const response = await aiChatbot({ 
+          query: data.query,
+          userContext: {
+              fullName: currentUser?.full_name || 'Employee',
+              role: currentUser?.role || 'employee'
+          }
+       });
       const assistantMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,
         role: 'assistant',

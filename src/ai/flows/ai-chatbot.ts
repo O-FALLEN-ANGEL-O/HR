@@ -13,6 +13,10 @@ import {z} from 'genkit';
 
 const AiChatbotInputSchema = z.object({
   query: z.string().describe('The HR-related question asked by the employee.'),
+  userContext: z.object({
+    fullName: z.string().optional().describe("The full name of the user asking the question."),
+    role: z.string().optional().describe("The role of the user."),
+  }).describe("Information about the user asking the question."),
 });
 export type AiChatbotInput = z.infer<typeof AiChatbotInputSchema>;
 
@@ -31,6 +35,8 @@ const prompt = ai.definePrompt({
   output: {schema: AiChatbotOutputSchema},
   prompt: `You are an AI chatbot designed to answer HR-related questions from employees.
   Provide accurate and helpful answers based on the information available to you.
+  
+  The user you are talking to is named {{userContext.fullName}} and their role is {{userContext.role}}. Use their name to make the conversation more personal.
 
   Question: {{{query}}}
   `,config: {
