@@ -13,7 +13,6 @@ import {
   Bot,
   Briefcase,
   Building2,
-  Calendar,
   ClipboardCheck,
   Clock,
   FolderKanban,
@@ -32,8 +31,6 @@ import {
   ShieldCheck,
   UserCog,
   WalletCards,
-  Target,
-  Receipt,
 } from 'lucide-react';
 
 import {
@@ -80,7 +77,6 @@ const getNavLinks = (role: UserRole) => {
     { href: '/hr/applicants', label: 'Applicants', icon: Users, roles: ['hr_manager', 'recruiter', 'super_hr'] },
     { href: '/recruiter/jobs', label: 'Job Postings', icon: Briefcase, roles: ['hr_manager', 'recruiter', 'super_hr'] },
     { href: '/hr/campus', label: 'Campus Drives', icon: GraduationCap, roles: ['hr_manager', 'recruiter', 'super_hr'] },
-    { href: '/interviewer/tasks', label: 'Interviews', icon: Calendar, roles: ['hr_manager', 'recruiter', 'super_hr', 'interviewer'] },
     { href: '/hr/onboarding', label: 'Onboarding', icon: ClipboardCheck, roles: ['hr_manager', 'super_hr'] },
 
     // Manager / Team Lead
@@ -88,10 +84,8 @@ const getNavLinks = (role: UserRole) => {
 
     // Company Wide
     { href: '/leaves', label: 'Leave System', icon: Clock, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern'] },
-    { href: '/expenses', label: 'Expenses', icon: Receipt, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern'] },
     { href: '/company-feed', label: 'Company Feed', icon: Newspaper, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern'] },
     { href: '/performance', label: 'Performance', icon: BarChart3, roles: ['admin', 'super_hr', 'hr_manager', 'manager'] },
-    { href: '/performance/okrs', label: 'OKRs', icon: Target, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'employee', 'intern'] },
     { href: '/employee/directory', label: 'Directory', icon: Users, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern'] },
     { href: '/employee/documents', label: 'Documents', icon: FileText, roles: ['admin', 'super_hr', 'hr_manager', 'employee', 'intern'] },
     { href: '/employee/payslips', label: 'Payslips', icon: WalletCards, roles: ['hr_manager', 'employee'] },

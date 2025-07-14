@@ -39,12 +39,6 @@ import {
   ClipboardCopy,
   User,
   CalendarPlus,
-  BrainCircuit,
-  Library,
-  SpellCheck,
-  HeartHandshake,
-  FileSearch,
-  UserX,
 } from 'lucide-react';
 import {
   Select,
@@ -59,21 +53,6 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { AddApplicantDialog } from '@/components/add-applicant-dialog';
 import { Header } from '@/components/header';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { rejectApplicant } from '@/app/actions';
-import { Loader2 } from 'lucide-react';
 
 type ApplicantListProps = {
   initialApplicants: Applicant[];
@@ -180,11 +159,11 @@ export default function ApplicantList({
     toast({ title: 'Export Complete!', description: 'Applicant data has been downloaded.' });
   };
   
-  const handleAssignTest = (applicantId: string, testName: string, testPath: string) => {
-    const url = `${window.location.origin}/${testPath}?id=${applicantId}`;
+  const handleAssignTest = (applicantId: string) => {
+    const url = `${window.location.origin}/typing-test?id=${applicantId}`;
     navigator.clipboard.writeText(url);
     toast({
-      title: `${testName} Link Copied!`,
+      title: 'Typing Test Link Copied!',
       description: 'The link has been copied to your clipboard.',
     });
   };
@@ -321,45 +300,20 @@ export default function ApplicantList({
                           <User className="mr-2 h-4 w-4" />
                           View Profile
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => router.push('/interviewer/tasks')}>
+                        <DropdownMenuItem>
                            <CalendarPlus className="mr-2 h-4 w-4" />
                            Schedule Interview
                         </DropdownMenuItem>
-                         <DropdownMenuItem onClick={() => window.location.href = `mailto:${applicant.email}`}>
+                         <DropdownMenuItem>
                           <Mail className="mr-2 h-4 w-4" />
                           Send Email
                         </DropdownMenuItem>
-                         <RejectCandidateDialog applicantId={applicant.id} />
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                          onClick={() => handleAssignTest(applicant.id, 'Typing Test', '/typing-test')}
+                          onClick={() => handleAssignTest(applicant.id)}
                         >
                           <Keyboard className="mr-2 h-4 w-4" />
                           Assign Typing Test
-                        </DropdownMenuItem>
-                         <DropdownMenuItem
-                          onClick={() => handleAssignTest(applicant.id, 'Aptitude Test', '/aptitude-test')}
-                        >
-                          <BrainCircuit className="mr-2 h-4 w-4" />
-                          Assign Aptitude Test
-                        </DropdownMenuItem>
-                         <DropdownMenuItem
-                          onClick={() => handleAssignTest(applicant.id, 'Comprehensive Test', '/comprehensive-test')}
-                        >
-                          <Library className="mr-2 h-4 w-4" />
-                          Assign Comprehensive Test
-                        </DropdownMenuItem>
-                         <DropdownMenuItem
-                          onClick={() => handleAssignTest(applicant.id, 'English Grammar Test', '/english-grammar-test')}
-                        >
-                          <SpellCheck className="mr-2 h-4 w-4" />
-                          Assign English Grammar Test
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleAssignTest(applicant.id, 'Customer Service Test', '/customer-service-test')}
-                        >
-                          <HeartHandshake className="mr-2 h-4 w-4" />
-                          Assign Customer Service Test
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -370,157 +324,6 @@ export default function ApplicantList({
           </Table>
         </CardContent>
       </Card>
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><FileSearch /> Rejection Reason Log</CardTitle>
-                <CardDescription>Review why candidates were not selected to improve processes.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="text-sm text-muted-foreground space-y-2">
-                    <div className="flex justify-between p-2 rounded-md hover:bg-muted/50">
-                        <span>Candidate not qualified</span>
-                        <Badge variant="outline">12</Badge>
-                    </div>
-                     <div className="flex justify-between p-2 rounded-md hover:bg-muted/50">
-                        <span>Salary expectation mismatch</span>
-                        <Badge variant="outline">8</Badge>
-                    </div>
-                     <div className="flex justify-between p-2 rounded-md hover:bg-muted/50">
-                        <span>Not a good culture fit</span>
-                        <Badge variant="outline">5</Badge>
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-         <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><User /> Talent Pool CRM</CardTitle>
-                <CardDescription>Manage high-potential candidates for future opportunities.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <Avatar>
-                                <AvatarImage data-ai-hint="person" src="https://placehold.co/40x40.png" />
-                                <AvatarFallback>SN</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <p className="font-medium">Sarah Nadia</p>
-                                <p className="text-xs text-muted-foreground">Past applicant for Sr. Developer</p>
-                            </div>
-                        </div>
-                        <Button variant="outline" size="sm">View</Button>
-                    </div>
-                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <Avatar>
-                                <AvatarImage data-ai-hint="person" src="https://placehold.co/40x40.png" />
-                                <AvatarFallback>MJ</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <p className="font-medium">Mike Johnson</p>
-                                <p className="text-xs text-muted-foreground">Past applicant for Product Manager</p>
-                            </div>
-                        </div>
-                        <Button variant="outline" size="sm">View</Button>
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-      </div>
     </div>
-  );
-}
-
-const rejectionSchema = z.object({
-  rejection_reason: z.string().min(1, { message: 'Please select a reason.' }),
-  rejection_notes: z.string().optional(),
-});
-
-function RejectCandidateDialog({ applicantId }: { applicantId: string }) {
-  const [open, setOpen] = React.useState(false);
-  const { toast } = useToast();
-  const form = useForm<z.infer<typeof rejectionSchema>>({
-    resolver: zodResolver(rejectionSchema),
-  });
-
-  const { formState: { isSubmitting }, handleSubmit, control, reset } = form;
-
-  const handleFormSubmit = async (data: z.infer<typeof rejectionSchema>) => {
-    try {
-      await rejectApplicant(applicantId, data.rejection_reason, data.rejection_notes);
-      toast({
-        title: 'Candidate Rejected',
-        description: 'The candidate has been marked as rejected and the reason has been logged.',
-      });
-      setOpen(false);
-      reset();
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'Could not reject the candidate.',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <div className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-red-600 hover:bg-accent">
-            <UserX className="mr-2 h-4 w-4" />
-            Reject Candidate
-        </div>
-      </DialogTrigger>
-      <DialogContent>
-        <form onSubmit={handleSubmit(handleFormSubmit)}>
-            <DialogHeader>
-            <DialogTitle>Reject Candidate</DialogTitle>
-            <DialogDescription>
-                Please select a reason for rejection. This will be logged for internal review.
-            </DialogDescription>
-            </DialogHeader>
-            <div className="py-4 space-y-4">
-                <Controller
-                    name="rejection_reason"
-                    control={control}
-                    render={({ field, fieldState }) => (
-                        <div className="space-y-1">
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a rejection reason" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="not-qualified">Not a good fit / Not qualified</SelectItem>
-                                    <SelectItem value="salary-mismatch">Salary expectation mismatch</SelectItem>
-                                    <SelectItem value="culture-fit">Not a good culture fit</SelectItem>
-                                    <SelectItem value="position-filled">Position filled by another candidate</SelectItem>
-                                    <SelectItem value="other">Other</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            {fieldState.error && <p className="text-sm text-destructive">{fieldState.error.message}</p>}
-                        </div>
-                    )}
-                />
-                <Controller
-                    name="rejection_notes"
-                    control={control}
-                    render={({ field }) => (
-                         <Textarea placeholder="Add optional notes..." {...field} />
-                    )}
-                />
-            </div>
-            <DialogFooter>
-            <Button variant="outline" type="button" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button variant="destructive" type="submit" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 animate-spin"/>}
-                Confirm Rejection
-            </Button>
-            </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
   );
 }

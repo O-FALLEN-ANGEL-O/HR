@@ -6,14 +6,10 @@ import {
   BookText,
   BrainCircuit,
   FileText,
-  HeartHandshake,
-  Keyboard,
-  Library,
   Lightbulb,
-  Link,
+  Link as LinkIcon,
   Loader2,
   MessageSquare,
-  SpellCheck,
   Sparkles,
   User,
   Workflow,
@@ -183,31 +179,8 @@ export default function ApplicantProfileClient({
             <CardHeader>
               <CardTitle className="text-lg">Assessments</CardTitle>
             </CardHeader>
-             <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-muted-foreground"><Keyboard className="h-4 w-4" /> Typing (WPM)</div>
-                    <p className="font-bold text-lg">{applicant.wpm || 'N/A'}</p>
-                 </div>
-                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-muted-foreground"><HeartHandshake className="h-4 w-4" /> Typing (Accuracy)</div>
-                    <p className="font-bold text-lg">{applicant.accuracy ? `${applicant.accuracy}%` : 'N/A'}</p>
-                 </div>
-                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-muted-foreground"><BrainCircuit className="h-4 w-4" /> Aptitude</div>
-                    <p className="font-bold text-lg">{applicant.aptitude_score ? `${applicant.aptitude_score}%` : 'N/A'}</p>
-                 </div>
-                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-muted-foreground"><Library className="h-4 w-4" /> Comprehensive</div>
-                    <p className="font-bold text-lg">{applicant.comprehensive_score ? `${applicant.comprehensive_score}%` : 'N/A'}</p>
-                 </div>
-                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-muted-foreground"><SpellCheck className="h-4 w-4" /> English Grammar</div>
-                    <p className="font-bold text-lg">{applicant.english_grammar_score ? `${applicant.english_grammar_score}%` : 'N/A'}</p>
-                 </div>
-                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-muted-foreground"><HeartHandshake className="h-4 w-4" /> Customer Service</div>
-                    <p className="font-bold text-lg">{applicant.customer_service_score ? `${applicant.customer_service_score}%` : 'N/A'}</p>
-                 </div>
+             <CardContent>
+                <p>Coming Soon</p>
              </CardContent>
           </Card>
           
@@ -301,7 +274,7 @@ function ResumeDetails({ resume }: { resume?: ProcessResumeOutput | null }) {
                                     rel="noopener noreferrer" 
                                     className="flex items-center gap-2 text-sm text-primary hover:underline"
                                 >
-                                    <Link className="h-4 w-4" />
+                                    <LinkIcon className="h-4 w-4" />
                                     <span>{link}</span>
                                 </a>
                             ))}

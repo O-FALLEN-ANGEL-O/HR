@@ -51,37 +51,16 @@ export type Applicant = {
   phone: string;
   job_id?: string;
   jobs?: { title: string } | null; // For joined data
-  stage: 'Sourced' | 'Applied' | 'Phone Screen' | 'Interview' | 'Offer' | 'Joined' | 'Rejected';
+  stage: 'Sourced' | 'Applied' | 'Phone Screen' | 'Interview' | 'Offer' | 'Hired' | 'Rejected';
   applied_date: string;
   avatar?: string;
   source?: 'walk-in' | 'college' | 'email' | 'manual';
   wpm?: number;
   accuracy?: number;
-  aptitude_score?: number;
-  comprehensive_score?: number;
-  english_grammar_score?: number;
-  customer_service_score?: number;
   college_id?: string;
   resume_data?: ProcessResumeOutput;
   ai_match_score?: number;
   ai_justification?: string;
-  rejection_reason?: string;
-  rejection_notes?: string;
-};
-
-export type Interview = {
-  id: string;
-  applicant_id: string;
-  interviewer_id: string;
-  candidate_name: string;
-  candidate_avatar: string | null;
-  job_title: string;
-  interviewer_name: string | null;
-  interviewer_avatar: string | null;
-  date: string;
-  time: string;
-  type: 'Video' | 'Phone' | 'In-person';
-  status: 'Scheduled' | 'Completed' | 'Canceled';
 };
 
 export type Onboarding = {
@@ -102,7 +81,6 @@ export type Onboarding = {
 export type PerformanceReview = {
   id: string;
   user_id: string;
-  job_title: string | null;
   review_date: string;
   status: 'Pending' | 'In Progress' | 'Completed';
   users: {
@@ -114,15 +92,14 @@ export type PerformanceReview = {
 export type Leave = {
     id: string;
     user_id: string;
-    leave_type: 'sick' | 'casual' | 'earned' | 'unpaid';
+    leave_type: 'sick' | 'casual' | 'earned';
     start_date: string;
     end_date: string;
-    total_days: number;
     reason: string;
     status: 'pending' | 'approved' | 'rejected';
     approver_id?: string;
     created_at: string;
-    users?: Pick<UserProfile, 'full_name' | 'avatar_url' | 'department'>;
+    users?: Pick<UserProfile, 'full_name' | 'avatar_url'>;
 }
 
 export type LeaveBalance = {
@@ -131,7 +108,6 @@ export type LeaveBalance = {
     sick_leave: number;
     casual_leave: number;
     earned_leave: number;
-    unpaid_leave: number;
 }
 
 export type ChatMessage = {
@@ -160,98 +136,3 @@ export type ApplicantNote = {
     note: string;
     created_at: string;
 };
-
-export type Payslip = {
-  id: string;
-  user_id: string;
-  month: string;
-  year: number;
-  gross_salary: number;
-  net_salary: number;
-  download_url: string;
-};
-
-export type CompanyDocument = {
-  id: string;
-  title: string;
-  category: string;
-  description: string;
-  last_updated: string;
-  download_url: string;
-};
-
-export type Kudo = {
-  id: string;
-  from_user_id: string;
-  to_user_id: string;
-  message: string;
-  value: 'Team Player' | 'Innovation' | 'Customer First' | 'Ownership';
-  created_at: string;
-  users_from: { full_name: string | null; avatar_url: string | null; } | null;
-  users_to: { full_name: string | null; avatar_url: string | null; } | null;
-};
-
-export type CompanyPost = {
-  id: string;
-  author_id: string;
-  content: string;
-  image_url?: string;
-  created_at: string;
-  users: {
-    full_name: string | null;
-    avatar_url: string | null;
-  } | null;
-}
-
-export type WeeklyAward = {
-    id: string;
-    user_id: string;
-    awarded_by_user_id: string;
-    reason: string;
-    week_of: string;
-    users: { full_name: string | null, avatar_url: string | null } | null;
-    awarded_by: { full_name: string | null } | null;
-}
-
-export type Objective = {
-  id: string;
-  title: string;
-  owner_id: string;
-  users: {
-    full_name: string | null;
-    avatar_url: string | null;
-  } | null;
-  key_results: KeyResult[];
-  progress: number;
-  quarter: string;
-};
-
-export type KeyResult = {
-  id: string;
-  description: string;
-  status: 'on_track' | 'at_risk' | 'off_track';
-  progress: number;
-};
-
-export type ExpenseReport = {
-  id: string;
-  user_id: string;
-  users: {
-    full_name: string | null;
-    avatar_url: string | null;
-  } | null;
-  title: string;
-  total_amount: number;
-  status: 'draft' | 'submitted' | 'approved' | 'rejected' | 'reimbursed';
-  submitted_at: string;
-  items: ExpenseItem[];
-}
-
-export type ExpenseItem = {
-  id: string;
-  date: string;
-  category: string;
-  amount: number;
-  description: string;
-  receipt_url?: string;
-}

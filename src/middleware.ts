@@ -2,22 +2,36 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 import type { UserRole } from './lib/types';
 
-const publicRoutes = ['/login', '/signup', '/auth/callback', '/register', '/aptitude-test', '/comprehensive-test', '/customer-service-test', '/english-grammar-test', '/typing-test', '/403'];
-const authRoutes = ['/login', 'signup'];
+const publicRoutes = ['/login', '/signup', '/auth/callback', '/register', '/403'];
 
-// Role-based access control matrix based on the new plan
+// This should now be a flat list of all possible application routes
+const allAppRoutes = [
+    '/admin/dashboard', '/admin/roles',
+    '/super_hr/dashboard',
+    '/hr/dashboard', '/hr/applicants', '/hr/campus', '/hr/onboarding',
+    '/recruiter/dashboard', '/recruiter/jobs',
+    '/manager/dashboard',
+    '/team-lead/dashboard',
+    '/employee/dashboard', '/employee/directory', '/employee/documents', '/employee/payslips', '/employee/kudos',
+    '/intern/dashboard',
+    '/leaves',
+    '/company-feed',
+    '/performance',
+    '/ai-tools/applicant-scoring', '/ai-tools/review-analyzer', '/ai-tools/chatbot',
+];
+
 const roleAccess: Record<UserRole, string[]> = {
-  admin: ['/admin', '/(app)'], // Full access
-  super_hr: ['/super_hr', '/hr', '/recruiter', '/interviewer', '/manager', '/employee', '/intern', '/ai-tools', '/leaves', '/company-feed', '/performance', '/employee/documents', '/admin/roles', '/employee/kudos', '/expenses', '/performance/okrs'],
-  hr_manager: ['/hr', '/recruiter', '/interviewer', '/manager', '/employee', '/intern', '/ai-tools', '/leaves', '/company-feed', '/performance', '/employee/documents', '/employee/kudos', '/expenses', '/performance/okrs'],
-  recruiter: ['/recruiter', '/hr/applicants', '/recruiter/jobs', '/ai-tools/applicant-scoring', '/hr/campus', '/interviewer/tasks'],
-  interviewer: ['/interviewer', '/interviewer/tasks'],
-  manager: ['/manager', '/employee', '/leaves', '/company-feed', '/performance', '/employee/directory', '/team-lead', '/employee/kudos', '/expenses', '/performance/okrs'],
-  team_lead: ['/team-lead', '/manager', '/employee', '/leaves', '/company-feed', '/performance', '/employee/directory', '/employee/kudos', '/expenses', '/performance/okrs'],
-  employee: ['/employee', '/leaves', '/company-feed', '/kudos', '/employee/documents', '/employee/payslips', '/employee/directory', '/ai-tools/chatbot', '/performance/okrs', '/expenses'],
-  intern: ['/intern', '/leaves', '/employee/documents', '/kudos', '/ai-tools/chatbot', '/performance/okrs', '/expenses'],
-  guest: [], // Guests have no access to app routes, handled by publicRoutes
-  finance: ['/expenses'],
+  admin: ['/admin', '/(app)'], // Simplified for now
+  super_hr: ['/super_hr', '/hr', '/recruiter', '/manager', '/employee', '/intern', '/ai-tools', '/leaves', '/company-feed', '/performance', '/employee/documents', '/admin/roles', '/employee/kudos'],
+  hr_manager: ['/hr', '/recruiter', '/manager', '/employee', '/intern', '/ai-tools', '/leaves', '/company-feed', '/performance', '/employee/documents', '/employee/kudos'],
+  recruiter: ['/recruiter', '/hr/applicants', '/recruiter/jobs', '/ai-tools/applicant-scoring', '/hr/campus'],
+  interviewer: [], // To be defined
+  manager: ['/manager', '/employee', '/leaves', '/company-feed', '/performance', '/employee/directory', '/team-lead', '/employee/kudos'],
+  team_lead: ['/team-lead', '/manager', '/employee', '/leaves', '/company-feed', '/performance', '/employee/directory', '/employee/kudos'],
+  employee: ['/employee', '/leaves', '/company-feed', '/kudos', '/employee/documents', '/employee/payslips', '/employee/directory', '/ai-tools/chatbot'],
+  intern: ['/intern', '/leaves', '/employee/documents', '/kudos', '/ai-tools/chatbot'],
+  guest: [],
+  finance: [],
   it_admin: [],
   support: [],
   auditor: [],
@@ -29,23 +43,26 @@ function getHomePathForRole(role: UserRole): string {
     case 'super_hr': return '/super_hr/dashboard';
     case 'hr_manager': return '/hr/dashboard';
     case 'recruiter': return '/recruiter/dashboard';
-    case 'interviewer': return '/interviewer/tasks';
     case 'manager': return '/manager/dashboard';
     case 'team_lead': return '/team-lead/dashboard';
     case 'employee': return '/employee/dashboard';
     case 'intern': return '/intern/dashboard';
-    case 'finance': return '/expenses';
     default: return '/login';
   }
 }
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  
+  // Exclude portal routes from auth checks
+  if (pathname.startsWith('/portal/')) {
+      return NextResponse.next();
+  }
+
   const { response, user } = await updateSession(request);
+  const isPublic = publicRoutes.some(route => pathname.startsWith(route));
 
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route)) || pathname.startsWith('/portal');
-
-  if (!user && !isPublicRoute) {
+  if (!user && !isPublic) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
   
@@ -56,15 +73,17 @@ export async function middleware(request: NextRequest) {
        return NextResponse.redirect(new URL(getHomePathForRole(role), request.url));
     }
 
-    if (authRoutes.includes(pathname)) {
+    const isAuthRoute = pathname === '/login' || pathname === '/signup';
+    if (isAuthRoute) {
         return NextResponse.redirect(new URL(getHomePathForRole(role), request.url));
     }
     
-    if (!isPublicRoute) {
+    if (!isPublic) {
       const allowedPaths = roleAccess[role] || [];
+      // A simple check to see if the user's role grants them access.
       const isAuthorized = allowedPaths.some(path => pathname.startsWith(path));
       
-      if (!isAuthorized) {
+      if (!isAuthorized && role !== 'admin') { // Let admin access everything for now
         return NextResponse.redirect(new URL('/403', request.url));
       }
     }
