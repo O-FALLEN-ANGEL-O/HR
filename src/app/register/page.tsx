@@ -43,7 +43,7 @@ const FormSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters.'),
   email: z.string().email('Please enter a valid email address.'),
   phone: z.string().min(10, 'Phone number seems too short.'),
-  job_id: z.string().min(1, 'Please select a position.'),
+  job_id: z.string().optional(),
   college_id: z.string().optional(),
   resumeFile: z.any().optional(),
   profilePic: z.any().optional(),
@@ -232,7 +232,7 @@ export default function RegisterPage() {
           name: data.fullName,
           email: data.email,
           phone: data.phone,
-          job_id: data.job_id,
+          job_id: data.job_id || null,
           college_id: data.college_id || null,
           stage: 'Applied',
           source: data.college_id ? 'college' : 'walk-in',
@@ -320,7 +320,7 @@ export default function RegisterPage() {
 
               {showCamera ? (
                 <div className="space-y-2">
-                  <video ref={videoRef} className="w-full aspect-video rounded-md bg-black" autoPlay muted />
+                  <video ref={videoRef} className="w-full aspect-video rounded-md bg-black" autoPlay muted playsInline />
                   {hasCameraPermission === false && (
                     <Alert variant="destructive">
                       <AlertTitle>Camera Access Required</AlertTitle>
@@ -425,6 +425,7 @@ export default function RegisterPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                          <SelectItem value="" disabled>Select a position</SelectItem>
                           {openJobs.map(job => (
                              <SelectItem key={job.id} value={job.id}>{job.title}</SelectItem>
                           ))}
@@ -447,6 +448,7 @@ export default function RegisterPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                          <SelectItem value="">None</SelectItem>
                           {colleges.map(college => (
                              <SelectItem key={college.id} value={college.id}>{college.name}</SelectItem>
                           ))}
