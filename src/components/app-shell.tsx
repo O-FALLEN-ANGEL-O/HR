@@ -67,34 +67,36 @@ const getNavLinks = (role: UserRole) => {
     { href: '/super_hr/dashboard', label: 'Dashboard', icon: UserCog, roles: ['super_hr'] },
     { href: '/hr/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['hr_manager'] },
     { href: '/recruiter/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['recruiter'] },
-    { href: '/manager/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['manager'] },
-    { href: '/employee/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['employee', 'intern'] },
+    { href: '/manager/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['manager', 'team_lead'] },
+    { href: '/employee/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['employee'] },
+    { href: '/intern/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['intern'] },
     
     // Admin
-    { href: '/admin/roles', label: 'Users & Roles', icon: Users, roles: ['admin'] },
-    { href: '/admin/settings', label: 'System Settings', icon: Settings, roles: ['admin'] },
-    { href: '/admin/logs', label: 'RLS Logs', icon: FileText, roles: ['admin'] },
-    { href: '/admin/templates', label: 'Templates', icon: FolderKanban, roles: ['admin'] },
-    { href: '/admin/audit', label: 'Audit Trail', icon: ScanSearch, roles: ['admin'] },
+    { href: '/admin/roles', label: 'Users & Roles', icon: Users, roles: ['admin', 'super_hr'] },
     
-    // Super HR
-    { href: '/hr/applicants', label: 'Applicants', icon: Users, roles: ['super_hr'] },
-    { href: '/leaves', label: 'Leave System', icon: Clock, roles: ['super_hr', 'hr_manager', 'manager', 'employee', 'intern'] },
-    { href: '/employee/documents', label: 'Docs & Reports', icon: FileText, roles: ['super_hr', 'hr_manager', 'employee', 'intern'] },
-    { href: '/ai-tools/review-analyzer', label: 'Performance AI', icon: Sparkles, roles: ['super_hr'] },
+    // HR / Recruiter
+    { href: '/hr/applicants', label: 'Applicants', icon: Users, roles: ['hr_manager', 'recruiter', 'super_hr'] },
+    { href: '/recruiter/jobs', label: 'Job Postings', icon: Briefcase, roles: ['hr_manager', 'recruiter', 'super_hr'] },
+    { href: '/hr/campus', label: 'Campus Drives', icon: GraduationCap, roles: ['hr_manager', 'recruiter', 'super_hr'] },
+    { href: '/interviewer/tasks', label: 'Interviews', icon: Calendar, roles: ['hr_manager', 'recruiter', 'super_hr', 'interviewer'] },
+    { href: '/hr/onboarding', label: 'Onboarding', icon: ClipboardCheck, roles: ['hr_manager', 'super_hr'] },
 
-    // HR Manager
-    { href: '/recruiter/jobs', label: 'Job Postings', icon: Briefcase, roles: ['hr_manager', 'recruiter'] },
-    { href: '/hr/campus', label: 'Campus', icon: GraduationCap, roles: ['hr_manager', 'recruiter'] },
-    { href: '/interviewer/tasks', label: 'Interviews', icon: Calendar, roles: ['hr_manager', 'interviewer'] },
-    { href: '/hr/onboarding', label: 'Onboarding', icon: ClipboardCheck, roles: ['hr_manager'] },
+    // Manager / Team Lead
+    { href: '/manager/team', label: 'My Team', icon: Users, roles: ['manager', 'team_lead'], comingSoon: true },
+
+    // Company Wide
+    { href: '/leaves', label: 'Leave System', icon: Clock, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern'] },
+    { href: '/company-feed', label: 'Company Feed', icon: Newspaper, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern'], comingSoon: true },
+    { href: '/performance', label: 'Performance', icon: BarChart3, roles: ['admin', 'super_hr', 'hr_manager', 'manager'] },
+    { href: '/employee/directory', label: 'Directory', icon: Users, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern'] },
+    { href: '/employee/documents', label: 'Documents', icon: FileText, roles: ['admin', 'super_hr', 'hr_manager', 'employee', 'intern'] },
     { href: '/employee/payslips', label: 'Payslips', icon: WalletCards, roles: ['hr_manager', 'employee'] },
-    { href: '/admin/policies', label: 'Policies', icon: ShieldCheck, roles: ['hr_manager'] },
+    { href: '/employee/kudos', label: 'Kudos', icon: Award, roles: ['super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern'] },
 
-    // Employee
-    { href: '/employee/kudos', label: 'Kudos', icon: Award, roles: ['employee', 'intern', 'hr_manager'] },
-    { href: '/employee/directory', label: 'Directory', icon: Users, roles: ['employee', 'hr_manager'] },
-    { href: '/employee/grievances', label: 'Grievances', icon: PenSquare, roles: ['employee'] },
+    // AI Tools
+    { href: '/ai-tools/applicant-scoring', label: 'AI Applicant Scoring', icon: Sparkles, roles: ['hr_manager', 'recruiter', 'super_hr'] },
+    { href: '/ai-tools/review-analyzer', label: 'AI Review Analyzer', icon: Sparkles, roles: ['hr_manager', 'super_hr', 'manager'] },
+    { href: '/ai-tools/chatbot', label: 'AI HR Chatbot', icon: Bot, roles: ['employee', 'intern'] },
 
   ];
 
@@ -130,7 +132,7 @@ export default function AppShell({
           <SidebarMenu>
             {navLinks.map(link => (
               <SidebarMenuItem key={link.href}>
-                <SidebarMenuButton asChild isActive={isActive(link.href)}>
+                <SidebarMenuButton asChild isActive={isActive(link.href)} disabled={link.comingSoon}>
                   <Link href={link.href}><link.icon />{link.label}</Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

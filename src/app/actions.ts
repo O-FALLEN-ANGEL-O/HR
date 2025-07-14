@@ -6,7 +6,7 @@ import { cookies } from 'next/headers';
 import { applicantMatchScoring } from '@/ai/flows/applicant-match-scoring';
 import { createClient } from '@/lib/supabase/server';
 import { getUser } from '@/lib/supabase/user';
-import type { Kudo, LeaveBalance, Interview } from '@/lib/types';
+import type { Kudo, LeaveBalance, Interview, UserRole } from '@/lib/types';
 import { differenceInDays } from 'date-fns';
 
 export async function addCompanyPost(formData: FormData) {
@@ -387,4 +387,44 @@ export async function scheduleInterview(formData: FormData) {
   
   revalidatePath('/interviewer/tasks');
   revalidatePath('/hr/applicants');
+}
+
+export async function addEmployee(formData: FormData) {
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+  const adminUser = await getUser(cookieStore);
+
+  if (!adminUser || !['admin', 'hr_manager', 'super_hr'].includes(adminUser.role)) {
+    throw new Error('You do not have permission to add employees.');
+  }
+  
+  const email = formData.get('email') as string;
+  const fullName = formData.get('fullName') as string;
+  const role = formData.get('role') as UserRole;
+  const department = formData.get('department') as string;
+  const password = formData.get('password') as string;
+
+  if (!email || !fullName || !role || !department || !password) {
+    throw new Error('All fields are required to add a new employee.');
+  }
+
+  const { error } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        full_name: fullName,
+        role: role,
+        department: department,
+        avatar_url: `https://api.pravatar.cc/150?u=${email}`
+      },
+  });
+
+  if (error) {
+    console.error('Error creating employee:', error);
+    throw new Error(`Could not create employee: ${error.message}`);
+  }
+
+  revalidatePath('/hr/dashboard');
+  revalidatePath('/admin/roles');
 }

@@ -33,6 +33,7 @@ import {
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { AddEmployeeDialog } from '@/components/add-employee-dialog';
 
 const DashboardCharts = dynamic(() => import('./charts').then(mod => mod.DashboardCharts), {
     ssr: false,
@@ -114,10 +115,12 @@ export default function HrDashboardClient({ initialMetrics, initialRecentHires, 
                 <Upload className="mr-2 h-4 w-4" />
                 Export
                 </Button>
-                <Button size="sm">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Add Employee
-                </Button>
+                <AddEmployeeDialog onEmployeeAdded={() => window.location.reload()}>
+                    <Button size="sm">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add Employee
+                    </Button>
+                </AddEmployeeDialog>
             </Header>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
