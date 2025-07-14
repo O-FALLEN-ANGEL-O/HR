@@ -1,10 +1,12 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { supabaseUrl, supabaseAnonKey } from './config'
 
 export function createClient(cookieStore: ReturnType<typeof cookies>) {
+  // Use the secure, server-only variables for the server-side client
   return createServerClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         get(name: string) {
