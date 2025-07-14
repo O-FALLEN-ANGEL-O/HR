@@ -4,7 +4,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { headers, cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import type { UserRole } from '@/lib/types';
 
 export async function login(formData: any) {
   const cookieStore = cookies();
@@ -17,11 +16,13 @@ export async function login(formData: any) {
 
   if (error) {
     console.error('Supabase auth error:', error);
-    return { error: `Authentication failed: ${error.message}` };
+    // This will now catch auth-specific errors like "Invalid login credentials"
+    return { error: `Authentication Error: ${error.message}` };
   }
 
   // On successful login, we must revalidate the root path to ensure
   // the middleware can correctly assess the new session and redirect.
+  // Re-directing to the root which will then be handled by the middleware.
   redirect('/');
 }
 

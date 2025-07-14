@@ -24,7 +24,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { login, loginWithGoogle } from '@/app/auth/actions';
-import { Loader2, LogIn, Mail } from 'lucide-react';
+import { Loader2, LogIn } from 'lucide-react';
 
 const GoogleIcon = () => (
   <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
