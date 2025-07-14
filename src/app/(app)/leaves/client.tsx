@@ -142,6 +142,7 @@ export function LeaveClient({
 function AdminLeaveView({ leaves, stats }: { leaves: Leave[], stats: LeaveClientProps['initialStats'] }) {
     const [isPredicting, setIsPredicting] = React.useState(false);
     const [prediction, setPrediction] = React.useState<PredictLeaveSpikesOutput | null>(null);
+    const { toast } = useToast();
 
     const handlePredict = async () => {
         setIsPredicting(true);
