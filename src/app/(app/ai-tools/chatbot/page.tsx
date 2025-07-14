@@ -1,1 +1,0 @@
-src/app/(app)/ai-tools/chatbot/page.tsx
