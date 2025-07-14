@@ -51,6 +51,12 @@ export async function middleware(request: NextRequest) {
   // If the user is logged in
   if (user) {
     const role = user.role;
+
+    // If a logged-in user lands on the root path, redirect them to their dashboard
+    if (pathname === '/') {
+       return NextResponse.redirect(new URL(getHomePathForRole(role), request.url));
+    }
+
     // And tries to access an auth route, redirect to their home
     if (authRoutes.includes(pathname)) {
         return NextResponse.redirect(new URL(getHomePathForRole(role), request.url));

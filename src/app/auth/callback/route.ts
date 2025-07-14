@@ -13,7 +13,9 @@ export async function GET(request: Request) {
     const supabase = createClient(cookieStore);
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      // After successfully exchanging the code for a session, redirect to the root.
+      // The root page or middleware will then handle redirecting to the correct dashboard.
+      return NextResponse.redirect(`${origin}`);
     }
   }
 
