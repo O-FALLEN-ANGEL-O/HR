@@ -34,11 +34,14 @@ function getHomePathForRole(role: UserRole): string {
 export async function login(formData: any, isMagicLink: boolean = false) {
   const cookieStore = cookies();
   const supabase = createClient(cookieStore);
+  const email = formData.email;
 
   if (isMagicLink) {
     const { error } = await supabase.auth.signInWithOtp({
       email: formData.email,
       options: {
+        // This is required for Supabase to confirm the user's email.
+        // It's safe to disable this in the Supabase dashboard for this app.
         emailRedirectTo: `${headers().get('origin')}/auth/callback`,
       },
     });
@@ -49,16 +52,31 @@ export async function login(formData: any, isMagicLink: boolean = false) {
     return { data: 'Magic link sent' };
   } 
   
-  const { data: authData, error } = await supabase.auth.signInWithPassword(formData);
+  // Standard password login
+  const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+    email,
+    password: formData.password
+  });
     
-  if (error || !authData.user) {
-      // Return the specific error from Supabase for better debugging
-      return { error: `Login failed: ${error?.message || 'Invalid credentials. Please try again.'}` };
+  if (authError || !authData.user) {
+      return { error: `Login failed: ${authError?.message || 'Invalid email or password.'}` };
   }
 
-  // More robust way to get the role directly from auth data, removing a failure point.
-  const userRole = authData.user.user_metadata?.role;
-    
+  // After successful authentication, fetch the user's role from the public.users table.
+  const { data: userProfile, error: profileError } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', authData.user.id)
+    .single();
+  
+  if (profileError || !userProfile) {
+    // This is a critical error. The user is authenticated but has no profile/role.
+    await supabase.auth.signOut(); // Log them out for safety
+    return { error: `Login successful, but failed to retrieve user role. Profile Error: ${profileError?.message || 'User profile not found.'}. Please contact support.` };
+  }
+  
+  const userRole = userProfile.role;
+
   if (!userRole || !['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'recruiter', 'interviewer', 'employee', 'intern', 'guest'].includes(userRole)) {
     await supabase.auth.signOut();
     return { error: `Login successful, but your user role ('${userRole || 'none'}') is not configured for platform access. Please contact support.` };
@@ -81,6 +99,7 @@ export async function loginWithGoogle() {
   });
 
   if (error) {
+    // This will now return a structured error object.
     return { error: `Could not authenticate with Google: ${error.message}` };
   }
   

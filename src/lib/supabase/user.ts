@@ -15,8 +15,8 @@ export async function getUser(cookieStore: ReadonlyRequestCookies) {
 
   if (error || !userProfile) {
     // This case might happen if the trigger failed or if there's a delay.
-    // For now, we return null, but a robust app might try to create the profile here.
-    console.error('User profile not found for authenticated user.', error);
+    // We log a more descriptive error for easier debugging on the server.
+    console.error(`User profile not found for authenticated user ID: ${user.id}. Error: ${error?.message}`);
     return null;
   }
   

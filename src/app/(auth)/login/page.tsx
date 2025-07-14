@@ -172,7 +172,16 @@ export default function LoginPage() {
         <Button
           variant="outline"
           className="w-full"
-          onClick={loginWithGoogle}
+          onClick={async () => {
+             const result = await loginWithGoogle();
+             if(result?.error) {
+                toast({
+                    title: 'Google Login Failed',
+                    description: result.error,
+                    variant: 'destructive',
+                });
+             }
+          }}
           disabled={isLoading}
         >
           <GoogleIcon />
