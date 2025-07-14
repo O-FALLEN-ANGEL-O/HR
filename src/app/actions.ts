@@ -8,7 +8,7 @@ import { applicantMatchScoring } from '@/ai/flows/applicant-match-scoring';
 import { createClient } from '@/lib/supabase/server';
 import { getUser } from '@/lib/supabase/user';
 import type { Kudo, LeaveBalance, Interview, UserRole, WeeklyAward } from '@/lib/types';
-import { differenceInDays, parseISO, format as formatTz } from 'date-fns';
+import { differenceInDays } from 'date-fns';
 import { createCalendarEvent } from '@/services/google-calendar';
 
 export async function addCompanyPost(formData: FormData) {
@@ -363,13 +363,13 @@ export async function scheduleInterview(formData: FormData) {
   const { data: applicant, error: applicantError } = await supabase.from('applicants').select('name, avatar, email, job_id').eq('id', applicantId).single();
   const { data: interviewer, error: interviewerError } = await supabase.from('users').select('full_name, email, avatar_url').eq('id', interviewerId).single();
   
-  if (applicantError || interviewerError) {
+  if (applicantError || interviewerError || !applicant || !interviewer) {
     throw new Error('Could not retrieve applicant or interviewer details.');
   }
   
   const { data: job, error: jobError } = await supabase.from('jobs').select('title').eq('id', applicant.job_id!).single();
 
-  if (jobError) {
+  if (jobError || !job) {
     throw new Error('Could not retrieve job details.');
   }
 

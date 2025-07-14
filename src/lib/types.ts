@@ -72,7 +72,7 @@ export type Interview = {
   candidate_name: string;
   candidate_avatar: string | null;
   job_title: string;
-  interviewer_name: string | null;
+  interviewer_name: string;
   interviewer_avatar: string | null;
   date: string;
   time: string;

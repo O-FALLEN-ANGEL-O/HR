@@ -39,7 +39,7 @@ import { format } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Calendar, Clock, MoreHorizontal, Phone, Users, Video, Edit, MessageSquare, Trash2, Check, Loader2, Mic, MessagesSquare, Send } from 'lucide-react';
-import { Tabs, TabsList, TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsContent } from '@radix-ui/react-tabs';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { addApplicantNote, updateInterviewStatus } from '@/app/actions';
@@ -210,7 +210,7 @@ function InterviewTable({ interviews, isClient }: { interviews: Interview[], isC
                     <TableCell>
                         <div className="flex items-center gap-3">
                         <Avatar>
-                            <AvatarImage src={interview.candidate_avatar} />
+                            <AvatarImage src={interview.candidate_avatar || undefined} />
                             <AvatarFallback>
                             {interview.candidate_name.charAt(0)}
                             </AvatarFallback>
@@ -226,7 +226,7 @@ function InterviewTable({ interviews, isClient }: { interviews: Interview[], isC
                     <TableCell>
                         <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
-                            <AvatarImage src={interview.interviewer_avatar} />
+                            <AvatarImage src={interview.interviewer_avatar || undefined} />
                             <AvatarFallback>
                             {interview.interviewer_name.charAt(0)}
                             </AvatarFallback>

@@ -40,7 +40,7 @@ async function getLeaveData(user: UserProfile) {
     // Calculate stats for admin/HR
     let stats = { totalEmployees: 0, presentToday: 0, absentToday: 0, pendingRequests: 0 };
     if (user.role === 'admin' || user.role === 'super_hr' || user.role === 'hr_manager') {
-        const { count: userCount, error: usersError } = await supabase.from('users').select('id', { count: 'exact' }).not('role', 'in', '("guest", "intern")');
+        const { count: userCount, error: usersError } = await supabase.from('users').select('id', { count: 'exact' }).not('role', 'in', '("guest")');
         if (usersError) console.error('Error fetching user count:', usersError);
         
         const today = new Date().toISOString().split('T')[0];

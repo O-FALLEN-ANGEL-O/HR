@@ -22,7 +22,6 @@ const features = [
         description: "AI suggests best dates for vacation.",
         icon: GitCommit,
         href: "/leaves",
-        comingSoon: true,
     },
     {
         title: "Employee Directory",
@@ -41,7 +40,6 @@ const features = [
         description: "Interactive chart of your CTC vs in-hand.",
         icon: BarChart,
         href: "/leaves",
-        comingSoon: true,
     },
     {
         title: "Kudos",
@@ -103,6 +101,14 @@ export default function EmployeeDashboardPage() {
                         </CardContent>
                     </Card>
                 );
+
+                if (feature.href === "/leaves") {
+                    return (
+                        <Link href={feature.href} key={feature.title}>
+                           {cardContent}
+                       </Link>
+                    )
+                }
 
                 return feature.comingSoon ? <div key={feature.title} className="cursor-not-allowed opacity-60">{cardContent}</div> : (
                      <Link href={feature.href} key={feature.title}>
