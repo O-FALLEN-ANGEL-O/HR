@@ -38,12 +38,14 @@ import { Interview } from '@/lib/types';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, MoreHorizontal, Phone, Users, Video, Edit, MessageSquare, Trash2, Check, Loader2, Mic, MessagesSquare } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Calendar, Clock, MoreHorizontal, Phone, Users, Video, Edit, MessageSquare, Trash2, Check, Loader2, Mic, MessagesSquare, Send } from 'lucide-react';
+import { Tabs, TabsList, TabsContent } from '@/components/ui/tabs';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { addApplicantNote, updateInterviewStatus } from '@/app/actions';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 type InterviewListProps = {
@@ -131,14 +133,40 @@ export default function InterviewList({ initialInterviews }: InterviewListProps)
         </Tabs>
       </div>
        <div className="lg:col-span-1">
-        <Card>
+        <Card className="h-full flex flex-col">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><MessagesSquare/> Panel Chat</CardTitle>
                 <CardDescription>Private chat for panelists on the same interview round.</CardDescription>
             </CardHeader>
-            <CardContent>
-                <div className="text-center text-muted-foreground py-10">
-                    <p>Panel Chat feature is coming soon.</p>
+            <CardContent className="flex-1 flex flex-col">
+                <ScrollArea className="flex-1 pr-4">
+                  <div className="space-y-4">
+                      <div className="text-center text-xs text-muted-foreground p-2">Today</div>
+                      <div className="flex items-start gap-3">
+                          <Avatar className="h-8 w-8 border">
+                              <AvatarImage data-ai-hint="person" src="https://placehold.co/40x40.png" />
+                              <AvatarFallback>HM</AvatarFallback>
+                          </Avatar>
+                          <div className="bg-muted p-3 rounded-lg max-w-[80%]">
+                              <p className="font-semibold text-xs mb-1">Hiring Manager</p>
+                              <p className="text-sm">Candidate seems strong technically, but let's probe on team collaboration skills.</p>
+                          </div>
+                      </div>
+                      <div className="flex items-start gap-3 justify-end">
+                           <div className="bg-primary text-primary-foreground p-3 rounded-lg max-w-[80%]">
+                              <p className="font-semibold text-xs mb-1">You</p>
+                              <p className="text-sm">Agreed. I'll focus my questions on that area. Thanks for the heads up.</p>
+                          </div>
+                          <Avatar className="h-8 w-8 border">
+                              <AvatarImage data-ai-hint="person" src="https://placehold.co/40x40.png" />
+                              <AvatarFallback>ME</AvatarFallback>
+                          </Avatar>
+                      </div>
+                  </div>
+                </ScrollArea>
+                <div className="mt-4 flex items-center gap-2">
+                    <Input placeholder="Type your message..." />
+                    <Button><Send /></Button>
                 </div>
             </CardContent>
         </Card>
@@ -297,7 +325,9 @@ function FeedbackDialog({ interviewId, applicantId }: { interviewId: string, app
                 <form action={handleFormSubmit} ref={formRef}>
                     <Textarea name="note" placeholder="Enter your feedback here... Your notes will be auto-saved." className="min-h-[120px]" required />
                     <DialogFooter className="mt-4 flex justify-between w-full">
-                        <Button variant="outline" type="button" disabled><Mic className="mr-2" /> Record Voice Note (soon)</Button>
+                        <Button variant="outline" type="button" disabled>
+                            <Mic className="mr-2" /> Record Voice Note (soon)
+                        </Button>
                         <Button type="submit" disabled={isSubmitting}>
                             {isSubmitting ? <Loader2 className="animate-spin mr-2"/> : <Check className="mr-2"/>} Submit & Complete
                         </Button>

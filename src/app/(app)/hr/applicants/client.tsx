@@ -227,6 +227,7 @@ export default function ApplicantList({
                 <SelectValue placeholder="Filter by stage" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">All Stages</SelectItem>
                 {Object.keys(stageColors).map((stage) => (
                   <SelectItem key={stage} value={stage}>
                     {stage}
@@ -376,8 +377,19 @@ export default function ApplicantList({
                 <CardDescription>Review why candidates were not selected to improve processes.</CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="text-center text-muted-foreground py-10">
-                    <p>Rejection reason log feature is coming soon.</p>
+                <div className="text-sm text-muted-foreground space-y-2">
+                    <div className="flex justify-between p-2 rounded-md hover:bg-muted/50">
+                        <span>Candidate not qualified</span>
+                        <Badge variant="outline">12</Badge>
+                    </div>
+                     <div className="flex justify-between p-2 rounded-md hover:bg-muted/50">
+                        <span>Salary expectation mismatch</span>
+                        <Badge variant="outline">8</Badge>
+                    </div>
+                     <div className="flex justify-between p-2 rounded-md hover:bg-muted/50">
+                        <span>Not a good culture fit</span>
+                        <Badge variant="outline">5</Badge>
+                    </div>
                 </div>
             </CardContent>
         </Card>
@@ -387,8 +399,33 @@ export default function ApplicantList({
                 <CardDescription>Manage high-potential candidates for future opportunities.</CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="text-center text-muted-foreground py-10">
-                    <p>Talent Pool CRM feature is coming soon.</p>
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <Avatar>
+                                <AvatarImage data-ai-hint="person" src="https://placehold.co/40x40.png" />
+                                <AvatarFallback>SN</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <p className="font-medium">Sarah Nadia</p>
+                                <p className="text-xs text-muted-foreground">Past applicant for Sr. Developer</p>
+                            </div>
+                        </div>
+                        <Button variant="outline" size="sm">View</Button>
+                    </div>
+                     <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <Avatar>
+                                <AvatarImage data-ai-hint="person" src="https://placehold.co/40x40.png" />
+                                <AvatarFallback>MJ</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <p className="font-medium">Mike Johnson</p>
+                                <p className="text-xs text-muted-foreground">Past applicant for Product Manager</p>
+                            </div>
+                        </div>
+                        <Button variant="outline" size="sm">View</Button>
+                    </div>
                 </div>
             </CardContent>
         </Card>
