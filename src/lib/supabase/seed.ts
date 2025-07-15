@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import path from 'path';
 import { faker } from '@faker-js/faker';
-import type { UserRole, Job, Applicant, College, Leave, LeaveBalance, Onboarding, PerformanceReview, Kudo, Payslip, CompanyDocument, Objective, KeyResult, ExpenseReport, ExpenseItem, HelpdeskTicket } from '@/lib/types';
+import type { UserRole, Job, Applicant, College, Leave, LeaveBalance, Onboarding, PerformanceReview, Kudo, Payslip, CompanyDocument, Objective, KeyResult, ExpenseReport, ExpenseItem, HelpdeskTicket, CompanyPost, PostComment } from '@/lib/types';
 import type { ProcessResumeOutput } from '@/ai/flows/process-resume';
 
 
@@ -45,7 +45,7 @@ async function main() {
   // --- 1. Clean up existing data ---
   console.log('🧹 Cleaning up old data...');
   const tablesToClean = [
-    'helpdesk_tickets', 'expense_reports', 'objectives', 'company_documents', 'payslips',
+    'post_comments', 'helpdesk_tickets', 'expense_reports', 'objectives', 'company_documents', 'payslips',
     'weekly_awards', 'kudos', 'company_posts', 'interviews', 'applicant_notes',
     'applicants', 'colleges', 'jobs', 'onboarding_workflows', 'leaves', 'leave_balances'
   ];
@@ -66,7 +66,6 @@ async function main() {
     console.error('🔴 Error listing users:', listError.message);
   } else if (existingUsers.length > 0) {
     console.log(`Found ${existingUsers.length} users to delete...`);
-    // Process deletions sequentially to avoid timeouts
     for (const user of existingUsers) {
       const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user.id, true); // true to hard-delete
       if (deleteError) {
@@ -261,6 +260,34 @@ async function main() {
   });
   await supabaseAdmin.from('onboarding_workflows').insert(onboarding);
 
+  // Company Posts
+  console.log('🌱 Seeding Company Posts & Comments...');
+  const companyPosts: Omit<CompanyPost, 'id' | 'users' | 'post_comments'>[] = [];
+  for (let i = 0; i < 10; i++) {
+    companyPosts.push({
+        user_id: createdUserIds['hr_manager'],
+        content: faker.lorem.paragraph(),
+        image_url: faker.helpers.arrayElement([faker.image.urlLoremFlickr({ category: 'business' }), null]),
+        created_at: faker.date.past({ years: 1 }).toISOString(),
+    });
+  }
+  const { data: createdPosts } = await supabaseAdmin.from('company_posts').insert(companyPosts).select();
+
+  if (createdPosts) {
+      const comments: Omit<PostComment, 'id' | 'users'>[] = [];
+      for (const post of createdPosts) {
+        for (let i = 0; i < faker.number.int({min: 0, max: 8}); i++) {
+            comments.push({
+                post_id: post.id,
+                user_id: faker.helpers.arrayElement(allUserIds),
+                comment: faker.lorem.sentence(),
+                created_at: faker.date.between({ from: post.created_at, to: new Date() }).toISOString()
+            });
+        }
+      }
+      await supabaseAdmin.from('post_comments').insert(comments);
+  }
+
 
   // Kudos
   console.log('🌱 Seeding Kudos...');
@@ -293,4 +320,3 @@ main().catch(error => {
     console.error('🔴 Seeding failed:', error);
     process.exit(1);
 });
-

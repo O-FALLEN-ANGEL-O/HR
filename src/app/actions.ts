@@ -527,16 +527,33 @@ export async function addCompanyPost(formData: FormData) {
   }
 
   const content = formData.get('content') as string;
-  const imageUrl = formData.get('imageUrl') as string;
+  const imageFile = formData.get('image') as File;
+  let imageUrl: string | null = null;
 
   if (!content) {
     throw new Error('Post content cannot be empty.');
   }
 
+  if (imageFile && imageFile.size > 0) {
+    const fileName = `${Date.now()}-${imageFile.name.replace(/\s/g, '-')}`;
+    const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('post_images')
+        .upload(fileName, imageFile);
+
+    if (uploadError) {
+        throw new Error(`Failed to upload image: ${uploadError.message}`);
+    }
+
+    const { data: urlData } = supabase.storage
+        .from('post_images')
+        .getPublicUrl(uploadData.path);
+    imageUrl = urlData.publicUrl;
+  }
+
   const { error } = await supabase.from('company_posts').insert({
     user_id: user.id,
     content,
-    image_url: imageUrl || null,
+    image_url: imageUrl,
   });
 
   if (error) {
@@ -544,6 +561,33 @@ export async function addCompanyPost(formData: FormData) {
   }
 
   revalidatePath('/company-feed');
+}
+
+export async function addPostComment(formData: FormData) {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const user = await getUser(cookieStore);
+
+    if (!user) throw new Error('You must be logged in.');
+
+    const postId = formData.get('postId') as string;
+    const comment = formData.get('comment') as string;
+
+    if (!postId || !comment) {
+        throw new Error('Post ID and comment are required.');
+    }
+
+    const { error } = await supabase.from('post_comments').insert({
+        post_id: postId,
+        user_id: user.id,
+        comment,
+    });
+
+    if (error) {
+        throw new Error(`Failed to add comment: ${error.message}`);
+    }
+
+    revalidatePath('/company-feed');
 }
 
 export async function addKudo(formData: FormData) {

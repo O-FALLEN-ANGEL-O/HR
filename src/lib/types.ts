@@ -164,13 +164,23 @@ export type Interview = {
     job_title: string;
 };
 
+export type PostComment = {
+    id: string;
+    post_id: string;
+    user_id: string;
+    comment: string;
+    created_at: string;
+    users: Pick<UserProfile, 'full_name' | 'avatar_url'>;
+}
+
 export type CompanyPost = {
     id: string;
     user_id: string;
     content: string;
     image_url?: string | null;
     created_at: string;
-    users?: Pick<UserProfile, 'full_name' | 'avatar_url'>;
+    users: Pick<UserProfile, 'full_name' | 'avatar_url'>;
+    post_comments: PostComment[];
 };
 
 export type Kudo = {

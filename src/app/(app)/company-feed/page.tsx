@@ -12,7 +12,7 @@ export default async function CompanyFeedPage() {
   
   const { data, error } = await supabase
     .from('company_posts')
-    .select('*, users (full_name, avatar_url)')
+    .select('*, users (full_name, avatar_url), post_comments(*, users(full_name, avatar_url))')
     .order('created_at', { ascending: false });
 
   if (error) {
