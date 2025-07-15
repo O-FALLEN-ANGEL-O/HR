@@ -1,4 +1,3 @@
-
 # HR+ Database Schema Documentation
 
 This document outlines the complete database schema for the HR+ application. It includes all custom types, tables, columns, and their relationships.
@@ -162,5 +161,93 @@ Stores comments and replies for helpdesk tickets.
 - `user_id` (uuid, Foreign Key): References `users.id`.
 - `comment` (text): The content of the reply.
 - `created_at` (timestamp with time zone).
+
+### 13. `kudos`
+Stores employee-to-employee recognition.
+- `id` (uuid, Primary Key): Unique identifier for the kudo.
+- `from_user_id` (uuid, Foreign Key): References `users.id` (sender).
+- `to_user_id` (uuid, Foreign Key): References `users.id` (receiver).
+- `value` (text): The company value being recognized (e.g., "Team Player").
+- `message` (text): The recognition message.
+- `created_at` (timestamp with time zone).
+
+### 14. `weekly_awards`
+Stores the "Employee of the Week" awards.
+- `id` (uuid, Primary Key): Unique identifier for the award.
+- `awarded_user_id` (uuid, Foreign Key): References `users.id`.
+- `awarded_by_user_id` (uuid, Foreign Key): References `users.id`.
+- `reason` (text): The reason for the award.
+- `week_of` (date): The starting date of the week for the award.
+
+### 15. `company_documents`
+Stores links to important company documents.
+- `id` (uuid, Primary Key): Unique identifier for the document.
+- `title` (text): The title of the document.
+- `description` (text): A short description.
+- `category` (text): Category like 'HR', 'IT', 'Policy'.
+- `last_updated` (timestamp with time zone): When the document was last updated.
+- `download_url` (text): The URL to download the document file.
+
+### 16. `payslips`
+Stores metadata about employee payslips.
+- `id` (uuid, Primary Key): Unique identifier for the payslip record.
+- `user_id` (uuid, Foreign Key): References `users.id`.
+- `month` (text): The month of the payslip (e.g., "January").
+- `year` (integer): The year of the payslip.
+- `gross_salary` (numeric): The gross salary amount.
+- `net_salary` (numeric): The net salary amount.
+- `download_url` (text): A secure URL to the payslip file.
+
+### 17. `onboarding_workflows`
+Tracks the onboarding progress for new hires.
+- `id` (uuid, Primary Key): Unique identifier for the workflow.
+- `user_id` (uuid, Foreign Key): References `users.id` (the new hire).
+- `manager_id` (uuid, Foreign Key): References `users.id`.
+- `buddy_id` (uuid, Foreign Key): References `users.id`.
+- `employee_name`, `employee_avatar`, `job_title`, `manager_name`, `buddy_name` (text): Denormalized data.
+- `progress` (integer): Onboarding completion percentage (0-100).
+- `current_step` (text): The current task in the onboarding process.
+- `start_date` (date): The employee's start date.
+
+### 18. `performance_reviews`
+Stores records of performance review cycles.
+- `id` (uuid, Primary Key): Unique identifier for the review.
+- `user_id` (uuid, Foreign Key): References `users.id`.
+- `review_date` (date): The date of the review cycle.
+- `status` (review_status): The status of the review.
+- `job_title` (text): The employee's job title at the time of review.
+
+### 19. `objectives`
+Stores high-level objectives for OKRs.
+- `id` (uuid, Primary Key): Unique identifier.
+- `owner_id` (uuid, Foreign Key): References `users.id`.
+- `title` (text): The objective title.
+- `quarter` (text): The quarter for the objective (e.g., "Q3 2024").
+
+### 20. `key_results`
+Stores the key results for each objective.
+- `id` (uuid, Primary Key): Unique identifier.
+- `objective_id` (uuid, Foreign Key): References `objectives.id`.
+- `description` (text): The description of the key result.
+- `progress` (integer): The progress percentage (0-100).
+- `status` (key_result_status): The status of the key result.
+
+### 21. `expense_reports`
+Stores employee expense reports.
+- `id` (uuid, Primary Key): Unique identifier.
+- `user_id` (uuid, Foreign Key): References `users.id`.
+- `title` (text): The title of the expense report.
+- `total_amount` (numeric): The total amount being claimed.
+- `status` (expense_status): The status of the report.
+- `submitted_at` (timestamp with time zone).
+
+### 22. `expense_items`
+Stores individual line items for an expense report.
+- `id` (uuid, Primary Key): Unique identifier.
+- `expense_report_id` (uuid, Foreign Key): References `expense_reports.id`.
+- `date` (date): The date of the expense.
+- `category` (text): The category of the expense (e.g., 'Travel', 'Food').
+- `amount` (numeric): The amount of the line item.
+- `description` (text): A description of the item.
 
 This covers the primary tables and their structures needed to make the HR+ application fully functional.
