@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import path from 'path';
 import { faker } from '@faker-js/faker';
-import type { UserRole, Job, Applicant, College, Leave, LeaveBalance, Onboarding, PerformanceReview, Kudo, Payslip, CompanyDocument, Objective, KeyResult, ExpenseReport, ExpenseItem, HelpdeskTicket, CompanyPost, PostComment } from '@/lib/types';
+import type { UserRole, Job, Applicant, College, Leave, LeaveBalance, Onboarding, PerformanceReview, Kudo, Payslip, CompanyDocument, Objective, KeyResult, ExpenseReport, ExpenseItem, HelpdeskTicket, CompanyPost, PostComment, WeeklyAward } from '@/lib/types';
 import type { ProcessResumeOutput } from '@/ai/flows/process-resume';
 
 
@@ -45,9 +45,9 @@ async function main() {
   // --- 1. Clean up existing data ---
   console.log('🧹 Cleaning up old data...');
   const tablesToClean = [
-    'post_comments', 'helpdesk_tickets', 'expense_reports', 'objectives', 'company_documents', 'payslips',
-    'weekly_awards', 'kudos', 'company_posts', 'interviews', 'applicant_notes',
-    'applicants', 'colleges', 'jobs', 'onboarding_workflows', 'leaves', 'leave_balances'
+    'ticket_comments', 'helpdesk_tickets', 'expense_items', 'expense_reports', 'key_results', 'objectives', 'company_documents', 'payslips',
+    'weekly_awards', 'kudos', 'post_comments', 'company_posts', 'performance_reviews', 'onboarding_workflows', 'leaves', 'leave_balances',
+    'interviews', 'applicant_notes', 'applicants', 'colleges', 'jobs'
   ];
   for (const table of tablesToClean) {
     const { error } = await supabaseAdmin.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000');
@@ -84,6 +84,8 @@ async function main() {
     { email: 'hr_manager@hrplus.com', role: 'hr_manager', fullName: 'HR Manager Harry', department: 'Human Resources' },
     { email: 'recruiter@hrplus.com', role: 'recruiter', fullName: 'Recruiter Rick', department: 'Human Resources' },
     { email: 'finance@hrplus.com', role: 'finance', fullName: 'Finance Fiona', department: 'Finance' },
+    { email: 'it_admin@hrplus.com', role: 'it_admin', fullName: 'IT Admin Ira', department: 'IT' },
+    { email: 'support@hrplus.com', role: 'support', fullName: 'Support Steve', department: 'IT' },
     { email: 'manager@hrplus.com', role: 'manager', fullName: 'Manager Mike', department: 'Engineering' },
     { email: 'team_lead@hrplus.com', role: 'team_lead', fullName: 'Team Lead Tina', department: 'Engineering' },
     { email: 'interviewer@hrplus.com', role: 'interviewer', fullName: 'Interviewer Ingrid', department: 'Engineering' },
@@ -121,7 +123,7 @@ async function main() {
 
   // Leave Balances
   console.log('🌱 Seeding Leave Balances...');
-  const leaveBalances = allUserIds.map(id => ({
+  const leaveBalances: Omit<LeaveBalance, 'id'>[] = allUserIds.map(id => ({
       user_id: id,
       sick_leave: 12,
       casual_leave: 12,
@@ -242,14 +244,13 @@ async function main() {
 
   // Onboarding
   console.log('🌱 Seeding Onboarding...');
-  const onboarding: Omit<Onboarding, 'id'>[] = allUserIds.slice(0, 5).map(id => {
+  const onboarding: Omit<Onboarding, 'id'|'employee_avatar'>[] = allUserIds.slice(0, 5).map(id => {
       const user = usersToCreate.find(u => createdUserIds[u.role] === id);
       return {
         user_id: id,
         manager_id: createdUserIds['manager'],
         buddy_id: createdUserIds['employee'],
         employee_name: user?.fullName || 'New Hire',
-        employee_avatar: faker.image.avatar(),
         job_title: user?.department || 'N/A',
         manager_name: usersToCreate.find(u=>u.role==='manager')?.fullName || 'Manager',
         buddy_name: usersToCreate.find(u=>u.role==='employee')?.fullName || 'Buddy',
@@ -302,6 +303,19 @@ async function main() {
     })
   }
   await supabaseAdmin.from('kudos').insert(kudos);
+
+  // Weekly Awards
+  console.log('🌱 Seeding Weekly Awards...');
+  const weeklyAwards: Omit<WeeklyAward, 'id' | 'users' | 'awarded_by'>[] = [];
+  for(let i=0; i<4; i++) {
+    weeklyAwards.push({
+        awarded_user_id: faker.helpers.arrayElement(allUserIds),
+        awarded_by_user_id: createdUserIds['manager'],
+        reason: faker.lorem.sentence(),
+        week_of: faker.date.past({ weeks: i+1 }).toISOString().split('T')[0],
+    });
+  }
+  await supabaseAdmin.from('weekly_awards').insert(weeklyAwards);
   
   // Company Documents
   console.log('🌱 Seeding Company Documents...');
@@ -311,6 +325,80 @@ async function main() {
     { title: 'IT Security Policy', description: 'Guidelines for using company IT resources', category: 'IT', last_updated: new Date().toISOString(), download_url: '#' },
   ];
   await supabaseAdmin.from('company_documents').insert(documents);
+
+  // Payslips
+  console.log('🌱 Seeding Payslips...');
+  const payslips: Omit<Payslip, 'id'>[] = [];
+  for (const userId of allUserIds) {
+    for (let i=0; i<6; i++) {
+        const gross = faker.number.int({ min: 40000, max: 120000 });
+        payslips.push({
+            user_id: userId,
+            month: faker.date.month(),
+            year: 2024,
+            gross_salary: gross,
+            net_salary: gross * 0.8,
+            download_url: '#'
+        });
+    }
+  }
+  await supabaseAdmin.from('payslips').insert(payslips);
+
+  // Performance Reviews
+  console.log('🌱 Seeding Performance Reviews...');
+  const reviews: Omit<PerformanceReview, 'id' | 'users'>[] = [];
+  for (const userId of allUserIds) {
+    reviews.push({
+      user_id: userId,
+      review_date: faker.date.past({ months: 6 }).toISOString().split('T')[0],
+      status: 'Completed',
+      job_title: usersToCreate.find(u => createdUserIds[u.role] === userId)?.department || 'N/A'
+    });
+  }
+  await supabaseAdmin.from('performance_reviews').insert(reviews);
+
+  // OKRs
+  console.log('🌱 Seeding OKRs...');
+  const objectives: Omit<Objective, 'id' | 'key_results' | 'users'>[] = [];
+  for(const userId of allUserIds.slice(0,4)) {
+    objectives.push({
+      owner_id: userId,
+      title: `Objective for ${usersToCreate.find(u => createdUserIds[u.role] === userId)?.fullName}`,
+      quarter: 'Q3 2024'
+    });
+  }
+  const { data: createdObjectives } = await supabaseAdmin.from('objectives').insert(objectives).select();
+
+  if (createdObjectives) {
+    const keyResults: Omit<KeyResult, 'id'>[] = [];
+    for (const objective of createdObjectives) {
+        for(let i = 0; i<3; i++) {
+            keyResults.push({
+                objective_id: objective.id,
+                description: faker.lorem.sentence(),
+                progress: faker.number.int({min: 0, max: 100}),
+                status: faker.helpers.arrayElement(['on_track', 'at_risk', 'off_track'])
+            })
+        }
+    }
+    await supabaseAdmin.from('key_results').insert(keyResults);
+  }
+
+  // Expense Reports
+  console.log('🌱 Seeding Expense Reports...');
+  const expenseReports: Omit<ExpenseReport, 'id'|'users'|'expense_items'>[] = [];
+  for(const userId of allUserIds) {
+    for(let i = 0; i<2; i++) {
+      expenseReports.push({
+        user_id: userId,
+        title: faker.lorem.words(4),
+        total_amount: faker.number.int({ min: 50, max: 500 }),
+        status: faker.helpers.arrayElement(['submitted', 'approved', 'rejected']),
+        submitted_at: faker.date.past({ months: 2}).toISOString()
+      });
+    }
+  }
+  await supabaseAdmin.from('expense_reports').insert(expenseReports);
 
 
   console.log('✅ Database seeding process completed.');
