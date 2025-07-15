@@ -38,10 +38,14 @@ async function main() {
   if (listError) {
     console.error('🔴 Error listing users:', listError.message);
   } else if (existingUsers.length > 0) {
-    const deletePromises = existingUsers.map(user => 
-        supabaseAdmin.auth.admin.deleteUser(user.id, true) // true to hard-delete
-    );
-    await Promise.all(deletePromises);
+    console.log(`Found ${existingUsers.length} users to delete...`);
+    // Process deletions sequentially to avoid timeouts
+    for (const user of existingUsers) {
+      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user.id, true); // true to hard-delete
+      if (deleteError) {
+        console.error(`🔴 Failed to delete user ${user.id}: ${deleteError.message}`);
+      }
+    }
     console.log(`✅ Deleted ${existingUsers.length} auth users.`);
   } else {
     console.log('✅ No existing users to delete.');
@@ -71,6 +75,7 @@ async function main() {
         role: userData.role,
         department: userData.department,
         avatar_url: faker.image.avatar(),
+        profile_setup_complete: true, // Mark profile as complete for seeded users
       },
     });
 
