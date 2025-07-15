@@ -107,6 +107,9 @@ export default function CompleteProfilePage() {
       description: 'You will now be redirected to your dashboard.',
     });
     
+    // Explicitly refresh the session to get the latest user data (including profile_setup_complete)
+    await supabase.auth.refreshSession();
+    
     // Refresh the page to allow middleware to redirect correctly
     window.location.href = '/';
   }
