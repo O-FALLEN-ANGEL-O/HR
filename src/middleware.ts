@@ -18,8 +18,6 @@ const publicRoutes = [
   '/auth/update-password',
 ];
 
-const firstLoginRoute = '/complete-profile';
-
 function getHomePathForRole(role: UserRole): string {
   switch (role) {
     case 'admin': return '/admin/dashboard';
@@ -39,7 +37,6 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isPublic = publicRoutes.some(route => pathname.startsWith(route));
-  const isFirstLogin = pathname.startsWith(firstLoginRoute);
 
   const { response, user } = await updateSession(request);
 
@@ -54,19 +51,8 @@ export async function middleware(request: NextRequest) {
   
   // If user is logged in
   if (user) {
-    // Check if user has completed their profile setup
-    if (!user.profile_setup_complete && !isFirstLogin) {
-      // If setup is not complete and they are not on the setup page, redirect them.
-      return NextResponse.redirect(new URL(firstLoginRoute, request.url));
-    }
-
-    if (user.profile_setup_complete && isFirstLogin) {
-      // If they have completed setup and try to access the setup page, redirect to their dashboard.
-       return NextResponse.redirect(new URL(getHomePathForRole(user.role), request.url));
-    }
-    
     // Redirect from root to the correct dashboard
-    if (pathname === '/') {
+    if (pathname === '/' || pathname === '/login') {
        return NextResponse.redirect(new URL(getHomePathForRole(user.role), request.url));
     }
   }
