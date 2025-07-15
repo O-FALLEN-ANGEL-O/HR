@@ -1,5 +1,4 @@
 
-
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -44,13 +43,16 @@ async function main() {
 
   // --- 1. Clean up existing data ---
   console.log('🧹 Cleaning up old data...');
+  // The order is critical due to foreign key constraints.
+  // We delete from tables that are depended upon last.
   const tablesToClean = [
-    'ticket_comments', 'helpdesk_tickets', 'expense_items', 'expense_reports', 'company_documents', 'payslips',
-    'weekly_awards', 'kudos', 'post_comments', 'company_posts', 'key_results', 'objectives', 'performance_reviews', 'onboarding_workflows', 'leaves', 'leave_balances',
-    'interviews', 'applicant_notes', 'applicants', 'colleges', 'jobs'
+    'ticket_comments', 'helpdesk_tickets', 'expense_items', 'expense_reports', 
+    'company_documents', 'payslips', 'weekly_awards', 'kudos', 'post_comments', 'company_posts', 
+    'key_results', 'objectives', 'performance_reviews', 'onboarding_workflows', 'leaves', 
+    'leave_balances', 'interviews', 'applicant_notes', 'applicants', 'colleges', 'jobs', 'users'
   ];
   for (const table of tablesToClean) {
-    const { error } = await supabaseAdmin.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    const { error } = await supabaseAdmin.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Dummy condition to delete all
     if (error) console.error(`🔴 Error cleaning table ${table}:`, error.message);
     else console.log(`- Cleaned ${table}`);
   }
@@ -126,13 +128,21 @@ async function main() {
     } else if (data.user) {
       // The public.users table is populated by a trigger, so we fetch it after creation
       const { data: userProfile } = await supabaseAdmin.from('users').select('*').eq('id', data.user.id).single();
-      createdUsers.push(userProfile);
+      if (userProfile) {
+        createdUsers.push(userProfile);
+      } else {
+        console.warn(`Could not fetch profile for created user ${data.user.id}. The trigger might have failed.`);
+      }
     }
   }
    console.log(`✅ Successfully created ${createdUsers.length} users.`);
 
 
   // --- 4. SEED APPLICATION DATA ---
+  if (createdUsers.length === 0) {
+      console.error("🔴 No users were created, cannot seed dependent data. Aborting.");
+      return;
+  }
   
   // Jobs
   console.log('🌱 Seeding Jobs...');
@@ -222,27 +232,32 @@ async function main() {
   // Interviews
   console.log('🌱 Seeding Interviews...');
   const interviews: Omit<Interview, 'id'>[] = [];
-  for (let i = 0; i < 50; i++) {
-    const applicant = faker.helpers.arrayElement(createdApplicants || []);
-    const interviewer = faker.helpers.arrayElement(createdUsers.filter((u:any) => ['hr_manager', 'recruiter', 'interviewer', 'manager'].includes(u.role)));
-    const job = createdJobs?.find(j => j.id === applicant.job_id);
+  const interviewers = createdUsers.filter((u:any) => ['hr_manager', 'recruiter', 'interviewer', 'manager'].includes(u.role));
+  if (interviewers.length > 0) {
+      for (let i = 0; i < 50; i++) {
+        const applicant = faker.helpers.arrayElement(createdApplicants || []);
+        const interviewer = faker.helpers.arrayElement(interviewers);
+        const job = createdJobs?.find(j => j.id === applicant.job_id);
 
-    interviews.push({
-      applicant_id: applicant.id,
-      interviewer_id: interviewer.id,
-      date: faker.date.future().toISOString().split('T')[0],
-      time: `${faker.number.int({ min: 9, max: 16 })}:00`,
-      type: faker.helpers.arrayElement(['Video', 'Phone', 'In-person']),
-      status: faker.helpers.arrayElement(['Scheduled', 'Completed', 'Canceled']),
-      candidate_name: applicant.name,
-      candidate_avatar: applicant.avatar || null,
-      interviewer_name: interviewer.full_name,
-      interviewer_avatar: interviewer.avatar_url,
-      job_title: job?.title || 'Software Engineer'
-    });
+        interviews.push({
+          applicant_id: applicant.id,
+          interviewer_id: interviewer.id,
+          date: faker.date.future().toISOString().split('T')[0],
+          time: `${faker.number.int({ min: 9, max: 16 })}:00`,
+          type: faker.helpers.arrayElement(['Video', 'Phone', 'In-person']),
+          status: faker.helpers.arrayElement(['Scheduled', 'Completed', 'Canceled']),
+          candidate_name: applicant.name,
+          candidate_avatar: applicant.avatar || null,
+          interviewer_name: interviewer.full_name,
+          interviewer_avatar: interviewer.avatar_url,
+          job_title: job?.title || 'Software Engineer'
+        });
+      }
+      const { data: createdInterviews } = await supabaseAdmin.from('interviews').insert(interviews).select();
+      console.log(`✅ Inserted ${createdInterviews?.length || 0} interviews`);
+  } else {
+      console.log('⚠️ No interviewers found, skipping interview seeding.');
   }
-  const { data: createdInterviews } = await supabaseAdmin.from('interviews').insert(interviews).select();
-  console.log(`✅ Inserted ${createdInterviews?.length || 0} interviews`);
 
   // Leave Balances
   console.log('🌱 Seeding Leave Balances...');
@@ -259,49 +274,61 @@ async function main() {
   // Leaves
   console.log('🌱 Seeding Leaves...');
   const leaves: Omit<Leave, 'id' | 'users'>[] = [];
-  for (let i = 0; i < 100; i++) {
-    const user = faker.helpers.arrayElement(createdUsers);
-    const startDate = faker.date.past({ years: 1 });
-    const endDate = new Date(startDate.getTime() + faker.number.int({ min: 1, max: 5 }) * 24 * 60 * 60 * 1000);
-    leaves.push({
-      user_id: user.id,
-      leave_type: faker.helpers.arrayElement(['sick', 'casual', 'earned']),
-      start_date: startDate.toISOString().split('T')[0],
-      end_date: endDate.toISOString().split('T')[0],
-      reason: faker.lorem.sentence(),
-      status: faker.helpers.arrayElement(['approved', 'rejected', 'pending']),
-      approver_id: faker.helpers.arrayElement(createdUsers.filter((u:any) => u.role === 'manager')).id,
-      created_at: faker.date.past({ years: 1 }).toISOString(),
-      total_days: faker.number.int({ min: 1, max: 5 }),
-    });
+  const managersAndLeads = createdUsers.filter((u:any) => ['manager', 'team_lead', 'hr_manager', 'admin'].includes(u.role));
+  if (managersAndLeads.length > 0) {
+      for (let i = 0; i < 100; i++) {
+        const user = faker.helpers.arrayElement(createdUsers);
+        const startDate = faker.date.past({ years: 1 });
+        const endDate = new Date(startDate.getTime() + faker.number.int({ min: 1, max: 5 }) * 24 * 60 * 60 * 1000);
+        leaves.push({
+          user_id: user.id,
+          leave_type: faker.helpers.arrayElement(['sick', 'casual', 'earned']),
+          start_date: startDate.toISOString().split('T')[0],
+          end_date: endDate.toISOString().split('T')[0],
+          reason: faker.lorem.sentence(),
+          status: faker.helpers.arrayElement(['approved', 'rejected', 'pending']),
+          approver_id: faker.helpers.arrayElement(managersAndLeads).id,
+          created_at: faker.date.past({ years: 1 }).toISOString(),
+          total_days: faker.number.int({ min: 1, max: 5 }),
+        });
+      }
+      const { data: createdLeaves } = await supabaseAdmin.from('leaves').insert(leaves).select();
+      console.log(`✅ Inserted ${createdLeaves?.length || 0} leaves`);
+  } else {
+      console.log('⚠️ No managers found, skipping leave seeding.');
   }
-  const { data: createdLeaves } = await supabaseAdmin.from('leaves').insert(leaves).select();
-  console.log(`✅ Inserted ${createdLeaves?.length || 0} leaves`);
+
 
   // Onboarding
   console.log('🌱 Seeding Onboarding...');
   const onboardingWorkflows: Omit<Onboarding, 'id'>[] = [];
-  for (let i = 0; i < 20; i++) {
-    const user = faker.helpers.arrayElement(createdUsers.filter((u:any) => ['employee', 'intern'].includes(u.role)));
-    const manager = faker.helpers.arrayElement(createdUsers.filter((u:any) => ['manager', 'team_lead'].includes(u.role)));
-    const buddy = faker.helpers.arrayElement(createdUsers.filter((u:any) => u.role === 'employee' && u.id !== user.id));
+  const employeesAndInterns = createdUsers.filter((u:any) => ['employee', 'intern'].includes(u.role));
+  if (employeesAndInterns.length > 0 && managersAndLeads.length > 0) {
+      for (let i = 0; i < 20; i++) {
+        const user = faker.helpers.arrayElement(employeesAndInterns);
+        const manager = faker.helpers.arrayElement(managersAndLeads);
+        const buddy = faker.helpers.arrayElement(createdUsers.filter((u:any) => u.id !== user.id));
 
-    onboardingWorkflows.push({
-      user_id: user.id,
-      manager_id: manager.id,
-      buddy_id: buddy.id,
-      employee_name: user.full_name,
-      employee_avatar: user.avatar_url,
-      job_title: faker.person.jobTitle(),
-      manager_name: manager.full_name,
-      buddy_name: buddy.full_name,
-      progress: faker.number.int({ min: 0, max: 100 }),
-      current_step: faker.helpers.arrayElement(['Paperwork', 'Team Intro', 'First Project']),
-      start_date: faker.date.past({ years: 1 }).toISOString().split('T')[0],
-    });
+        onboardingWorkflows.push({
+          user_id: user.id,
+          manager_id: manager.id,
+          buddy_id: buddy.id,
+          employee_name: user.full_name,
+          employee_avatar: user.avatar_url,
+          job_title: faker.person.jobTitle(),
+          manager_name: manager.full_name,
+          buddy_name: buddy.full_name,
+          progress: faker.number.int({ min: 0, max: 100 }),
+          current_step: faker.helpers.arrayElement(['Paperwork', 'Team Intro', 'First Project']),
+          start_date: faker.date.past({ years: 1 }).toISOString().split('T')[0],
+        });
+      }
+      const { data: createdOnboarding } = await supabaseAdmin.from('onboarding_workflows').insert(onboardingWorkflows).select();
+      console.log(`✅ Inserted ${createdOnboarding?.length || 0} onboarding workflows`);
+  } else {
+      console.log('⚠️ Not enough users with required roles to seed onboarding.');
   }
-  const { data: createdOnboarding } = await supabaseAdmin.from('onboarding_workflows').insert(onboardingWorkflows).select();
-  console.log(`✅ Inserted ${createdOnboarding?.length || 0} onboarding workflows`);
+
 
   // Performance Reviews
   console.log('🌱 Seeding Performance Reviews...');
@@ -350,32 +377,37 @@ async function main() {
   // Company Posts
   console.log('🌱 Seeding Company Posts...');
   const companyPosts: Omit<CompanyPost, 'id' | 'users' | 'post_comments'>[] = [];
-  for (let i = 0; i < 15; i++) {
-    companyPosts.push({
-      user_id: faker.helpers.arrayElement(createdUsers.filter((u:any) => ['hr_manager', 'admin', 'super_hr'].includes(u.role))).id,
-      content: faker.lorem.paragraphs(2),
-      image_url: faker.helpers.maybe(() => faker.image.urlLoremFlickr({ category: 'business' })),
-      created_at: faker.date.past({ years: 1 }).toISOString()
-    });
-  }
-  const { data: createdPosts } = await supabaseAdmin.from('company_posts').insert(companyPosts).select();
-  console.log(`✅ Inserted ${createdPosts?.length || 0} company posts`);
+  const postAuthors = createdUsers.filter((u:any) => ['hr_manager', 'admin', 'super_hr'].includes(u.role));
+  if (postAuthors.length > 0) {
+      for (let i = 0; i < 15; i++) {
+        companyPosts.push({
+          user_id: faker.helpers.arrayElement(postAuthors).id,
+          content: faker.lorem.paragraphs(2),
+          image_url: faker.helpers.maybe(() => faker.image.urlLoremFlickr({ category: 'business' })),
+          created_at: faker.date.past({ years: 1 }).toISOString()
+        });
+      }
+      const { data: createdPosts } = await supabaseAdmin.from('company_posts').insert(companyPosts).select();
+      console.log(`✅ Inserted ${createdPosts?.length || 0} company posts`);
 
-  // Post Comments
-  console.log('🌱 Seeding Post Comments...');
-  const postComments: Omit<PostComment, 'id' | 'users'>[] = [];
-  for (const post of createdPosts || []) {
-    for (let i = 0; i < faker.number.int({min: 0, max: 10}); i++) {
-      postComments.push({
-        post_id: post.id,
-        user_id: faker.helpers.arrayElement(createdUsers).id,
-        comment: faker.lorem.paragraph(),
-        created_at: faker.date.past({ years: 1 }).toISOString()
-      });
-    }
+      // Post Comments
+      console.log('🌱 Seeding Post Comments...');
+      const postComments: Omit<PostComment, 'id' | 'users'>[] = [];
+      for (const post of createdPosts || []) {
+        for (let i = 0; i < faker.number.int({min: 0, max: 10}); i++) {
+          postComments.push({
+            post_id: post.id,
+            user_id: faker.helpers.arrayElement(createdUsers).id,
+            comment: faker.lorem.paragraph(),
+            created_at: faker.date.past({ years: 1 }).toISOString()
+          });
+        }
+      }
+      const { data: createdComments } = await supabaseAdmin.from('post_comments').insert(postComments).select();
+      console.log(`✅ Inserted ${createdComments?.length || 0} post comments`);
+  } else {
+      console.log('⚠️ No post authors found, skipping company posts and comments seeding.');
   }
-  const { data: createdComments } = await supabaseAdmin.from('post_comments').insert(postComments).select();
-  console.log(`✅ Inserted ${createdComments?.length || 0} post comments`);
 
   // Kudos
   console.log('🌱 Seeding Kudos...');
@@ -397,25 +429,31 @@ async function main() {
   // Weekly Awards
   console.log('🌱 Seeding Weekly Awards...');
   const weeklyAwards: Omit<WeeklyAward, 'id' | 'users' | 'awarded_by'>[] = [];
-  for (let i = 0; i < 10; i++) {
-    const awardedBy = faker.helpers.arrayElement(createdUsers.filter((u:any) => ['manager', 'hr_manager', 'admin'].includes(u.role)));
-    const awardedUser = faker.helpers.arrayElement(createdUsers.filter((u:any) => u.id !== awardedBy.id));
-    weeklyAwards.push({
-      awarded_user_id: awardedUser.id,
-      awarded_by_user_id: awardedBy.id,
-      reason: faker.lorem.sentence(),
-      week_of: faker.date.past({ weeks: i + 1 }).toISOString().split('T')[0]
-    });
+  const awardGivers = createdUsers.filter((u:any) => ['manager', 'hr_manager', 'admin', 'super_hr'].includes(u.role));
+  if (awardGivers.length > 0) {
+      for (let i = 0; i < 10; i++) {
+        const awardedBy = faker.helpers.arrayElement(awardGivers);
+        const awardedUser = faker.helpers.arrayElement(createdUsers.filter((u:any) => u.id !== awardedBy.id));
+        weeklyAwards.push({
+          awarded_user_id: awardedUser.id,
+          awarded_by_user_id: awardedBy.id,
+          reason: faker.lorem.sentence(),
+          week_of: faker.date.past({ weeks: i + 1 }).toISOString().split('T')[0]
+        });
+      }
+      const { data: createdAwards } = await supabaseAdmin.from('weekly_awards').insert(weeklyAwards).select();
+      console.log(`✅ Inserted ${createdAwards?.length || 0} weekly awards`);
+  } else {
+      console.log('⚠️ No award givers found, skipping weekly awards seeding.');
   }
-  const { data: createdAwards } = await supabaseAdmin.from('weekly_awards').insert(weeklyAwards).select();
-  console.log(`✅ Inserted ${createdAwards?.length || 0} weekly awards`);
+  
 
   // Payslips
   console.log('🌱 Seeding Payslips...');
   const payslips: Omit<Payslip, 'id'>[] = [];
   for (const user of createdUsers) {
     for (let i=0; i < 6; i++) {
-      const gross = faker.number.float({ min: 3000, max: 15000, precision: 2 });
+      const gross = faker.number.float({ min: 3000, max: 15000, multipleOf: 0.01 });
       payslips.push({
         user_id: user.id,
         month: faker.date.month(),
@@ -446,7 +484,7 @@ async function main() {
     expenseReports.push({
       user_id: faker.helpers.arrayElement(createdUsers).id,
       title: faker.commerce.productName(),
-      total_amount: faker.number.float({ min: 50, max: 5000, precision: 2 }),
+      total_amount: faker.number.float({ min: 50, max: 5000, multipleOf: 0.01 }),
       status: faker.helpers.arrayElement(['draft', 'submitted', 'approved', 'rejected', 'reimbursed']),
       submitted_at: faker.date.past({ years: 1 }).toISOString()
     });
@@ -463,7 +501,7 @@ async function main() {
         expense_report_id: report.id,
         date: faker.date.past({ years: 1 }).toISOString().split('T')[0],
         category: faker.helpers.arrayElement(['Travel', 'Meals', 'Software']),
-        amount: faker.number.float({ min: 10, max: 1000, precision: 2 }),
+        amount: faker.number.float({ min: 10, max: 1000, multipleOf: 0.01 }),
         description: faker.lorem.sentence()
       });
     }
@@ -474,39 +512,43 @@ async function main() {
   // Helpdesk Tickets
   console.log('🌱 Seeding Helpdesk Tickets...');
   const helpdeskTickets: Omit<HelpdeskTicket, 'id' | 'users' | 'ticket_comments'>[] = [];
-  for (let i = 0; i < 50; i++) {
-    const resolver = faker.helpers.arrayElement(createdUsers.filter((u:any) => ['it_admin', 'support', 'hr_manager'].includes(u.role)));
-    helpdeskTickets.push({
-      user_id: faker.helpers.arrayElement(createdUsers).id,
-      subject: faker.hacker.phrase(),
-      description: faker.lorem.paragraphs(2),
-      category: faker.helpers.arrayElement(['IT', 'HR', 'Finance', 'General']),
-      status: faker.helpers.arrayElement(['Open', 'In Progress', 'Resolved', 'Closed']),
-      priority: faker.helpers.arrayElement(['Low', 'Medium', 'High', 'Urgent']),
-      created_at: faker.date.past({ years: 1 }).toISOString(),
-      updated_at: faker.date.past({ years: 1 }).toISOString(),
-      resolver_id: resolver?.id
-    });
-  }
-  const { data: createdTickets } = await supabaseAdmin.from('helpdesk_tickets').insert(helpdeskTickets).select();
-  console.log(`✅ Inserted ${createdTickets?.length || 0} helpdesk tickets`);
+  const resolvers = createdUsers.filter((u:any) => ['it_admin', 'support', 'hr_manager'].includes(u.role));
+  if (resolvers.length > 0) {
+      for (let i = 0; i < 50; i++) {
+        const resolver = faker.helpers.arrayElement(resolvers);
+        helpdeskTickets.push({
+          user_id: faker.helpers.arrayElement(createdUsers).id,
+          subject: faker.hacker.phrase(),
+          description: faker.lorem.paragraphs(2),
+          category: faker.helpers.arrayElement(['IT', 'HR', 'Finance', 'General']),
+          status: faker.helpers.arrayElement(['Open', 'In Progress', 'Resolved', 'Closed']),
+          priority: faker.helpers.arrayElement(['Low', 'Medium', 'High', 'Urgent']),
+          created_at: faker.date.past({ years: 1 }).toISOString(),
+          updated_at: faker.date.past({ years: 1 }).toISOString(),
+          resolver_id: resolver?.id
+        });
+      }
+      const { data: createdTickets } = await supabaseAdmin.from('helpdesk_tickets').insert(helpdeskTickets).select();
+      console.log(`✅ Inserted ${createdTickets?.length || 0} helpdesk tickets`);
 
-  // Ticket Comments
-  console.log('🌱 Seeding Ticket Comments...');
-  const ticketComments: Omit<TicketComment, 'id' | 'users'>[] = [];
-  for (const ticket of createdTickets || []) {
-    for (let i=0; i<faker.number.int({min: 0, max: 5}); i++) {
-      ticketComments.push({
-        ticket_id: ticket.id,
-        user_id: faker.helpers.arrayElement(createdUsers).id,
-        comment: faker.lorem.paragraph(),
-        created_at: faker.date.past({ years: 1 }).toISOString()
-      });
-    }
+      // Ticket Comments
+      console.log('🌱 Seeding Ticket Comments...');
+      const ticketComments: Omit<TicketComment, 'id' | 'users'>[] = [];
+      for (const ticket of createdTickets || []) {
+        for (let i=0; i<faker.number.int({min: 0, max: 5}); i++) {
+          ticketComments.push({
+            ticket_id: ticket.id,
+            user_id: faker.helpers.arrayElement(createdUsers).id,
+            comment: faker.lorem.paragraph(),
+            created_at: faker.date.past({ years: 1 }).toISOString()
+          });
+        }
+      }
+      const { data: createdTicketComments } = await supabaseAdmin.from('ticket_comments').insert(ticketComments).select();
+      console.log(`✅ Inserted ${createdTicketComments?.length || 0} ticket comments`);
+  } else {
+      console.log('⚠️ No ticket resolvers found, skipping helpdesk tickets seeding.');
   }
-  const { data: createdTicketComments } = await supabaseAdmin.from('ticket_comments').insert(ticketComments).select();
-  console.log(`✅ Inserted ${createdTicketComments?.length || 0} ticket comments`);
-
 
   console.log('✅ Database seeding process completed successfully!');
 }
