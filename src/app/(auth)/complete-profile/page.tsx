@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
@@ -26,6 +26,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
 import { Loader2, KeyRound, Phone, CheckCircle } from 'lucide-react';
+import { completeProfile } from '@/app/auth/actions';
 
 const profileSchema = z.object({
   phone: z.string().min(10, 'Please enter a valid phone number.'),
@@ -52,66 +53,27 @@ export default function CompleteProfilePage() {
       if (user) {
         setUserEmail(user.email || null);
       } else {
-        // If no user is logged in, they shouldn't be here
         router.push('/login');
       }
     };
     fetchUser();
   }, [router]);
   
-  const handleProfileSubmit = async (values: ProfileSchema) => {
+  const handleProfileSubmit: SubmitHandler<ProfileSchema> = async (values) => {
     setIsSubmitting(true);
-    const supabase = createClient();
     
-    // 1. Update the user's password
-    const { error: passwordError } = await supabase.auth.updateUser({
-      password: values.password,
-    });
-    
-    if (passwordError) {
+    const result = await completeProfile(values);
+
+    if (result?.error) {
       toast({
-        title: 'Password Update Failed',
-        description: passwordError.message,
+        title: 'Update Failed',
+        description: result.error,
         variant: 'destructive',
       });
       setIsSubmitting(false);
-      return;
     }
-
-    // 2. Update user metadata with phone number and mark profile as complete
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-        router.push('/login');
-        return;
-    }
-
-    const { error: metadataError } = await supabase.from('users')
-      .update({
-        phone: values.phone,
-        profile_setup_complete: true,
-      })
-      .eq('id', user.id);
-
-    if (metadataError) {
-      toast({
-        title: 'Profile Update Failed',
-        description: `Could not save your phone number: ${metadataError.message}`,
-        variant: 'destructive',
-      });
-      setIsSubmitting(false);
-      return;
-    }
-
-    toast({
-      title: 'Profile Complete!',
-      description: 'You will now be redirected to your dashboard.',
-    });
-    
-    // Explicitly refresh the session to get the latest user data (including profile_setup_complete)
-    await supabase.auth.refreshSession();
-    
-    // Refresh the page to allow middleware to redirect correctly
-    window.location.href = '/';
+    // On success, the server action will handle the redirect.
+    // If we reach here, it means there was an error that didn't throw.
   }
 
   if (!userEmail) {
