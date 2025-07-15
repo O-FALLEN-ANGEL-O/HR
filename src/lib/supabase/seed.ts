@@ -45,8 +45,8 @@ async function main() {
   // --- 1. Clean up existing data ---
   console.log('🧹 Cleaning up old data...');
   const tablesToClean = [
-    'ticket_comments', 'helpdesk_tickets', 'expense_items', 'expense_reports', 'key_results', 'objectives', 'company_documents', 'payslips',
-    'weekly_awards', 'kudos', 'post_comments', 'company_posts', 'performance_reviews', 'onboarding_workflows', 'leaves', 'leave_balances',
+    'ticket_comments', 'helpdesk_tickets', 'expense_items', 'expense_reports', 'company_documents', 'payslips',
+    'weekly_awards', 'kudos', 'post_comments', 'company_posts', 'key_results', 'objectives', 'performance_reviews', 'onboarding_workflows', 'leaves', 'leave_balances',
     'interviews', 'applicant_notes', 'applicants', 'colleges', 'jobs'
   ];
   for (const table of tablesToClean) {
@@ -92,9 +92,21 @@ async function main() {
     { email: 'employee@hrplus.com', role: 'employee', fullName: 'Employee Eric', department: 'Engineering' },
     { email: 'intern@hrplus.com', role: 'intern', fullName: 'Intern Ian', department: 'Engineering' },
   ];
+  
+  // Add more fake users
+  for (let i = 0; i < 40; i++) {
+    const department = faker.helpers.arrayElement(departments);
+    usersToCreate.push({
+      email: faker.internet.email(),
+      role: faker.helpers.arrayElement(['employee', 'interviewer', 'team_lead']),
+      fullName: faker.person.fullName(),
+      department: department
+    })
+  }
 
-  console.log('👤 Creating one user for each role with password "password"...');
-  const createdUserIds: { [key: string]: string } = {};
+
+  console.log(`👤 Creating ${usersToCreate.length} users with password "password"...`);
+  const createdUsers: any[] = [];
   for (const userData of usersToCreate) {
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email: userData.email,
@@ -112,63 +124,32 @@ async function main() {
     if (error) {
       console.error(`🔴 Error creating user ${userData.email}: ${error.message}`);
     } else if (data.user) {
-      createdUserIds[userData.role] = data.user.id;
-      console.log(`✅ Successfully created user: ${data.user?.email}`);
+      // The public.users table is populated by a trigger, so we fetch it after creation
+      const { data: userProfile } = await supabaseAdmin.from('users').select('*').eq('id', data.user.id).single();
+      createdUsers.push(userProfile);
     }
   }
+   console.log(`✅ Successfully created ${createdUsers.length} users.`);
 
-  const allUserIds = Object.values(createdUserIds);
 
   // --- 4. SEED APPLICATION DATA ---
-
-  // Leave Balances
-  console.log('🌱 Seeding Leave Balances...');
-  const leaveBalances: Omit<LeaveBalance, 'id'>[] = allUserIds.map(id => ({
-      user_id: id,
-      sick_leave: 12,
-      casual_leave: 12,
-      earned_leave: 15,
-      unpaid_leave: 0,
-  }));
-  await supabaseAdmin.from('leave_balances').insert(leaveBalances);
-
-  // Leaves
-  console.log('🌱 Seeding Leaves...');
-  const leaves: Omit<Leave, 'id' | 'users'>[] = [];
-  for (const userId of allUserIds) {
-      for(let i=0; i<3; i++) {
-        leaves.push({
-            user_id: userId,
-            leave_type: faker.helpers.arrayElement(['sick', 'casual', 'earned']),
-            start_date: faker.date.past({ years: 1 }).toISOString().split('T')[0],
-            end_date: faker.date.recent({ days: 5 }).toISOString().split('T')[0],
-            reason: faker.lorem.sentence(),
-            status: faker.helpers.arrayElement(['approved', 'rejected']),
-            approver_id: createdUserIds['manager'],
-            created_at: faker.date.past({ years: 1 }).toISOString(),
-            total_days: faker.number.int({ min: 1, max: 3 }),
-        });
-      }
-  }
-  await supabaseAdmin.from('leaves').insert(leaves);
   
-
   // Jobs
   console.log('🌱 Seeding Jobs...');
-  const jobs: Omit<Job, 'id'>[] = [];
-  for (const dept of departments) {
-      for (const title of jobTitlesByDept[dept]) {
-          jobs.push({
-              title,
-              department: dept,
-              description: faker.lorem.paragraphs(3),
-              status: 'Open',
-              posted_date: faker.date.past({ years: 1 }).toISOString(),
-              applicants: 0,
-          });
-      }
+  const jobs: Omit<Job, 'id' | 'applicants'>[] = [];
+  for (let i = 0; i < 20; i++) {
+    const department = faker.helpers.arrayElement(departments);
+    jobs.push({
+        title: faker.person.jobTitle(),
+        department,
+        description: faker.lorem.paragraphs(3),
+        status: faker.helpers.arrayElement(['Open', 'Closed', 'On hold']),
+        posted_date: faker.date.past({ years: 1 }).toISOString(),
+    });
   }
   const { data: createdJobs } = await supabaseAdmin.from('jobs').insert(jobs).select();
+  console.log(`✅ Inserted ${createdJobs?.length || 0} jobs`);
+
 
   // Colleges
   console.log('🌱 Seeding Colleges...');
@@ -180,14 +161,12 @@ async function main() {
         last_contacted: faker.date.past({ years: 1 }).toISOString(),
     }));
     const { data: createdColleges } = await supabaseAdmin.from('colleges').insert(colleges).select();
-
+    console.log(`✅ Inserted ${createdColleges?.length || 0} colleges`);
 
   // Applicants
   console.log('🌱 Seeding Applicants...');
   const applicants: Omit<Applicant, 'id' | 'jobs'>[] = [];
-  for (let i = 0; i < 150; i++) {
-    const job = faker.helpers.arrayElement(createdJobs || []);
-    const college = faker.helpers.arrayElement(createdColleges || []);
+  for (let i = 0; i < 100; i++) {
     const resume_data: ProcessResumeOutput = {
         fullName: faker.person.fullName(),
         email: faker.internet.email(),
@@ -195,7 +174,7 @@ async function main() {
         links: [faker.internet.url()],
         skills: faker.helpers.arrayElements(['React', 'Node.js', 'PostgreSQL', 'Communication', 'Teamwork', 'Project Management'], { min: 3, max: 5 }),
         experience: [{ jobTitle: 'Previous Role', company: faker.company.name(), duration: '2020-2022' }],
-        education: [{ institution: college.name, degree: 'B.Tech', year: '2020' }],
+        education: [{ institution: faker.helpers.arrayElement(createdColleges || []).name, degree: 'B.Tech', year: '2020' }],
         fullText: faker.lorem.paragraphs(5),
     };
 
@@ -203,12 +182,12 @@ async function main() {
       name: resume_data.fullName,
       email: resume_data.email,
       phone: resume_data.phone,
-      job_id: job.id,
+      job_id: faker.helpers.arrayElement(createdJobs || []).id,
+      college_id: faker.helpers.arrayElement(createdColleges || []).id,
       stage: faker.helpers.arrayElement(['Sourced', 'Applied', 'Phone Screen', 'Interview', 'Offer', 'Hired', 'Rejected']),
       applied_date: faker.date.past({ years: 1 }).toISOString(),
       avatar: faker.image.avatar(),
       source: faker.helpers.arrayElement(['walk-in', 'college', 'email', 'manual']),
-      college_id: college.id,
       resume_data,
       ai_match_score: faker.number.int({ min: 40, max: 95 }),
       ai_justification: faker.lorem.sentence(),
@@ -220,188 +199,316 @@ async function main() {
       customer_service_score: faker.number.int({min: 50, max: 98})
     });
   }
-  await supabaseAdmin.from('applicants').insert(applicants);
+  const { data: createdApplicants } = await supabaseAdmin.from('applicants').insert(applicants).select();
+  console.log(`✅ Inserted ${createdApplicants?.length || 0} applicants`);
 
-   // Helpdesk Tickets
-   console.log('🌱 Seeding Helpdesk Tickets...');
-   const tickets: Omit<HelpdeskTicket, 'id' | 'users' | 'ticket_comments'>[] = [];
-   for (const userId of allUserIds) {
-    for (let i=0; i<2; i++) {
-        tickets.push({
-            user_id: userId,
-            subject: faker.lorem.sentence(),
-            description: faker.lorem.paragraph(),
-            category: faker.helpers.arrayElement(['IT', 'HR', 'Finance']),
-            status: faker.helpers.arrayElement(['Open', 'In Progress', 'Resolved']),
-            priority: faker.helpers.arrayElement(['Low', 'Medium', 'High']),
-            created_at: faker.date.past({ years: 1 }).toISOString(),
-            updated_at: faker.date.recent().toISOString(),
-        })
-    }
-   }
-   await supabaseAdmin.from('helpdesk_tickets').insert(tickets);
+  // Applicant Notes
+  console.log('🌱 Seeding Applicant Notes...');
+  const applicantNotes: Omit<ApplicantNote, 'id'>[] = [];
+  for (let i = 0; i < 200; i++) {
+    const user = faker.helpers.arrayElement(createdUsers);
+    applicantNotes.push({
+      applicant_id: faker.helpers.arrayElement(createdApplicants || []).id,
+      user_id: user.id,
+      author_name: user.full_name,
+      author_avatar: user.avatar_url,
+      note: faker.lorem.paragraph(),
+      created_at: faker.date.past({ years: 1 }).toISOString()
+    });
+  }
+  const { data: createdApplicantNotes } = await supabaseAdmin.from('applicant_notes').insert(applicantNotes).select();
+  console.log(`✅ Inserted ${createdApplicantNotes?.length || 0} applicant notes`);
 
+  // Interviews
+  console.log('🌱 Seeding Interviews...');
+  const interviews: Omit<Interview, 'id'>[] = [];
+  for (let i = 0; i < 50; i++) {
+    const applicant = faker.helpers.arrayElement(createdApplicants || []);
+    const interviewer = faker.helpers.arrayElement(createdUsers.filter((u:any) => ['hr_manager', 'recruiter', 'interviewer', 'manager'].includes(u.role)));
+    const job = createdJobs?.find(j => j.id === applicant.job_id);
+
+    interviews.push({
+      applicant_id: applicant.id,
+      interviewer_id: interviewer.id,
+      date: faker.date.future().toISOString().split('T')[0],
+      time: `${faker.number.int({ min: 9, max: 16 })}:00`,
+      type: faker.helpers.arrayElement(['Video', 'Phone', 'In-person']),
+      status: faker.helpers.arrayElement(['Scheduled', 'Completed', 'Canceled']),
+      candidate_name: applicant.name,
+      candidate_avatar: applicant.avatar || null,
+      interviewer_name: interviewer.full_name,
+      interviewer_avatar: interviewer.avatar_url,
+      job_title: job?.title || 'Software Engineer'
+    });
+  }
+  const { data: createdInterviews } = await supabaseAdmin.from('interviews').insert(interviews).select();
+  console.log(`✅ Inserted ${createdInterviews?.length || 0} interviews`);
+
+  // Leave Balances
+  console.log('🌱 Seeding Leave Balances...');
+  const leaveBalances: Omit<LeaveBalance, 'id'>[] = createdUsers.map((user:any) => ({
+      user_id: user.id,
+      sick_leave: 12,
+      casual_leave: 12,
+      earned_leave: 15,
+      unpaid_leave: 0,
+  }));
+  const { data: createdLeaveBalances } = await supabaseAdmin.from('leave_balances').insert(leaveBalances).select();
+  console.log(`✅ Inserted ${createdLeaveBalances?.length || 0} leave balances`);
+
+  // Leaves
+  console.log('🌱 Seeding Leaves...');
+  const leaves: Omit<Leave, 'id' | 'users'>[] = [];
+  for (let i = 0; i < 100; i++) {
+    const user = faker.helpers.arrayElement(createdUsers);
+    const startDate = faker.date.past({ years: 1 });
+    const endDate = new Date(startDate.getTime() + faker.number.int({ min: 1, max: 5 }) * 24 * 60 * 60 * 1000);
+    leaves.push({
+      user_id: user.id,
+      leave_type: faker.helpers.arrayElement(['sick', 'casual', 'earned']),
+      start_date: startDate.toISOString().split('T')[0],
+      end_date: endDate.toISOString().split('T')[0],
+      reason: faker.lorem.sentence(),
+      status: faker.helpers.arrayElement(['approved', 'rejected', 'pending']),
+      approver_id: faker.helpers.arrayElement(createdUsers.filter((u:any) => u.role === 'manager')).id,
+      created_at: faker.date.past({ years: 1 }).toISOString(),
+      total_days: faker.number.int({ min: 1, max: 5 }),
+    });
+  }
+  const { data: createdLeaves } = await supabaseAdmin.from('leaves').insert(leaves).select();
+  console.log(`✅ Inserted ${createdLeaves?.length || 0} leaves`);
 
   // Onboarding
   console.log('🌱 Seeding Onboarding...');
-  const onboarding: Omit<Onboarding, 'id'|'employee_avatar'>[] = allUserIds.slice(0, 5).map(id => {
-      const user = usersToCreate.find(u => createdUserIds[u.role] === id);
-      return {
-        user_id: id,
-        manager_id: createdUserIds['manager'],
-        buddy_id: createdUserIds['employee'],
-        employee_name: user?.fullName || 'New Hire',
-        job_title: user?.department || 'N/A',
-        manager_name: usersToCreate.find(u=>u.role==='manager')?.fullName || 'Manager',
-        buddy_name: usersToCreate.find(u=>u.role==='employee')?.fullName || 'Buddy',
-        progress: faker.number.int({ min: 10, max: 100 }),
-        current_step: faker.helpers.arrayElement(['Documentation', 'Team Intro', 'Training']),
-        start_date: faker.date.past({ months: 3 }).toISOString(),
-      }
-  });
-  await supabaseAdmin.from('onboarding_workflows').insert(onboarding);
+  const onboardingWorkflows: Omit<Onboarding, 'id'>[] = [];
+  for (let i = 0; i < 20; i++) {
+    const user = faker.helpers.arrayElement(createdUsers.filter((u:any) => ['employee', 'intern'].includes(u.role)));
+    const manager = faker.helpers.arrayElement(createdUsers.filter((u:any) => ['manager', 'team_lead'].includes(u.role)));
+    const buddy = faker.helpers.arrayElement(createdUsers.filter((u:any) => u.role === 'employee' && u.id !== user.id));
+
+    onboardingWorkflows.push({
+      user_id: user.id,
+      manager_id: manager.id,
+      buddy_id: buddy.id,
+      employee_name: user.full_name,
+      employee_avatar: user.avatar_url,
+      job_title: faker.person.jobTitle(),
+      manager_name: manager.full_name,
+      buddy_name: buddy.full_name,
+      progress: faker.number.int({ min: 0, max: 100 }),
+      current_step: faker.helpers.arrayElement(['Paperwork', 'Team Intro', 'First Project']),
+      start_date: faker.date.past({ years: 1 }).toISOString().split('T')[0],
+    });
+  }
+  const { data: createdOnboarding } = await supabaseAdmin.from('onboarding_workflows').insert(onboardingWorkflows).select();
+  console.log(`✅ Inserted ${createdOnboarding?.length || 0} onboarding workflows`);
+
+  // Performance Reviews
+  console.log('🌱 Seeding Performance Reviews...');
+  const performanceReviews: Omit<PerformanceReview, 'id' | 'users'>[] = [];
+  for (let i = 0; i < 50; i++) {
+    const user = faker.helpers.arrayElement(createdUsers.filter((u:any) => ['employee', 'manager', 'team_lead'].includes(u.role)));
+    performanceReviews.push({
+      user_id: user.id,
+      review_date: faker.date.past({ years: 1 }).toISOString().split('T')[0],
+      status: faker.helpers.arrayElement(['Pending', 'In Progress', 'Completed']),
+      job_title: faker.person.jobTitle()
+    });
+  }
+  const { data: createdReviews } = await supabaseAdmin.from('performance_reviews').insert(performanceReviews).select();
+  console.log(`✅ Inserted ${createdReviews?.length || 0} performance reviews`);
+
+  // Objectives
+  console.log('🌱 Seeding Objectives...');
+  const objectives: Omit<Objective, 'id' | 'users' | 'key_results'>[] = [];
+  for (let i = 0; i < 30; i++) {
+    objectives.push({
+      owner_id: faker.helpers.arrayElement(createdUsers).id,
+      title: faker.company.catchPhrase(),
+      quarter: `Q${faker.number.int({ min: 1, max: 4 })} ${faker.number.int({ min: 2023, max: 2024 })}`
+    });
+  }
+  const { data: createdObjectives } = await supabaseAdmin.from('objectives').insert(objectives).select();
+  console.log(`✅ Inserted ${createdObjectives?.length || 0} objectives`);
+
+  // Key Results
+  console.log('🌱 Seeding Key Results...');
+  const keyResults: Omit<KeyResult, 'id'>[] = [];
+  for (const objective of createdObjectives || []) {
+    for (let i = 0; i < faker.number.int({min: 2, max: 4}); i++) {
+      keyResults.push({
+        objective_id: objective.id,
+        description: faker.lorem.sentence(),
+        progress: faker.number.int({ min: 0, max: 100 }),
+        status: faker.helpers.arrayElement(['on_track', 'at_risk', 'off_track'])
+      });
+    }
+  }
+  const { data: createdKeyResults } = await supabaseAdmin.from('key_results').insert(keyResults).select();
+  console.log(`✅ Inserted ${createdKeyResults?.length || 0} key results`);
 
   // Company Posts
-  console.log('🌱 Seeding Company Posts & Comments...');
+  console.log('🌱 Seeding Company Posts...');
   const companyPosts: Omit<CompanyPost, 'id' | 'users' | 'post_comments'>[] = [];
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 15; i++) {
     companyPosts.push({
-        user_id: createdUserIds['hr_manager'],
-        content: faker.lorem.paragraph(),
-        image_url: faker.helpers.arrayElement([faker.image.urlLoremFlickr({ category: 'business' }), null]),
-        created_at: faker.date.past({ years: 1 }).toISOString(),
+      user_id: faker.helpers.arrayElement(createdUsers.filter((u:any) => ['hr_manager', 'admin', 'super_hr'].includes(u.role))).id,
+      content: faker.lorem.paragraphs(2),
+      image_url: faker.helpers.maybe(() => faker.image.urlLoremFlickr({ category: 'business' })),
+      created_at: faker.date.past({ years: 1 }).toISOString()
     });
   }
   const { data: createdPosts } = await supabaseAdmin.from('company_posts').insert(companyPosts).select();
+  console.log(`✅ Inserted ${createdPosts?.length || 0} company posts`);
 
-  if (createdPosts) {
-      const comments: Omit<PostComment, 'id' | 'users'>[] = [];
-      for (const post of createdPosts) {
-        for (let i = 0; i < faker.number.int({min: 0, max: 8}); i++) {
-            comments.push({
-                post_id: post.id,
-                user_id: faker.helpers.arrayElement(allUserIds),
-                comment: faker.lorem.sentence(),
-                created_at: faker.date.between({ from: post.created_at, to: new Date() }).toISOString()
-            });
-        }
-      }
-      await supabaseAdmin.from('post_comments').insert(comments);
+  // Post Comments
+  console.log('🌱 Seeding Post Comments...');
+  const postComments: Omit<PostComment, 'id' | 'users'>[] = [];
+  for (const post of createdPosts || []) {
+    for (let i = 0; i < faker.number.int({min: 0, max: 10}); i++) {
+      postComments.push({
+        post_id: post.id,
+        user_id: faker.helpers.arrayElement(createdUsers).id,
+        comment: faker.lorem.paragraph(),
+        created_at: faker.date.past({ years: 1 }).toISOString()
+      });
+    }
   }
-
+  const { data: createdComments } = await supabaseAdmin.from('post_comments').insert(postComments).select();
+  console.log(`✅ Inserted ${createdComments?.length || 0} post comments`);
 
   // Kudos
   console.log('🌱 Seeding Kudos...');
   const kudos: Omit<Kudo, 'id' | 'users_from' | 'users_to'>[] = [];
-  for(let i=0; i<30; i++) {
+  for (let i = 0; i < 100; i++) {
+    const fromUser = faker.helpers.arrayElement(createdUsers);
+    const toUser = faker.helpers.arrayElement(createdUsers.filter((u:any) => u.id !== fromUser.id));
     kudos.push({
-        from_user_id: faker.helpers.arrayElement(allUserIds),
-        to_user_id: faker.helpers.arrayElement(allUserIds),
-        value: faker.helpers.arrayElement(['Team Player', 'Innovation', 'Customer First']),
-        message: faker.lorem.sentence(),
-        created_at: faker.date.past({ years: 1 }).toISOString(),
-    })
+      from_user_id: fromUser.id,
+      to_user_id: toUser.id,
+      value: faker.helpers.arrayElement(['Team Player', 'Innovation', 'Customer First', 'Ownership']),
+      message: faker.lorem.sentence(),
+      created_at: faker.date.past({ years: 1 }).toISOString()
+    });
   }
-  await supabaseAdmin.from('kudos').insert(kudos);
+  const { data: createdKudos } = await supabaseAdmin.from('kudos').insert(kudos).select();
+  console.log(`✅ Inserted ${createdKudos?.length || 0} kudos`);
 
   // Weekly Awards
   console.log('🌱 Seeding Weekly Awards...');
   const weeklyAwards: Omit<WeeklyAward, 'id' | 'users' | 'awarded_by'>[] = [];
-  for(let i=0; i<4; i++) {
+  for (let i = 0; i < 10; i++) {
+    const awardedBy = faker.helpers.arrayElement(createdUsers.filter((u:any) => ['manager', 'hr_manager', 'admin'].includes(u.role)));
+    const awardedUser = faker.helpers.arrayElement(createdUsers.filter((u:any) => u.id !== awardedBy.id));
     weeklyAwards.push({
-        awarded_user_id: faker.helpers.arrayElement(allUserIds),
-        awarded_by_user_id: createdUserIds['manager'],
-        reason: faker.lorem.sentence(),
-        week_of: faker.date.past({ weeks: i+1 }).toISOString().split('T')[0],
+      awarded_user_id: awardedUser.id,
+      awarded_by_user_id: awardedBy.id,
+      reason: faker.lorem.sentence(),
+      week_of: faker.date.past({ weeks: i + 1 }).toISOString().split('T')[0]
     });
   }
-  await supabaseAdmin.from('weekly_awards').insert(weeklyAwards);
-  
-  // Company Documents
-  console.log('🌱 Seeding Company Documents...');
-  const documents: Omit<CompanyDocument, 'id'>[] = [
-    { title: 'Employee Handbook', description: 'Company policies and procedures', category: 'HR', last_updated: new Date().toISOString(), download_url: '#' },
-    { title: 'Code of Conduct', description: 'Ethical guidelines and standards', category: 'HR', last_updated: new Date().toISOString(), download_url: '#' },
-    { title: 'IT Security Policy', description: 'Guidelines for using company IT resources', category: 'IT', last_updated: new Date().toISOString(), download_url: '#' },
-  ];
-  await supabaseAdmin.from('company_documents').insert(documents);
+  const { data: createdAwards } = await supabaseAdmin.from('weekly_awards').insert(weeklyAwards).select();
+  console.log(`✅ Inserted ${createdAwards?.length || 0} weekly awards`);
 
   // Payslips
   console.log('🌱 Seeding Payslips...');
   const payslips: Omit<Payslip, 'id'>[] = [];
-  for (const userId of allUserIds) {
-    for (let i=0; i<6; i++) {
-        const gross = faker.number.int({ min: 40000, max: 120000 });
-        payslips.push({
-            user_id: userId,
-            month: faker.date.month(),
-            year: 2024,
-            gross_salary: gross,
-            net_salary: gross * 0.8,
-            download_url: '#'
-        });
-    }
-  }
-  await supabaseAdmin.from('payslips').insert(payslips);
-
-  // Performance Reviews
-  console.log('🌱 Seeding Performance Reviews...');
-  const reviews: Omit<PerformanceReview, 'id' | 'users'>[] = [];
-  for (const userId of allUserIds) {
-    reviews.push({
-      user_id: userId,
-      review_date: faker.date.past({ months: 6 }).toISOString().split('T')[0],
-      status: 'Completed',
-      job_title: usersToCreate.find(u => createdUserIds[u.role] === userId)?.department || 'N/A'
-    });
-  }
-  await supabaseAdmin.from('performance_reviews').insert(reviews);
-
-  // OKRs
-  console.log('🌱 Seeding OKRs...');
-  const objectives: Omit<Objective, 'id' | 'key_results' | 'users'>[] = [];
-  for(const userId of allUserIds.slice(0,4)) {
-    objectives.push({
-      owner_id: userId,
-      title: `Objective for ${usersToCreate.find(u => createdUserIds[u.role] === userId)?.fullName}`,
-      quarter: 'Q3 2024'
-    });
-  }
-  const { data: createdObjectives } = await supabaseAdmin.from('objectives').insert(objectives).select();
-
-  if (createdObjectives) {
-    const keyResults: Omit<KeyResult, 'id'>[] = [];
-    for (const objective of createdObjectives) {
-        for(let i = 0; i<3; i++) {
-            keyResults.push({
-                objective_id: objective.id,
-                description: faker.lorem.sentence(),
-                progress: faker.number.int({min: 0, max: 100}),
-                status: faker.helpers.arrayElement(['on_track', 'at_risk', 'off_track'])
-            })
-        }
-    }
-    await supabaseAdmin.from('key_results').insert(keyResults);
-  }
-
-  // Expense Reports
-  console.log('🌱 Seeding Expense Reports...');
-  const expenseReports: Omit<ExpenseReport, 'id'|'users'|'expense_items'>[] = [];
-  for(const userId of allUserIds) {
-    for(let i = 0; i<2; i++) {
-      expenseReports.push({
-        user_id: userId,
-        title: faker.lorem.words(4),
-        total_amount: faker.number.int({ min: 50, max: 500 }),
-        status: faker.helpers.arrayElement(['submitted', 'approved', 'rejected']),
-        submitted_at: faker.date.past({ months: 2}).toISOString()
+  for (const user of createdUsers) {
+    for (let i=0; i < 6; i++) {
+      const gross = faker.number.float({ min: 3000, max: 15000, precision: 2 });
+      payslips.push({
+        user_id: user.id,
+        month: faker.date.month(),
+        year: 2024,
+        gross_salary: gross,
+        net_salary: gross * 0.75,
+        download_url: '#'
       });
     }
   }
-  await supabaseAdmin.from('expense_reports').insert(expenseReports);
+  const { data: createdPayslips } = await supabaseAdmin.from('payslips').insert(payslips).select();
+  console.log(`✅ Inserted ${createdPayslips?.length || 0} payslips`);
+
+  // Company Documents
+  console.log('🌱 Seeding Company Documents...');
+  const companyDocuments: Omit<CompanyDocument, 'id'>[] = [
+    { title: 'Employee Handbook', description: 'Company policies and procedures', category: 'HR', last_updated: new Date().toISOString(), download_url: '#' },
+    { title: 'Code of Conduct', description: 'Ethical guidelines and standards', category: 'HR', last_updated: new Date().toISOString(), download_url: '#' },
+    { title: 'IT Security Policy', description: 'Guidelines for using company IT resources', category: 'IT', last_updated: new Date().toISOString(), download_url: '#' },
+  ];
+  const { data: createdDocs } = await supabaseAdmin.from('company_documents').insert(companyDocuments).select();
+  console.log(`✅ Inserted ${createdDocs?.length || 0} company documents`);
+
+  // Expense Reports
+  console.log('🌱 Seeding Expense Reports...');
+  const expenseReports: Omit<ExpenseReport, 'id' | 'users' | 'expense_items'>[] = [];
+  for (let i = 0; i < 50; i++) {
+    expenseReports.push({
+      user_id: faker.helpers.arrayElement(createdUsers).id,
+      title: faker.commerce.productName(),
+      total_amount: faker.number.float({ min: 50, max: 5000, precision: 2 }),
+      status: faker.helpers.arrayElement(['draft', 'submitted', 'approved', 'rejected', 'reimbursed']),
+      submitted_at: faker.date.past({ years: 1 }).toISOString()
+    });
+  }
+  const { data: createdReports } = await supabaseAdmin.from('expense_reports').insert(expenseReports).select();
+  console.log(`✅ Inserted ${createdReports?.length || 0} expense reports`);
+
+  // Expense Items
+  console.log('🌱 Seeding Expense Items...');
+  const expenseItems: Omit<ExpenseItem, 'id'>[] = [];
+  for (const report of createdReports || []) {
+     for (let i = 0; i < faker.number.int({min: 1, max: 5}); i++) {
+      expenseItems.push({
+        expense_report_id: report.id,
+        date: faker.date.past({ years: 1 }).toISOString().split('T')[0],
+        category: faker.helpers.arrayElement(['Travel', 'Meals', 'Software']),
+        amount: faker.number.float({ min: 10, max: 1000, precision: 2 }),
+        description: faker.lorem.sentence()
+      });
+    }
+  }
+  const { data: createdItems } = await supabaseAdmin.from('expense_items').insert(expenseItems).select();
+  console.log(`✅ Inserted ${createdItems?.length || 0} expense items`);
+
+  // Helpdesk Tickets
+  console.log('🌱 Seeding Helpdesk Tickets...');
+  const helpdeskTickets: Omit<HelpdeskTicket, 'id' | 'users' | 'ticket_comments'>[] = [];
+  for (let i = 0; i < 50; i++) {
+    const resolver = faker.helpers.arrayElement(createdUsers.filter((u:any) => ['it_admin', 'support', 'hr_manager'].includes(u.role)));
+    helpdeskTickets.push({
+      user_id: faker.helpers.arrayElement(createdUsers).id,
+      subject: faker.hacker.phrase(),
+      description: faker.lorem.paragraphs(2),
+      category: faker.helpers.arrayElement(['IT', 'HR', 'Finance', 'General']),
+      status: faker.helpers.arrayElement(['Open', 'In Progress', 'Resolved', 'Closed']),
+      priority: faker.helpers.arrayElement(['Low', 'Medium', 'High', 'Urgent']),
+      created_at: faker.date.past({ years: 1 }).toISOString(),
+      updated_at: faker.date.past({ years: 1 }).toISOString(),
+      resolver_id: resolver?.id
+    });
+  }
+  const { data: createdTickets } = await supabaseAdmin.from('helpdesk_tickets').insert(helpdeskTickets).select();
+  console.log(`✅ Inserted ${createdTickets?.length || 0} helpdesk tickets`);
+
+  // Ticket Comments
+  console.log('🌱 Seeding Ticket Comments...');
+  const ticketComments: Omit<TicketComment, 'id' | 'users'>[] = [];
+  for (const ticket of createdTickets || []) {
+    for (let i=0; i<faker.number.int({min: 0, max: 5}); i++) {
+      ticketComments.push({
+        ticket_id: ticket.id,
+        user_id: faker.helpers.arrayElement(createdUsers).id,
+        comment: faker.lorem.paragraph(),
+        created_at: faker.date.past({ years: 1 }).toISOString()
+      });
+    }
+  }
+  const { data: createdTicketComments } = await supabaseAdmin.from('ticket_comments').insert(ticketComments).select();
+  console.log(`✅ Inserted ${createdTicketComments?.length || 0} ticket comments`);
 
 
-  console.log('✅ Database seeding process completed.');
+  console.log('✅ Database seeding process completed successfully!');
 }
 
 main().catch(error => {
