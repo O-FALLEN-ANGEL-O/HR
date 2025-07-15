@@ -1,445 +1,583 @@
--- ------------------------------------------------------------------------------------------------
---  SETUP
--- ------------------------------------------------------------------------------------------------
 
--- Create a table for public user profiles
-create table if not exists public.users (
-  id uuid not null references auth.users on delete cascade,
-  full_name text,
-  avatar_url text,
-  department text,
-  phone text,
-  role text,
-  profile_setup_complete boolean default false,
-  primary key (id)
+-- Drop policies first to avoid conflicts
+DROP POLICY IF EXISTS "Enable read access for all users" ON public.jobs;
+DROP POLICY IF EXISTS "Enable insert for authenticated users" ON public.applicants;
+DROP POLICY IF EXISTS "Enable read access for all users" ON public.applicants;
+DROP POLICY IF EXISTS "Enable read for users based on user_id" ON public.leaves;
+DROP POLICY IF EXISTS "Allow users to insert their own leave" ON public.leaves;
+DROP POLICY IF EXISTS "Allow admins to manage leaves" ON public.leaves;
+DROP POLICY IF EXISTS "Allow individual read access" ON public.leave_balances;
+DROP POLICY IF EXISTS "Allow admins to read all balances" ON public.leave_balances;
+DROP POLICY IF EXISTS "Allow individual read access" ON public.users;
+DROP POLICY IF EXISTS "Allow admins to manage everything" ON public.users;
+DROP POLICY IF EXISTS "Allow full access for admins" ON public.colleges;
+DROP POLICY IF EXISTS "Allow read access for authenticated users" ON public.colleges;
+DROP POLICY IF EXISTS "Allow full access for admins" ON public.applicant_notes;
+DROP POLICY IF EXISTS "Allow read access for authenticated users" ON public.applicant_notes;
+DROP POLICY IF EXISTS "Allow insert for authenticated users" ON public.applicant_notes;
+DROP POLICY IF EXISTS "Allow full access to HR and admins" ON public.interviews;
+DROP POLICY IF EXISTS "Allow interviewers to see their own interviews" ON public.interviews;
+DROP POLICY IF EXISTS "Enable read access for all users" ON public.company_posts;
+DROP POLICY IF EXISTS "Enable insert for admins and HR" ON public.company_posts;
+DROP POLICY IF EXISTS "Enable read for all users" ON public.post_comments;
+DROP POLICY IF EXISTS "Enable insert for authenticated users" ON public.post_comments;
+DROP POLICY IF EXISTS "Enable read for all users" ON public.kudos;
+DROP POLICY IF EXISTS "Enable insert for authenticated users" ON public.kudos;
+DROP POLICY IF EXISTS "Enable read for all users" ON public.weekly_awards;
+DROP POLICY IF EXISTS "Enable insert for managers and HR" ON public.weekly_awards;
+DROP POLICY IF EXISTS "Enable read for own payslips" ON public.payslips;
+DROP POLICY IF EXISTS "Allow admin to read all payslips" ON public.payslips;
+DROP POLICY IF EXISTS "Enable read for all users" ON public.company_documents;
+DROP POLICY IF EXISTS "Enable read access for own data" ON public.objectives;
+DROP POLICY IF EXISTS "Enable CRUD for admin/hr" ON public.objectives;
+DROP POLICY IF EXISTS "Enable read access for own data" ON public.key_results;
+DROP POLICY IF EXISTS "Enable CRUD for admin/hr" ON public.key_results;
+DROP POLICY IF EXISTS "Allow users to manage their own expense reports" ON public.expense_reports;
+DROP POLICY IF EXISTS "Allow finance/admin to manage all expense reports" ON public.expense_reports;
+DROP POLICY IF EXISTS "Allow users to manage items on their own reports" ON public.expense_items;
+DROP POLICY IF EXISTS "Allow finance/admin to manage all expense items" ON public.expense_items;
+DROP POLICY IF EXISTS "Allow users to manage their own tickets" ON public.helpdesk_tickets;
+DROP POLICY IF EXISTS "Allow support/admin to manage all tickets" ON public.helpdesk_tickets;
+DROP POLICY IF EXISTS "Allow users to manage their own comments" ON public.ticket_comments;
+DROP POLICY IF EXISTS "Allow support/admin to manage all comments" ON public.ticket_comments;
+DROP POLICY IF EXISTS "Enable read access for authenticated users" ON public.onboarding_workflows;
+
+
+-- Drop tables in reverse order of creation due to dependencies
+DROP TABLE IF EXISTS public.ticket_comments;
+DROP TABLE IF EXISTS public.helpdesk_tickets;
+DROP TABLE IF EXISTS public.expense_items;
+DROP TABLE IF EXISTS public.expense_reports;
+DROP TABLE IF EXISTS public.key_results;
+DROP TABLE IF EXISTS public.objectives;
+DROP TABLE IF EXISTS public.company_documents;
+DROP TABLE IF EXISTS public.payslips;
+DROP TABLE IF EXISTS public.weekly_awards;
+DROP TABLE IF EXISTS public.kudos;
+DROP TABLE IF EXISTS public.post_comments;
+DROP TABLE IF EXISTS public.company_posts;
+DROP TABLE IF EXISTS public.interviews;
+DROP TABLE IF EXISTS public.applicant_notes;
+DROP TABLE IF EXISTS public.onboarding_workflows;
+DROP TABLE IF EXISTS public.leaves;
+DROP TABLE IF EXISTS public.leave_balances;
+DROP TABLE IF EXISTS public.applicants;
+DROP TABLE IF EXISTS public.colleges;
+DROP TABLE IF EXISTS public.jobs;
+
+-- Drop dependent types last
+DROP TYPE IF EXISTS public.user_role;
+DROP TYPE IF EXISTS public.applicant_stage;
+DROP TYPE IF EXISTS public.job_status;
+DROP TYPE IF EXISTS public.leave_status;
+DROP TYPE IF EXISTS public.leave_type;
+DROP TYPE IF EXISTS public.college_status;
+DROP TYPE IF EXISTS public.interview_status;
+DROP TYPE IF EXISTS public.interview_type;
+DROP TYPE IF EXISTS public.review_status;
+DROP TYPE IF EXISTS public.key_result_status;
+DROP TYPE IF EXISTS public.expense_report_status;
+DROP TYPE IF EXISTS public.ticket_status;
+DROP TYPE IF EXISTS public.ticket_priority;
+DROP TYPE IF EXISTS public.ticket_category;
+
+-- Functions and Triggers
+-- The handle_new_user function and its trigger on auth.users are managed in a separate file
+-- to avoid permission issues with dropping/creating triggers on the auth schema.
+-- This schema file focuses on the public schema.
+
+
+-- Custom Types
+CREATE TYPE public.user_role AS ENUM (
+  'admin', 'super_hr', 'hr_manager', 'recruiter', 'interviewer', 'manager', 'team_lead', 'employee', 'intern', 'guest', 'finance', 'it_admin', 'support', 'auditor'
 );
--- Set up Row Level Security (RLS)
-alter table public.users enable row level security;
+CREATE TYPE public.applicant_stage AS ENUM (
+  'Sourced', 'Applied', 'Phone Screen', 'Interview', 'Offer', 'Hired', 'Rejected'
+);
+CREATE TYPE public.job_status AS ENUM (
+  'Open', 'Closed', 'On hold'
+);
+CREATE TYPE public.leave_status AS ENUM (
+  'pending', 'approved', 'rejected'
+);
+CREATE TYPE public.leave_type AS ENUM (
+  'sick', 'casual', 'earned', 'unpaid'
+);
+CREATE TYPE public.college_status AS ENUM (
+    'Invited', 'Confirmed', 'Attended', 'Declined'
+);
+CREATE TYPE public.interview_status AS ENUM (
+    'Scheduled', 'Completed', 'Canceled'
+);
+CREATE TYPE public.interview_type AS ENUM (
+    'Video', 'Phone', 'In-person'
+);
+CREATE TYPE public.review_status AS ENUM (
+    'Pending', 'In Progress', 'Completed'
+);
+CREATE TYPE public.key_result_status AS ENUM (
+    'on_track', 'at_risk', 'off_track'
+);
+CREATE TYPE public.expense_report_status AS ENUM (
+    'draft', 'submitted', 'approved', 'rejected', 'reimbursed'
+);
+CREATE TYPE public.ticket_status AS ENUM (
+    'Open', 'In Progress', 'Resolved', 'Closed'
+);
+CREATE TYPE public.ticket_priority AS ENUM (
+    'Low', 'Medium', 'High', 'Urgent'
+);
+CREATE TYPE public.ticket_category AS ENUM (
+    'IT', 'HR', 'Finance', 'General'
+);
 
--- Set up Policies
--- Allow public access to view user profiles
-create policy "Public user profiles are viewable by everyone." on public.users for select using (true);
--- Allow users to insert their own profile
-create policy "Users can insert their own profile." on public.users for insert with check (auth.uid() = id);
--- Allow users to update their own profile
-create policy "Users can update their own profile." on public.users for update using (auth.uid() = id);
 
--- This trigger automatically creates a profile entry when a new user signs up via Supabase Auth.
--- See https://supabase.com/docs/guides/auth/managing-user-data#using-triggers for more details.
-create or replace function public.handle_new_user()
-returns trigger as $$
-begin
-  insert into public.users (id, full_name, avatar_url, role, department)
-  values (
-    new.id,
-    new.raw_user_meta_data->>'full_name',
-    new.raw_user_meta_data->>'avatar_url',
-    new.raw_user_meta_data->>'role',
-    new.raw_user_meta_data->>'department'
+-- Tables
+CREATE TABLE public.users (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    full_name TEXT,
+    email TEXT UNIQUE,
+    avatar_url TEXT,
+    role user_role NOT NULL DEFAULT 'guest',
+    department TEXT,
+    phone TEXT,
+    profile_setup_complete BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS phone TEXT;
+
+
+CREATE TABLE public.leave_balances (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+    sick_leave INT NOT NULL DEFAULT 0,
+    casual_leave INT NOT NULL DEFAULT 0,
+    earned_leave INT NOT NULL DEFAULT 0,
+    unpaid_leave INT NOT NULL DEFAULT 0,
+    UNIQUE(user_id)
+);
+
+
+CREATE TABLE public.leaves (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+    leave_type leave_type NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    reason TEXT,
+    status leave_status NOT NULL DEFAULT 'pending',
+    approver_id UUID REFERENCES public.users(id),
+    total_days INT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE public.onboarding_workflows (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    manager_id UUID NOT NULL REFERENCES public.users(id),
+    buddy_id UUID REFERENCES public.users(id),
+    employee_name TEXT NOT NULL,
+    employee_avatar TEXT,
+    job_title TEXT NOT NULL,
+    manager_name TEXT NOT NULL,
+    buddy_name TEXT,
+    progress INT NOT NULL DEFAULT 0,
+    current_step TEXT NOT NULL DEFAULT 'Welcome Kit',
+    start_date DATE NOT NULL
+);
+
+CREATE TABLE public.jobs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    department TEXT NOT NULL,
+    description TEXT,
+    status job_status NOT NULL,
+    posted_date DATE NOT NULL,
+    applicants INT DEFAULT 0
+);
+
+CREATE TABLE public.colleges (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    status college_status NOT NULL,
+    resumes_received INT DEFAULT 0,
+    contact_email TEXT,
+    last_contacted DATE
+);
+
+CREATE TABLE public.applicants (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    phone TEXT NOT NULL,
+    job_id UUID REFERENCES public.jobs(id) ON DELETE SET NULL,
+    college_id UUID REFERENCES public.colleges(id) ON DELETE SET NULL,
+    stage applicant_stage NOT NULL,
+    applied_date DATE NOT NULL,
+    avatar TEXT,
+    source TEXT,
+    resume_data JSONB,
+    ai_match_score INT,
+    ai_justification TEXT,
+    wpm INT,
+    accuracy REAL,
+    aptitude_score REAL,
+    comprehensive_score REAL,
+    english_grammar_score REAL,
+    customer_service_score REAL,
+    rejection_reason TEXT,
+    rejection_notes TEXT
+);
+
+
+CREATE TABLE public.applicant_notes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    applicant_id UUID NOT NULL REFERENCES public.applicants(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
+    author_name TEXT NOT NULL,
+    author_avatar TEXT,
+    note TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+
+CREATE TABLE public.interviews (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    applicant_id UUID NOT NULL REFERENCES public.applicants(id) ON DELETE CASCADE,
+    interviewer_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    date DATE NOT NULL,
+    time TEXT NOT NULL,
+    type interview_type NOT NULL,
+    status interview_status NOT NULL,
+    candidate_name TEXT NOT NULL,
+    candidate_avatar TEXT,
+    interviewer_name TEXT NOT NULL,
+    interviewer_avatar TEXT,
+    job_title TEXT NOT NULL
+);
+
+CREATE TABLE public.company_posts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    image_url TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE public.post_comments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    post_id UUID NOT NULL REFERENCES public.company_posts(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    comment TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+
+CREATE TABLE public.kudos (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    from_user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    to_user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    value TEXT NOT NULL,
+    message TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE public.weekly_awards (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    awarded_user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    awarded_by_user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    reason TEXT NOT NULL,
+    week_of DATE NOT NULL
+);
+
+CREATE TABLE public.payslips (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    month TEXT NOT NULL,
+    year INT NOT NULL,
+    gross_salary REAL NOT NULL,
+    net_salary REAL NOT NULL,
+    download_url TEXT NOT NULL
+);
+
+CREATE TABLE public.company_documents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    description TEXT,
+    category TEXT NOT NULL,
+    last_updated TIMESTAMPTZ NOT NULL,
+    download_url TEXT NOT NULL
+);
+
+CREATE TABLE public.objectives (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    quarter TEXT NOT NULL
+);
+
+CREATE TABLE public.key_results (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    objective_id UUID NOT NULL REFERENCES public.objectives(id) ON DELETE CASCADE,
+    description TEXT NOT NULL,
+    progress INT NOT NULL DEFAULT 0,
+    status key_result_status NOT NULL DEFAULT 'on_track'
+);
+
+CREATE TABLE public.expense_reports (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    total_amount REAL NOT NULL,
+    status expense_report_status NOT NULL DEFAULT 'submitted',
+    submitted_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE public.expense_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    expense_report_id UUID NOT NULL REFERENCES public.expense_reports(id) ON DELETE CASCADE,
+    date DATE NOT NULL,
+    category TEXT NOT NULL,
+    amount REAL NOT NULL,
+    description TEXT
+);
+
+CREATE TABLE public.helpdesk_tickets (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    subject TEXT NOT NULL,
+    description TEXT NOT NULL,
+    category ticket_category NOT NULL,
+    status ticket_status NOT NULL DEFAULT 'Open',
+    priority ticket_priority NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    resolver_id UUID REFERENCES public.users(id)
+);
+
+CREATE TABLE public.ticket_comments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ticket_id UUID NOT NULL REFERENCES public.helpdesk_tickets(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    comment TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Function to get job funnel stats
+CREATE OR REPLACE FUNCTION get_job_funnel_stats()
+RETURNS TABLE(stage applicant_stage, count BIGINT) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        a.stage,
+        COUNT(a.id) as count
+    FROM 
+        public.applicants a
+    GROUP BY 
+        a.stage
+    ORDER BY
+        CASE a.stage
+            WHEN 'Sourced' THEN 1
+            WHEN 'Applied' THEN 2
+            WHEN 'Phone Screen' THEN 3
+            WHEN 'Interview' THEN 4
+            WHEN 'Offer' THEN 5
+            WHEN 'Hired' THEN 6
+            WHEN 'Rejected' THEN 7
+            ELSE 8
+        END;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create handle_new_user function if it doesn't exist, or replace it if it does
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.users (id, email, full_name, avatar_url, role, department)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    NEW.raw_user_meta_data ->> 'full_name',
+    NEW.raw_user_meta_data ->> 'avatar_url',
+    (NEW.raw_user_meta_data ->> 'role')::public.user_role,
+    NEW.raw_user_meta_data ->> 'department'
   );
-  return new;
-end;
-$$ language plpgsql security definer;
+  -- Also create a default leave balance
+  INSERT INTO public.leave_balances(user_id, sick_leave, casual_leave, earned_leave, unpaid_leave)
+  VALUES (NEW.id, 12, 12, 15, 0);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Trigger the function upon user creation
+
+-- Create the trigger only if it does not already exist
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1
-    FROM pg_trigger
-    WHERE tgname = 'on_auth_user_created'
-  ) THEN
-    create trigger on_auth_user_created
-      after insert on auth.users
-      for each row execute procedure public.handle_new_user();
-  END IF;
+   IF NOT EXISTS (
+      SELECT 1
+      FROM pg_trigger
+      WHERE tgname = 'on_auth_user_created'
+   ) THEN
+      CREATE TRIGGER on_auth_user_created
+      AFTER INSERT ON auth.users
+      FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+   END IF;
 END
 $$;
 
-
--- ------------------------------------------------------------------------------------------------
---  TABLES & RLS
--- ------------------------------------------------------------------------------------------------
-
--- Jobs Table
-create table if not exists public.jobs (
-    id uuid primary key default gen_random_uuid(),
-    title text not null,
-    department text not null,
-    description text,
-    status text not null default 'Open', -- Open, Closed, On hold
-    posted_date timestamptz not null default now(),
-    applicants int not null default 0
-);
-alter table public.jobs enable row level security;
-create policy "Jobs are viewable by authenticated users." on public.jobs for select using (auth.role() = 'authenticated');
-create policy "HR and admins can create/update jobs." on public.jobs for all using (
-    (select role from public.users where id = auth.uid()) in ('admin', 'hr_manager', 'super_hr', 'recruiter')
+-- RLS Policies
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow individual read access" ON public.users FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Allow admins to manage everything" ON public.users FOR ALL USING (
+    (SELECT role FROM public.users WHERE id = auth.uid()) IN ('admin', 'super_hr')
+) WITH CHECK (
+    (SELECT role FROM public.users WHERE id = auth.uid()) IN ('admin', 'super_hr')
 );
 
--- Colleges Table
-create table if not exists public.colleges (
-    id uuid primary key default gen_random_uuid(),
-    name text not null,
-    status text not null, -- Invited, Confirmed, Attended
-    resumes_received int not null default 0,
-    contact_email text,
-    last_contacted timestamptz not null default now()
-);
-alter table public.colleges enable row level security;
-create policy "Colleges are viewable by HR team." on public.colleges for select using (
-    (select role from public.users where id = auth.uid()) in ('admin', 'hr_manager', 'super_hr', 'recruiter')
-);
-create policy "HR and admins can create/update colleges." on public.colleges for all using (
-    (select role from public.users where id = auth.uid()) in ('admin', 'hr_manager', 'super_hr', 'recruiter')
-);
-
--- Applicants Table
-create table if not exists public.applicants (
-    id uuid primary key default gen_random_uuid(),
-    name text not null,
-    email text not null,
-    phone text,
-    job_id uuid references public.jobs(id),
-    stage text not null default 'Sourced',
-    applied_date timestamptz not null default now(),
-    avatar text,
-    source text, -- walk-in, college, email
-    college_id uuid references public.colleges(id),
-    resume_data jsonb,
-    ai_match_score int,
-    ai_justification text,
-    wpm int,
-    accuracy int,
-    aptitude_score int,
-    comprehensive_score int,
-    english_grammar_score int,
-    customer_service_score int,
-    rejection_reason text,
-    rejection_notes text
-);
-alter table public.applicants enable row level security;
-create policy "Applicants are viewable by HR team and interviewers." on public.applicants for select using (
-    (select role from public.users where id = auth.uid()) in ('admin', 'hr_manager', 'super_hr', 'recruiter', 'interviewer', 'manager')
-);
-create policy "Anyone can create an applicant." on public.applicants for insert with check (true);
-create policy "HR team can update applicants." on public.applicants for update using (
-    (select role from public.users where id = auth.uid()) in ('admin', 'hr_manager', 'super_hr', 'recruiter')
-);
-
--- Onboarding Table
-create table if not exists public.onboarding_workflows (
-    id uuid primary key default gen_random_uuid(),
-    user_id uuid not null references public.users(id),
-    manager_id uuid references public.users(id),
-    buddy_id uuid references public.users(id),
-    employee_name text not null,
-    employee_avatar text,
-    job_title text,
-    manager_name text,
-    buddy_name text,
-    progress int not null default 0,
-    current_step text not null default 'Pending',
-    start_date timestamptz not null default now()
-);
-alter table public.onboarding_workflows enable row level security;
-create policy "Onboarding info accessible by relevant parties." on public.onboarding_workflows for select using (
-    user_id = auth.uid() or manager_id = auth.uid() or buddy_id = auth.uid() or (select role from public.users where id = auth.uid()) in ('admin', 'hr_manager', 'super_hr')
-);
-create policy "HR and admins can manage onboarding." on public.onboarding_workflows for all using (
-    (select role from public.users where id = auth.uid()) in ('admin', 'hr_manager', 'super_hr')
-);
-
--- Leave Balances Table
-create table if not exists public.leave_balances (
-    id uuid primary key default gen_random_uuid(),
-    user_id uuid not null unique references public.users(id),
-    sick_leave int not null default 12,
-    casual_leave int not null default 12,
-    earned_leave int not null default 15,
-    unpaid_leave int not null default 0
-);
-alter table public.leave_balances enable row level security;
-create policy "Users can view their own leave balance." on public.leave_balances for select using (user_id = auth.uid());
-create policy "Admins/HR can view all leave balances." on public.leave_balances for select using ((select role from public.users where id = auth.uid()) in ('admin', 'hr_manager', 'super_hr'));
-create policy "Admins/HR can update leave balances." on public.leave_balances for update using ((select role from public.users where id = auth.uid()) in ('admin', 'hr_manager', 'super_hr'));
-
--- Leaves Table
-create table if not exists public.leaves (
-    id uuid primary key default gen_random_uuid(),
-    user_id uuid not null references public.users(id),
-    leave_type text not null,
-    start_date date not null,
-    end_date date not null,
-    reason text not null,
-    status text not null default 'pending', -- pending, approved, rejected
-    approver_id uuid references public.users(id),
-    created_at timestamptz not null default now(),
-    total_days int not null
-);
-alter table public.leaves enable row level security;
-create policy "Users can view their own leave requests." on public.leaves for select using (user_id = auth.uid());
-create policy "Users can create their own leave requests." on public.leaves for insert with check (user_id = auth.uid());
-create policy "Managers and HR can view all leave requests." on public.leaves for select using (
-    (select role from public.users where id = auth.uid()) in ('admin', 'hr_manager', 'super_hr', 'manager', 'team_lead')
-);
-create policy "Managers and HR can approve leave requests." on public.leaves for update using (
-    (select role from public.users where id = auth.uid()) in ('admin', 'hr_manager', 'super_hr', 'manager', 'team_lead')
-) with check (
-    status in ('approved', 'rejected')
-);
-
--- Applicant Notes Table
-create table if not exists public.applicant_notes (
-    id uuid primary key default gen_random_uuid(),
-    applicant_id uuid not null references public.applicants(id),
-    user_id uuid not null references public.users(id),
-    author_name text not null,
-    author_avatar text,
-    note text not null,
-    created_at timestamptz not null default now()
-);
-alter table public.applicant_notes enable row level security;
-create policy "HR team and interviewers can view notes." on public.applicant_notes for select using ((select role from public.users where id = auth.uid()) in ('admin', 'super_hr', 'hr_manager', 'recruiter', 'interviewer'));
-create policy "HR team and interviewers can create notes." on public.applicant_notes for insert with check ((select role from public.users where id = auth.uid()) in ('admin', 'super_hr', 'hr_manager', 'recruiter', 'interviewer'));
-
--- Interviews Table
-create table if not exists public.interviews (
-    id uuid primary key default gen_random_uuid(),
-    applicant_id uuid not null references public.applicants(id),
-    interviewer_id uuid not null references public.users(id),
-    date date not null,
-    time text not null,
-    type text not null, -- Video, Phone, In-person
-    status text not null default 'Scheduled', -- Scheduled, Completed, Canceled
-    candidate_name text not null,
-    candidate_avatar text,
-    interviewer_name text not null,
-    interviewer_avatar text,
-    job_title text not null
-);
-alter table public.interviews enable row level security;
-create policy "Interviews are visible to involved parties and HR." on public.interviews for select using (
-    interviewer_id = auth.uid() 
-    or (select role from public.users where id = auth.uid()) in ('admin', 'super_hr', 'hr_manager', 'recruiter')
-);
-create policy "HR team can schedule interviews." on public.interviews for insert with check (
-    (select role from public.users where id = auth.uid()) in ('admin', 'super_hr', 'hr_manager', 'recruiter')
-);
-create policy "Interviewers and HR can update interview status." on public.interviews for update using (
-    interviewer_id = auth.uid() 
-    or (select role from public.users where id = auth.uid()) in ('admin', 'super_hr', 'hr_manager', 'recruiter')
-);
-
--- Company Posts Table
-create table if not exists public.company_posts (
-    id uuid primary key default gen_random_uuid(),
-    user_id uuid not null references public.users(id),
-    content text not null,
-    image_url text,
-    created_at timestamptz not null default now()
-);
-alter table public.company_posts enable row level security;
-create policy "All authenticated users can see company posts." on public.company_posts for select using (auth.role() = 'authenticated');
-create policy "HR/Admin can create company posts." on public.company_posts for insert with check (
-    (select role from public.users where id = auth.uid()) in ('admin', 'super_hr', 'hr_manager')
-);
-
--- Post Comments Table
-create table if not exists public.post_comments (
-    id uuid primary key default gen_random_uuid(),
-    post_id uuid not null references public.company_posts(id) on delete cascade,
-    user_id uuid not null references public.users(id) on delete cascade,
-    comment text not null,
-    created_at timestamptz not null default now()
-);
-alter table public.post_comments enable row level security;
-create policy "Authenticated users can see all comments." on public.post_comments for select using (auth.role() = 'authenticated');
-create policy "Authenticated users can insert comments." on public.post_comments for insert with check (user_id = auth.uid());
-create policy "Users can update their own comments." on public.post_comments for update using (user_id = auth.uid());
-create policy "Users can delete their own comments." on public.post_comments for delete using (user_id = auth.uid());
-
-
--- Kudos Table
-create table if not exists public.kudos (
-    id uuid primary key default gen_random_uuid(),
-    from_user_id uuid not null references public.users(id),
-    to_user_id uuid not null references public.users(id),
-    value text not null,
-    message text not null,
-    created_at timestamptz not null default now()
-);
-alter table public.kudos enable row level security;
-create policy "All authenticated users can see kudos." on public.kudos for select using (auth.role() = 'authenticated');
-create policy "All authenticated users can give kudos." on public.kudos for insert with check (auth.role() = 'authenticated');
-
--- Weekly Awards Table
-create table if not exists public.weekly_awards (
-    id uuid primary key default gen_random_uuid(),
-    awarded_user_id uuid not null references public.users(id),
-    awarded_by_user_id uuid not null references public.users(id),
-    reason text not null,
-    week_of date not null
-);
-alter table public.weekly_awards enable row level security;
-create policy "All authenticated users can see awards." on public.weekly_awards for select using (auth.role() = 'authenticated');
-create policy "Managers and HR can give awards." on public.weekly_awards for insert with check (
-    (select role from public.users where id = auth.uid()) in ('admin', 'super_hr', 'hr_manager', 'manager', 'team_lead')
-);
-
--- Company Documents Table
-create table if not exists public.company_documents (
-    id uuid primary key default gen_random_uuid(),
-    title text not null,
-    description text not null,
-    category text not null,
-    last_updated date not null,
-    download_url text not null
-);
-alter table public.company_documents enable row level security;
-create policy "Documents are visible to all authenticated users." on public.company_documents for select using (auth.role() = 'authenticated');
-
--- Payslips Table
-create table if not exists public.payslips (
-    id uuid primary key default gen_random_uuid(),
-    user_id uuid not null references public.users(id),
-    month text not null,
-    year int not null,
-    gross_salary real not null,
-    net_salary real not null,
-    download_url text not null
-);
-alter table public.payslips enable row level security;
-create policy "Users can see their own payslips." on public.payslips for select using (user_id = auth.uid());
-create policy "HR and admins can see all payslips." on public.payslips for select using ((select role from public.users where id = auth.uid()) in ('admin', 'super_hr', 'hr_manager'));
-
-
--- OKR Tables
-create table if not exists public.objectives (
-    id uuid primary key default gen_random_uuid(),
-    owner_id uuid not null references public.users(id),
-    title text not null,
-    quarter text not null
-);
-create table if not exists public.key_results (
-    id uuid primary key default gen_random_uuid(),
-    objective_id uuid not null references public.objectives(id),
-    description text not null,
-    progress int not null default 0,
-    status text not null default 'on_track'
-);
-alter table public.objectives enable row level security;
-alter table public.key_results enable row level security;
-create policy "Users can see their own OKRs." on public.objectives for select using (owner_id = auth.uid() or (select role from public.users where id = auth.uid()) in ('admin', 'super_hr', 'hr_manager'));
-create policy "Users can see their own KRs." on public.key_results for select using (
-    exists (select 1 from public.objectives where id = objective_id and (owner_id = auth.uid() or (select role from public.users where id = auth.uid()) in ('admin', 'super_hr', 'hr_manager')))
-);
-
--- Expense Management Tables
-create table if not exists public.expense_reports (
-    id uuid primary key default gen_random_uuid(),
-    user_id uuid not null references public.users(id),
-    title text not null,
-    total_amount real not null,
-    status text not null default 'submitted',
-    submitted_at timestamptz not null default now()
-);
-create table if not exists public.expense_items (
-    id uuid primary key default gen_random_uuid(),
-    expense_report_id uuid not null references public.expense_reports(id),
-    date date not null,
-    category text not null,
-    amount real not null,
-    description text
-);
-alter table public.expense_reports enable row level security;
-alter table public.expense_items enable row level security;
-create policy "Users can manage their own expense reports." on public.expense_reports for all using (user_id = auth.uid());
-create policy "Users can manage items for their own reports." on public.expense_items for all using (
-    exists (select 1 from public.expense_reports where id = expense_report_id and user_id = auth.uid())
-);
-create policy "Finance/HR/Admin can view all reports." on public.expense_reports for select using ((select role from public.users where id = auth.uid()) in ('admin', 'super_hr', 'hr_manager', 'finance'));
-create policy "Finance/HR/Admin can view all items." on public.expense_items for select using ((select role from public.users where id = auth.uid()) in ('admin', 'super_hr', 'hr_manager', 'finance'));
-
--- Helpdesk Table
-create table if not exists public.helpdesk_tickets (
-    id uuid primary key default gen_random_uuid(),
-    user_id uuid not null references public.users(id),
-    subject text not null,
-    description text not null,
-    category text not null,
-    status text not null,
-    priority text not null,
-    created_at timestamptz not null default now(),
-    updated_at timestamptz not null default now(),
-    resolver_id uuid references public.users(id)
-);
-alter table public.helpdesk_tickets enable row level security;
-create policy "Users see their own tickets." on public.helpdesk_tickets for select using (user_id = auth.uid());
-create policy "Users can create tickets." on public.helpdesk_tickets for insert with check (user_id = auth.uid());
-create policy "Support roles can see all tickets." on public.helpdesk_tickets for select using ((select role from public.users where id = auth.uid()) in ('admin', 'super_hr', 'hr_manager', 'it_admin', 'support'));
-create policy "Support roles can update tickets." on public.helpdesk_tickets for update using ((select role from public.users where id = auth.uid()) in ('admin', 'super_hr', 'hr_manager', 'it_admin', 'support'));
-
--- Ticket Comments Table
-create table if not exists public.ticket_comments (
-    id uuid primary key default gen_random_uuid(),
-    ticket_id uuid not null references public.helpdesk_tickets(id),
-    user_id uuid not null references public.users(id),
-    comment text not null,
-    created_at timestamptz not null default now()
-);
-alter table public.ticket_comments enable row level security;
-create policy "Involved parties and support can see comments." on public.ticket_comments for select using (
-    (select role from public.users where id = auth.uid()) in ('admin', 'super_hr', 'hr_manager', 'it_admin', 'support') or 
-    exists(select 1 from public.helpdesk_tickets where id = ticket_id and user_id = auth.uid())
-);
-create policy "Involved parties and support can create comments." on public.ticket_comments for insert with check (
-    (select role from public.users where id = auth.uid()) in ('admin', 'super_hr', 'hr_manager', 'it_admin', 'support') or 
-    exists(select 1 from public.helpdesk_tickets where id = ticket_id and user_id = auth.uid())
-);
-
--- ------------------------------------------------------------------------------------------------
---  STORAGE
--- ------------------------------------------------------------------------------------------------
-
--- Set up Storage!
-insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values 
-    ('avatars', 'avatars', true, 5242880, '{"image/jpeg","image/png","image/gif","image/webp"}'),
-    ('post_images', 'post_images', true, 10485760, '{"image/jpeg","image/png","image/gif","image/webp"}')
-on conflict (id) do nothing;
-
-create policy "Avatar images are publicly accessible." on storage.objects for select using (bucket_id = 'avatars');
-create policy "Anyone can upload an avatar." on storage.objects for insert with check (bucket_id = 'avatars');
-create policy "Post images are publicly accessible." on storage.objects for select using (bucket_id = 'post_images');
-create policy "HR/Admins can upload post images." on storage.objects for insert with check (
-    bucket_id = 'post_images' and (select role from public.users where id = auth.uid()) in ('admin', 'super_hr', 'hr_manager')
+ALTER TABLE public.leave_balances ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow individual read access" ON public.leave_balances FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Allow admins to read all balances" ON public.leave_balances FOR SELECT USING (
+    (SELECT role FROM public.users WHERE id = auth.uid()) IN ('admin', 'super_hr', 'hr_manager')
 );
 
 
--- ------------------------------------------------------------------------------------------------
---  FUNCTIONS
--- ------------------------------------------------------------------------------------------------
+ALTER TABLE public.leaves ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Enable read for users based on user_id" ON public.leaves FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Allow users to insert their own leave" ON public.leaves FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Allow admins to manage leaves" ON public.leaves FOR ALL USING (
+    (SELECT role FROM public.users WHERE id = auth.uid()) IN ('admin', 'super_hr', 'hr_manager')
+);
+CREATE POLICY "Managers can see their team's leave requests" ON public.leaves FOR SELECT USING (
+    department = (SELECT department FROM public.users WHERE id = auth.uid())
+);
 
--- Function to get job funnel stats
-create or replace function get_job_funnel_stats()
-returns table (stage text, count bigint) as $$
-begin
-  return query
-    select 
-      a.stage, 
-      count(a.id)
-    from public.applicants a
-    where a.stage in ('Sourced', 'Applied', 'Phone Screen', 'Interview', 'Offer', 'Hired')
-    group by a.stage
-    order by 
-      case a.stage
-        when 'Sourced' then 1
-        when 'Applied' then 2
-        when 'Phone Screen' then 3
-        when 'Interview' then 4
-        when 'Offer' then 5
-        when 'Hired' then 6
-      end;
-end;
-$$ language plpgsql;
+
+ALTER TABLE public.jobs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Enable read access for all users" ON public.jobs FOR SELECT USING (true);
+CREATE POLICY "Enable write access for hr and admin" ON public.jobs FOR ALL USING (
+    (SELECT role FROM public.users WHERE id = auth.uid()) IN ('admin', 'super_hr', 'hr_manager', 'recruiter')
+);
+
+ALTER TABLE public.applicants ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Enable insert for authenticated users" ON public.applicants FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Enable read access for all users" ON public.applicants FOR SELECT USING (
+    (SELECT role FROM public.users WHERE id = auth.uid()) IN ('admin', 'super_hr', 'hr_manager', 'recruiter', 'manager', 'interviewer')
+);
+CREATE POLICY "Enable write access for hr and admin" ON public.applicants FOR UPDATE USING (
+    (SELECT role FROM public.users WHERE id = auth.uid()) IN ('admin', 'super_hr', 'hr_manager', 'recruiter')
+);
+
+ALTER TABLE public.colleges ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow full access for admins" ON public.colleges FOR ALL USING (
+    (SELECT role FROM public.users WHERE id = auth.uid()) IN ('admin', 'super_hr', 'hr_manager', 'recruiter')
+);
+CREATE POLICY "Allow read access for authenticated users" ON public.colleges FOR SELECT USING (auth.role() = 'authenticated');
+
+ALTER TABLE public.applicant_notes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow full access for admins" ON public.applicant_notes FOR ALL USING (
+    (SELECT role FROM public.users WHERE id = auth.uid()) IN ('admin', 'super_hr', 'hr_manager', 'recruiter', 'manager', 'interviewer')
+);
+CREATE POLICY "Allow read access for authenticated users" ON public.applicant_notes FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow insert for authenticated users" ON public.applicant_notes FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+ALTER TABLE public.interviews ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow full access to HR and admins" ON public.interviews FOR ALL USING (
+    (SELECT role FROM public.users WHERE id = auth.uid()) IN ('admin', 'super_hr', 'hr_manager', 'recruiter')
+);
+CREATE POLICY "Allow interviewers to see their own interviews" ON public.interviews FOR SELECT USING (
+    interviewer_id = auth.uid()
+);
+
+ALTER TABLE public.company_posts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Enable read access for all users" ON public.company_posts FOR SELECT USING (true);
+CREATE POLICY "Enable insert for admins and HR" ON public.company_posts FOR INSERT WITH CHECK (
+    (SELECT role FROM public.users WHERE id = auth.uid()) IN ('admin', 'super_hr', 'hr_manager')
+);
+
+ALTER TABLE public.post_comments ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Enable read for all users" ON public.post_comments FOR SELECT USING (true);
+CREATE POLICY "Enable insert for authenticated users" ON public.post_comments FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Users can manage their own comments" ON public.post_comments FOR ALL USING (auth.uid() = user_id);
+
+ALTER TABLE public.kudos ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Enable read for all users" ON public.kudos FOR SELECT USING (true);
+CREATE POLICY "Enable insert for authenticated users" ON public.kudos FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+ALTER TABLE public.weekly_awards ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Enable read for all users" ON public.weekly_awards FOR SELECT USING (true);
+CREATE POLICY "Enable insert for managers and HR" ON public.weekly_awards FOR INSERT WITH CHECK (
+    (SELECT role FROM public.users WHERE id = auth.uid()) IN ('admin', 'super_hr', 'hr_manager', 'manager', 'team_lead')
+);
+
+ALTER TABLE public.payslips ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Enable read for own payslips" ON public.payslips FOR SELECT USING (user_id = auth.uid());
+CREATE POLICY "Allow admin to read all payslips" ON public.payslips FOR SELECT USING (
+    (SELECT role FROM public.users WHERE id = auth.uid()) IN ('admin', 'super_hr', 'hr_manager')
+);
+
+ALTER TABLE public.company_documents ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Enable read for all users" ON public.company_documents FOR SELECT USING (true);
+
+ALTER TABLE public.objectives ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Enable read access for own data" ON public.objectives FOR SELECT USING (owner_id = auth.uid());
+CREATE POLICY "Enable CRUD for admin/hr" ON public.objectives FOR ALL USING ((SELECT role FROM public.users WHERE id = auth.uid()) IN ('admin', 'super_hr', 'hr_manager'));
+
+ALTER TABLE public.key_results ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Enable read access for own data" ON public.key_results FOR SELECT USING (
+    objective_id IN (SELECT id FROM public.objectives WHERE owner_id = auth.uid())
+);
+CREATE POLICY "Enable CRUD for admin/hr" ON public.key_results FOR ALL USING (
+    (SELECT role FROM public.users WHERE id = auth.uid()) IN ('admin', 'super_hr', 'hr_manager')
+);
+
+ALTER TABLE public.expense_reports ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow users to manage their own expense reports" ON public.expense_reports FOR ALL USING (user_id = auth.uid());
+CREATE POLICY "Allow finance/admin to manage all expense reports" ON public.expense_reports FOR ALL USING (
+    (SELECT role FROM public.users WHERE id = auth.uid()) IN ('admin', 'super_hr', 'finance')
+);
+
+ALTER TABLE public.expense_items ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow users to manage items on their own reports" ON public.expense_items FOR ALL USING (
+    expense_report_id IN (SELECT id FROM public.expense_reports WHERE user_id = auth.uid())
+);
+CREATE POLICY "Allow finance/admin to manage all expense items" ON public.expense_items FOR ALL USING (
+    (SELECT role FROM public.users WHERE id = auth.uid()) IN ('admin', 'super_hr', 'finance')
+);
+
+ALTER TABLE public.helpdesk_tickets ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow users to manage their own tickets" ON public.helpdesk_tickets FOR ALL USING (user_id = auth.uid());
+CREATE POLICY "Allow support/admin to manage all tickets" ON public.helpdesk_tickets FOR ALL USING (
+    (SELECT role FROM public.users WHERE id = auth.uid()) IN ('admin', 'super_hr', 'support', 'it_admin')
+);
+
+ALTER TABLE public.ticket_comments ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow users to manage their own comments" ON public.ticket_comments FOR ALL USING (user_id = auth.uid());
+CREATE POLICY "Allow support/admin to manage all comments" ON public.ticket_comments FOR ALL USING (
+    (SELECT role FROM public.users WHERE id = auth.uid()) IN ('admin', 'super_hr', 'support', 'it_admin')
+);
+
+ALTER TABLE public.onboarding_workflows ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Enable read access for authenticated users" ON public.onboarding_workflows FOR SELECT USING (
+    user_id = auth.uid() OR manager_id = auth.uid() OR buddy_id = auth.uid() OR (SELECT role FROM public.users WHERE id = auth.uid()) IN ('admin', 'super_hr', 'hr_manager')
+);
+
+-- Storage buckets
+INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', true) ON CONFLICT (id) DO NOTHING;
+INSERT INTO storage.buckets (id, name, public) VALUES ('post_images', 'post_images', true) ON CONFLICT (id) DO NOTHING;
+
+-- Storage policies
+DROP POLICY IF EXISTS "Avatar images are publicly accessible." ON storage.objects;
+CREATE POLICY "Avatar images are publicly accessible." ON storage.objects FOR
+SELECT USING (bucket_id = 'avatars');
+
+DROP POLICY IF EXISTS "Anyone can upload an avatar." ON storage.objects;
+CREATE POLICY "Anyone can upload an avatar." ON storage.objects FOR
+INSERT WITH CHECK (bucket_id = 'avatars');
+
+DROP POLICY IF EXISTS "Post images are publicly accessible." ON storage.objects;
+CREATE POLICY "Post images are publicly accessible." ON storage.objects FOR
+SELECT USING (bucket_id = 'post_images');
+
+DROP POLICY IF EXISTS "Anyone can upload a post image." ON storage.objects;
+CREATE POLICY "Anyone can upload a post image." ON storage.objects FOR
+INSERT WITH CHECK (bucket_id = 'post_images');
