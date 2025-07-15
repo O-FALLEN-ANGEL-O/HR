@@ -32,7 +32,7 @@ export async function addEmployee(formData: FormData) {
   // 1. Create the user in Supabase Auth
   const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
     email,
-    email_confirm: true,
+    email_confirm: true, // Auto-confirm email to make magic link work immediately
     user_metadata: {
       full_name: fullName,
       role: role,
@@ -50,27 +50,28 @@ export async function addEmployee(formData: FormData) {
   // The public.users table is now populated by a trigger, so we don't need to insert here.
   // We just need to generate the setup link.
 
-  // 2. Generate a password recovery link for the new user
+  // 2. Generate an identity verification link (magic link) for the new user
   const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-    type: 'recovery',
+    type: 'magiclink',
     email: email,
   });
 
   if (linkError) {
     // If link generation fails, we should probably delete the user we just created to avoid orphans.
     await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-    throw new Error(`Could not generate password setup link: ${linkError.message}`);
+    throw new Error(`Could not generate setup link: ${linkError.message}`);
   }
 
   // NOTE: In a real application, you would now email `linkData.properties.action_link` to the new user.
   // For this demo, we will return it so the dialog can display it.
-  console.log("Password Setup Link (for demo):", linkData.properties.action_link)
+  console.log("Onboarding Magic Link (for demo):", linkData.properties.action_link)
   
   revalidatePath('/hr/dashboard');
   
   return {
     setupLink: linkData.properties.action_link,
-    userName: fullName
+    userName: fullName,
+    userEmail: email
   };
 }
 

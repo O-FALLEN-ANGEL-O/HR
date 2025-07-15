@@ -37,17 +37,27 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user: authUser } } = await supabase.auth.getUser();
 
-  const userProfile: UserProfile | null = user ? {
-    id: user.id,
-    full_name: user.user_metadata.full_name,
-    email: user.email,
-    avatar_url: user.user_metadata.avatar_url,
-    role: user.user_metadata.role || 'guest',
-    department: user.user_metadata.department,
-    created_at: user.created_at,
-  } : null;
+  let userProfile: UserProfile | null = null;
+  if (authUser) {
+    const { data: profile } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authUser.id)
+        .single();
+    
+    userProfile = profile ? {
+      id: profile.id,
+      full_name: profile.full_name,
+      email: profile.email,
+      avatar_url: profile.avatar_url,
+      role: profile.role,
+      department: profile.department,
+      created_at: profile.created_at,
+      profile_setup_complete: profile.profile_setup_complete
+    } : null;
+  }
 
   return { response, supabase, user: userProfile }
 }

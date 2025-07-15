@@ -64,7 +64,7 @@ const roleOptions: UserRole[] = [
 
 export function AddEmployeeDialog({ children, onEmployeeAdded }: AddEmployeeDialogProps) {
   const [open, setOpen] = React.useState(false);
-  const [setupInfo, setSetupInfo] = React.useState<{ link: string, name: string} | null>(null);
+  const [setupInfo, setSetupInfo] = React.useState<{ link: string, name: string, email: string} | null>(null);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof FormSchema>>({
@@ -85,8 +85,8 @@ export function AddEmployeeDialog({ children, onEmployeeAdded }: AddEmployeeDial
 
     try {
       const result = await addEmployee(serverFormData);
-      if (result?.setupLink && result?.userName) {
-        setSetupInfo({ link: result.setupLink, name: result.userName });
+      if (result?.setupLink && result?.userName && result?.userEmail) {
+        setSetupInfo({ link: result.setupLink, name: result.userName, email: result.userEmail });
         onEmployeeAdded();
         form.reset();
       } else {
@@ -99,8 +99,21 @@ export function AddEmployeeDialog({ children, onEmployeeAdded }: AddEmployeeDial
 
   const handleCopyLink = () => {
     if (setupInfo) {
-      navigator.clipboard.writeText(setupInfo.link);
-      toast({ title: 'Link Copied!', description: 'The password setup link is on your clipboard.'});
+      const emailBody = `
+Subject: Welcome to HR+! Complete Your Onboarding
+
+Hi ${setupInfo.name},
+
+Welcome aboard! You’ve been added to our HR+ system.
+Please click the link below to log in and set up your account. This is a secure, one-time-use link.
+
+Login Now -> ${setupInfo.link}
+
+Cheers,
+HR Team
+      `.trim();
+      navigator.clipboard.writeText(emailBody);
+      toast({ title: 'Email Content Copied!', description: 'The onboarding email body is on your clipboard.'});
     }
   }
 
@@ -120,11 +133,11 @@ export function AddEmployeeDialog({ children, onEmployeeAdded }: AddEmployeeDial
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{setupInfo ? `Setup Link for ${setupInfo.name}`: 'Add New Employee'}</DialogTitle>
+          <DialogTitle>{setupInfo ? `Onboarding Link for ${setupInfo.name}`: 'Add New Employee'}</DialogTitle>
           <DialogDescription>
             {setupInfo 
-              ? `Share this secure link with the new employee for them to set up their password.`
-              : `Enter the details to create a new user profile. A password setup link will be generated.`
+              ? `Copy the email content below and send it to ${setupInfo.email}.`
+              : `Enter the details to create a new user profile. An onboarding link will be generated.`
             }
           </DialogDescription>
         </DialogHeader>
@@ -132,11 +145,17 @@ export function AddEmployeeDialog({ children, onEmployeeAdded }: AddEmployeeDial
         {setupInfo ? (
             <div className="space-y-4 py-4">
                 <Alert>
-                    <AlertTitle>Password Setup Link</AlertTitle>
-                    <AlertDescription>This is a one-time use link.</AlertDescription>
+                    <AlertTitle>Onboarding Email</AlertTitle>
+                    <AlertDescription>
+                        Copy this content and send it to the new employee.
+                    </AlertDescription>
                     <div className="relative mt-2">
-                         <Input readOnly value={setupInfo.link} className="pr-10" />
-                         <Button size="icon" variant="ghost" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8" onClick={handleCopyLink}>
+                        <Textarea 
+                            readOnly 
+                            value={`Hi ${setupInfo.name},\n\nWelcome aboard! Click this link to set up your account: ${setupInfo.link}`} 
+                            className="pr-10 h-32"
+                        />
+                         <Button size="icon" variant="ghost" className="absolute right-1 top-1 h-8 w-8" onClick={handleCopyLink}>
                             <Copy className="h-4 w-4" />
                          </Button>
                     </div>
