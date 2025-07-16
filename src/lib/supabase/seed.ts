@@ -1,13 +1,21 @@
 
 'use server';
+import { config } from 'dotenv';
+config({ path: '.env.local' });
 
 import { createClient } from '@supabase/supabase-js';
 import { faker } from '@faker-js/faker';
-import { supabaseUrl, supabaseServiceRoleKey } from './config';
-import type { UserProfile, Job, UserRole, ApplicantStage, College, Leave, Interview } from '../types';
+import type { UserProfile, Job, ApplicantStage, College, Leave, Interview } from '../types';
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseServiceRoleKey) {
+  throw new Error('Supabase URL or Service Role Key is missing from environment variables.');
+}
 
 // This is the admin client, created once and reused.
-const supabaseAdmin = createClient(supabaseUrl!, supabaseServiceRoleKey!);
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
 
 // Main seeding function
 async function seed() {
