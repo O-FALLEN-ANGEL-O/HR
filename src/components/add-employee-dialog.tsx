@@ -35,6 +35,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Copy } from 'lucide-react';
 import { addEmployee } from '@/app/actions';
 import type { UserRole } from '@/lib/types';
+import { Textarea } from '@/components/ui/textarea';
 
 const FormSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters.'),
@@ -152,8 +153,8 @@ HR Team
                     <div className="relative mt-2">
                         <Textarea 
                             readOnly 
-                            value={`Hi ${setupInfo.name},\n\nWelcome aboard! Click this link to set up your account: ${setupInfo.link}`} 
-                            className="pr-10 h-32"
+                            value={`Hi ${setupInfo.name},\n\nWelcome aboard! You’ve been added to our HR+ system.\nPlease click the link below to log in and set up your account. This is a secure, one-time-use link.\n\nLogin Now -> ${setupInfo.link}\n\nCheers,\nHR Team`}
+                            className="pr-10 h-48"
                         />
                          <Button size="icon" variant="ghost" className="absolute right-1 top-1 h-8 w-8" onClick={handleCopyLink}>
                             <Copy className="h-4 w-4" />
