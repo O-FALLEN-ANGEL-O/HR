@@ -5,7 +5,7 @@ config({ path: '.env.local' });
 
 import { createClient } from '@supabase/supabase-js';
 import { faker } from '@faker-js/faker';
-import type { UserProfile, Job, ApplicantStage, College, Leave, Interview } from '../types';
+import type { UserProfile, ApplicantStage } from '../types';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -42,32 +42,38 @@ async function seed() {
   }
   console.log('✅ Supabase admin client initialized.');
 
-  // Clean up existing data in all other tables
+  // Clean up existing data
   console.log('🧹 Cleaning up old data...');
+  const { data: { users: authUsers } } = await supabaseAdmin.auth.admin.listUsers();
+  console.log(`Found ${authUsers.length} auth users to delete...`);
+  for (const user of authUsers) {
+    await supabaseAdmin.auth.admin.deleteUser(user.id);
+  }
+  console.log('✅ Finished deleting auth users.');
+
+  // The public.users table is cleaned by the cascade delete from auth.users.
+  // We only need to clean the other tables.
   const tablesToClean = [
       'ticket_comments', 'helpdesk_tickets', 'expense_items', 'expense_reports',
       'company_documents', 'payslips', 'weekly_awards', 'kudos', 'post_comments',
       'company_posts', 'key_results', 'objectives', 'performance_reviews', 'onboarding_workflows',
-      'leaves', 'leave_balances', 'interviews', 'applicant_notes', 'applicants', 'colleges', 'jobs', 'users'
+      'leaves', 'leave_balances', 'interviews', 'applicant_notes', 'applicants', 'colleges', 'jobs'
   ];
 
   for (const table of tablesToClean) {
-    const { error: deleteError } = await supabaseAdmin.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    if (deleteError) {
-      console.warn(`🟡 Could not clean table ${table}: ${deleteError.message}`);
+    const { error: deleteError } = await supabaseAdmin.from(table).delete().gt('id', 0); // Use a condition that is always true for tables with integer PKs, or adjust as needed. For UUIDs, a different approach is better.
+     if (deleteError) {
+      // It's often better to ignore "relation does not exist" and continue
+      if (!deleteError.message.includes('does not exist')) {
+        console.warn(`🟡 Could not clean table ${table}: ${deleteError.message}`);
+      }
     }
   }
-
-  const { data: { users: authUsers } } = await supabaseAdmin.auth.admin.listUsers();
-  for (const user of authUsers) {
-    await supabaseAdmin.auth.admin.deleteUser(user.id);
-  }
-  
-  console.log('✅ Finished cleaning tables and auth users.');
+  console.log('✅ Finished cleaning public tables.');
   
   // Seed Users
   console.log('👤 Creating auth users and public profiles...');
-  const createdUsers = [];
+  const createdUsers: UserProfile[] = [];
   for (const userData of demoUsers) {
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
           email: userData.email,
@@ -84,12 +90,13 @@ async function seed() {
           console.error(`🔴 Error creating auth user ${userData.email}:`, authError?.message);
           continue;
       }
-
+      
+      // The trigger should handle this, but we insert manually to be safe if trigger is disabled/missing.
       const { error: profileError } = await supabaseAdmin.from('users').insert({
           id: authData.user.id,
           full_name: userData.fullName,
           email: userData.email,
-          role: userData.role as UserRole,
+          role: userData.role,
           department: userData.department,
           profile_setup_complete: true,
           avatar_url: faker.image.avatar(),
@@ -98,14 +105,29 @@ async function seed() {
       if (profileError) {
           console.error(`🔴 Error creating public profile for ${userData.email}:`, profileError.message);
       } else {
-          createdUsers.push({ ...authData.user, ...userData, avatar_url: '' }); // Push a complete profile
+          const userProfile: UserProfile = {
+            id: authData.user.id,
+            full_name: userData.fullName,
+            email: userData.email,
+            role: userData.role,
+            department: userData.department,
+            avatar_url: '', // Will be updated by faker
+            created_at: new Date().toISOString()
+          };
+          createdUsers.push(userProfile);
       }
   }
   console.log(`✅ Created ${createdUsers.length} users.`);
   
   if (createdUsers.length === 0) {
-      console.error('🔴 No users were created. Aborting seed of other tables.');
-      return;
+      const { data: existingUsers } = await supabaseAdmin.from('users').select('*');
+      if (existingUsers && existingUsers.length > 0) {
+          console.log('🟡 Seeding other tables with existing users...');
+          createdUsers.push(...(existingUsers as UserProfile[]));
+      } else {
+        console.error('🔴 No users found or created. Aborting seed of other tables.');
+        return;
+      }
   }
 
   // Seed all other tables
@@ -223,6 +245,7 @@ async function seedApplicantNotes(applicants: {id: string}[], users: UserProfile
 }
 
 async function seedInterviews(applicants: {id: string, name: string}[], interviewers: UserProfile[]) {
+    if (applicants.length === 0 || interviewers.length === 0) return;
     const interviews = applicants.map(applicant => {
         const interviewer = faker.helpers.arrayElement(interviewers);
         return {
@@ -242,6 +265,7 @@ async function seedInterviews(applicants: {id: string, name: string}[], intervie
 }
 
 async function seedLeaveBalancesAndLeave(users: UserProfile[], managers: UserProfile[]) {
+    if (users.length === 0) return;
     const balances = users.map(user => ({
         user_id: user.id,
         sick_leave: 12,
@@ -252,6 +276,7 @@ async function seedLeaveBalancesAndLeave(users: UserProfile[], managers: UserPro
     await supabaseAdmin.from('leave_balances').insert(balances);
     console.log(`✅ Seeded ${balances.length} leave balances.`);
     
+    if (managers.length === 0) return;
     const leaves = users.flatMap(user =>
         Array.from({ length: faker.number.int({ min: 1, max: 5 }) }, () => {
             const startDate = faker.date.past({ years: 1 });
@@ -308,6 +333,7 @@ async function seedPerformanceReviews(employees: UserProfile[]) {
 }
 
 async function seedOkrs(users: UserProfile[]) {
+    if (users.length === 0) return;
     const objectives = Array.from({ length: 5 }, () => ({
         owner_id: faker.helpers.arrayElement(users).id,
         title: faker.company.catchPhrase(),
@@ -330,6 +356,7 @@ async function seedOkrs(users: UserProfile[]) {
 }
 
 async function seedCompanyFeed(users: UserProfile[]) {
+     if (users.length === 0) return;
     const posts = Array.from({ length: 10 }, () => ({
         user_id: faker.helpers.arrayElement(users).id,
         content: faker.lorem.paragraph(),
@@ -353,6 +380,7 @@ async function seedCompanyFeed(users: UserProfile[]) {
 }
 
 async function seedKudos(users: UserProfile[]) {
+     if (users.length < 2) return;
     const kudos = Array.from({ length: 20 }, () => {
         const fromUser = faker.helpers.arrayElement(users);
         const toUser = faker.helpers.arrayElement(users.filter(u => u.id !== fromUser.id));
@@ -380,6 +408,7 @@ async function seedWeeklyAward(managers: UserProfile[], employees: UserProfile[]
 }
 
 async function seedPayslips(employees: UserProfile[]) {
+     if (employees.length === 0) return;
     const payslips = employees.flatMap(emp => 
         Array.from({ length: 3 }, () => {
             const gross = faker.number.int({ min: 50000, max: 150000 });
@@ -408,6 +437,7 @@ async function seedCompanyDocs() {
 }
 
 async function seedExpenses(users: UserProfile[]) {
+     if (users.length === 0) return;
     const reports = users.map(user => ({
         user_id: user.id,
         title: `Expenses for ${faker.commerce.department()}`,
@@ -431,6 +461,7 @@ async function seedExpenses(users: UserProfile[]) {
 }
 
 async function seedHelpdesk(users: UserProfile[]) {
+    if (users.length === 0) return;
     const supportStaff = users.filter(u => ['it_admin', 'support'].includes(u.role));
     const tickets = Array.from({ length: 15 }, () => ({
         user_id: faker.helpers.arrayElement(users).id,
@@ -464,5 +495,3 @@ seed().catch(e => {
   console.error("🔴 Script failed with an unhandled error:", e);
   process.exit(1);
 });
-
-    
