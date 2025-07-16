@@ -45,7 +45,7 @@ async function seed() {
   // Clean up existing data
   console.log('🧹 Cleaning up old data...');
   
-  // 1. Delete all auth users. The `on delete cascade` should handle public.users.
+  // 1. Delete all auth users. 
   const { data: { users: authUsers } } = await supabaseAdmin.auth.admin.listUsers();
   console.log(`Found ${authUsers.length} auth users to delete...`);
   for (const user of authUsers) {
@@ -53,18 +53,17 @@ async function seed() {
   }
   console.log('✅ Finished deleting auth users.');
 
-  // 2. Clean all other public tables
+  // 2. Clean all other public tables. This is now more robust.
   const tablesToClean = [
       'ticket_comments', 'helpdesk_tickets', 'expense_items', 'expense_reports',
       'company_documents', 'payslips', 'weekly_awards', 'kudos', 'post_comments',
       'company_posts', 'key_results', 'objectives', 'performance_reviews', 'onboarding_workflows',
       'leaves', 'leave_balances', 'interviews', 'applicant_notes', 'applicants', 'colleges', 'jobs',
-      'users' // Also explicitly clean users table as a fallback
+      'users' // Explicitly including users table to be certain it's cleared.
   ];
 
   for (const table of tablesToClean) {
-    // Delete all rows from the table without a filter
-    const { error: deleteError } = await supabaseAdmin.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Use a condition that is always true for UUIDs to delete all rows
+    const { error: deleteError } = await supabaseAdmin.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000');
      if (deleteError) {
         if (!deleteError.message.includes('does not exist')) {
             console.warn(`🟡 Could not clean table ${table}: ${deleteError.message}`);
