@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import path from 'path';
 import { faker } from '@faker-js/faker';
+import type { UserRole } from '../types';
 
 // Configure dotenv to load variables from .env.local
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
@@ -49,12 +50,30 @@ async function main() {
 
   // --- 2. Clean up public tables ---
   // The public.users table should be cleaned automatically by the trigger when auth.users are deleted.
-  // We'll clean the rest.
+  // We will manually clean all tables in reverse order of dependencies from DATABASE_REFERENCE.md
   console.log('🧹 Cleaning up public table data...');
    const tablesToClean = [
-      'ticket_comments', 'helpdesk_tickets', 'expense_items', 'expense_reports', 'company_documents', 'payslips',
-      'weekly_awards', 'kudos', 'post_comments', 'company_posts', 'key_results', 'objectives', 'onboarding_workflows',
-      'leaves', 'leave_balances', 'interviews', 'applicant_notes', 'applicants', 'colleges', 'jobs'
+      'ticket_comments',
+      'post_comments',
+      'kudos',
+      'weekly_awards',
+      'key_results',
+      'applicant_notes',
+      'interviews',
+      'onboarding_workflows',
+      'helpdesk_tickets',
+      'expense_items',
+      'leaves',
+      'payslips',
+      'company_posts',
+      'objectives',
+      'expense_reports',
+      'leave_balances',
+      'applicants',
+      'colleges',
+      'jobs',
+      'company_documents',
+      'users' // Clean users last, just in case trigger fails
    ];
   
   for (const table of tablesToClean) {
@@ -70,7 +89,7 @@ async function main() {
 
 
   // --- 3. Create one user for each role ---
-  const usersToCreate: { email: string; role: string; fullName: string, department: string }[] = [
+  const usersToCreate: { email: string; role: UserRole; fullName: string, department: string }[] = [
     { email: 'admin@hrplus.com', role: 'admin', fullName: 'Admin User', department: 'Management' },
     { email: 'super_hr@hrplus.com', role: 'super_hr', fullName: 'Super HR Susan', department: 'Human Resources' },
     { email: 'hr_manager@hrplus.com', role: 'hr_manager', fullName: 'HR Manager Harry', department: 'Human Resources' },
@@ -102,7 +121,7 @@ async function main() {
   
     if (authError) {
       console.error(`🔴 Error creating auth user ${userData.email}: ${authError.message}`);
-      continue; // Skip to next user if this one fails
+      continue;
     } 
     
     if (authData.user) {
@@ -116,7 +135,6 @@ async function main() {
         if (publicUserError || !publicUser) {
             console.error(`🔴 Public user profile for ${userData.email} was not created by trigger: ${publicUserError?.message}`);
         } else {
-             // Let's update the avatar and profile completion status
             const { data: updatedUser, error: updateError } = await supabaseAdmin
                 .from('users')
                 .update({
@@ -177,9 +195,9 @@ async function main() {
         avatar: faker.image.avatar(),
       });
     }
-    const { error: applicantsError } = await supabaseAdmin.from('applicants').insert(applicantsToInsert).select();
+    const { data: createdApplicants, error: applicantsError } = await supabaseAdmin.from('applicants').insert(applicantsToInsert).select();
     if(applicantsError) console.error("🔴 Error seeding applicants:", applicantsError.message);
-    else console.log(`✅ Inserted 10 applicants.`);
+    else console.log(`✅ Inserted ${createdApplicants?.length || 0} applicants.`);
   }
 
   // Leaves & Balances
@@ -191,10 +209,10 @@ async function main() {
       leaves.push({
           user_id: user.id,
           leave_type: 'casual',
-          start_date: faker.date.future(),
-          end_date: faker.date.future(),
+          start_date: faker.date.past().toISOString(),
+          end_date: faker.date.recent().toISOString(),
           reason: 'Vacation',
-          status: 'pending',
+          status: 'approved',
           total_days: 2
       });
   }
