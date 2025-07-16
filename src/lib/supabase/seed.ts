@@ -44,19 +44,22 @@ async function main() {
   // --- 1. Clean up existing data ---
   console.log('🧹 Cleaning up old data...');
   // The order is critical due to foreign key constraints.
-  // We delete from tables that are depended upon last.
+  // Start from tables that depend on others and move towards the base tables.
   const tablesToClean = [
-    'ticket_comments', 'helpdesk_tickets', 'expense_items', 'expense_reports', 
-    'company_documents', 'payslips', 'weekly_awards', 'kudos', 'post_comments', 'company_posts', 
-    'key_results', 'objectives', 'performance_reviews', 'onboarding_workflows', 'leaves', 
-    'leave_balances', 'interviews', 'applicant_notes', 'applicants', 'colleges', 'jobs'
+      'ticket_comments', 'expense_items', 'post_comments', 'kudos', 'weekly_awards',
+      'key_results', 'applicant_notes', 'interviews', 'onboarding_workflows',
+      'helpdesk_tickets', 'expense_reports', 'company_posts', 'objectives', 
+      'performance_reviews', 'leaves', 'leave_balances', 'payslips',
+      'company_documents', 'applicants', 'colleges', 'jobs'
   ];
+  
   for (const table of tablesToClean) {
     const { error } = await supabaseAdmin.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Dummy condition to delete all
-    if (error) console.error(`🔴 Error cleaning table ${table}:`, error.message);
+    if (error) console.warn(`🟠 Could not clean table ${table}:`, error.message);
     else console.log(`- Cleaned ${table}`);
   }
-   const { error: usersError } = await supabaseAdmin.from('users').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  // Clean users table last before cleaning auth users
+  const { error: usersError } = await supabaseAdmin.from('users').delete().neq('id', '00000000-0000-0000-0000-000000000000');
   if (usersError) console.error(`🔴 Error cleaning table users:`, usersError.message);
   else console.log(`- Cleaned users`);
   
