@@ -7,7 +7,7 @@
 
 // NEVER expose this client or the SERVICE_ROLE_KEY to the browser or client-side code.
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { supabaseUrl } from './config';
 
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -16,12 +16,16 @@ if (!supabaseServiceRoleKey) {
   throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set in environment variables. This is required for admin operations.');
 }
 
-// Create a singleton instance of the admin client, so we don't reconnect on every call
-const adminClient = createClient(supabaseUrl, supabaseServiceRoleKey, {
+// This is the admin client, created once and reused.
+const adminClient = createSupabaseClient(supabaseUrl, supabaseServiceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false
     }
 });
 
-export { adminClient as createClient };
+// We export a function that returns the singleton instance.
+// This is a more robust pattern than exporting the client directly.
+export function createClient() {
+    return adminClient;
+}
