@@ -48,20 +48,24 @@ async function main() {
   }
 
   // --- 2. Clean up public tables ---
-  // The order is critical due to foreign key constraints.
   console.log('🧹 Cleaning up public table data...');
    const tablesToClean = [
-      'generated_documents', 'document_templates', 'payroll_entries', 'payroll_runs', 
-      'employee_salary', 'salary_components', 'performance_reviews', 'performance_goals', 
-      'performance_cycles', 'attendance_logs', 'employee_shifts', 'leave_applications', 
-      'leave_balances', 'leave_types', 'employee_official_details', 'employee_personal_details', 
-      'employees', 'interviews', 'applicant_notes', 'applicants', 'colleges', 'jobs', 'users'
+      'ticket_comments', 'helpdesk_tickets', 'expense_items', 'expense_reports', 'company_documents', 'payslips',
+      'weekly_awards', 'kudos', 'post_comments', 'company_posts', 'key_results', 'objectives', 'onboarding_workflows',
+      'leaves', 'leave_balances', 'interviews', 'applicant_notes', 'applicants', 'colleges', 'jobs', 'users'
    ];
   
   for (const table of tablesToClean) {
-    const { error } = await supabaseAdmin.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Dummy condition to delete all
-    if (error) console.warn(`🟠 Could not clean table ${table}:`, error.message);
-    else console.log(`- Cleaned ${table}`);
+      const { error } = await supabaseAdmin.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      if (error) {
+        if (error.message.includes('relation "public.performance_reviews" does not exist')) {
+            console.warn(`🟠 Skipping non-existent table: ${table}`);
+        } else {
+            console.warn(`🟠 Could not clean table ${table}:`, error.message);
+        }
+      } else {
+          console.log(`- Cleaned ${table}`);
+      }
   }
 
 
@@ -93,19 +97,24 @@ async function main() {
 
   console.log(`👤 Creating ${usersToCreate.length} users with password "password"...`);
   const createdUsers: any[] = [];
-  const createdEmployees: any[] = [];
-
+  
   for (const userData of usersToCreate) {
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: userData.email,
       password: 'password',
       email_confirm: true,
+      user_metadata: {
+        full_name: userData.fullName,
+        role: userData.role,
+        department: userData.department,
+      },
     });
   
     if (authError) {
       console.error(`🔴 Error creating auth user ${userData.email}: ${authError.message}`);
     } else if (authData.user) {
-        // Insert into public.users
+        // Manually insert into public.users, which should trigger after auth user creation
+        // This makes sure the public user exists if the trigger somehow fails or is disabled
         const { data: publicUser, error: publicUserError } = await supabaseAdmin
             .from('users')
             .insert({
@@ -125,36 +134,15 @@ async function main() {
             console.error(`🔴 Error creating public user profile for ${userData.email}: ${publicUserError.message}`);
         } else {
             createdUsers.push(publicUser);
-            // Insert into employees
-            const { data: employee, error: employeeError } = await supabaseAdmin
-                .from('employees')
-                .insert({
-                    user_id: publicUser.id,
-                    email: publicUser.email,
-                    full_name: publicUser.full_name,
-                    phone: publicUser.phone,
-                    department: publicUser.department,
-                    role: publicUser.role,
-                    joining_date: faker.date.past({ years: 3 }),
-                    status: 'active'
-                })
-                .select()
-                .single();
-
-            if (employeeError) {
-                console.error(`🔴 Error creating employee record for ${publicUser.email}: ${employeeError.message}`);
-            } else {
-                createdEmployees.push(employee);
-            }
         }
     }
   }
-  console.log(`✅ Successfully created ${createdUsers.length} users and ${createdEmployees.length} employee records.`);
+  console.log(`✅ Successfully created ${createdUsers.length} users.`);
 
 
   // --- 4. SEED APPLICATION DATA ---
-  if (createdUsers.length === 0 || createdEmployees.length === 0) {
-      console.error("🔴 No users or employees were created, cannot seed dependent data. Aborting.");
+  if (createdUsers.length === 0) {
+      console.error("🔴 No users were created, cannot seed dependent data. Aborting.");
       return;
   }
   
@@ -195,149 +183,67 @@ async function main() {
         customer_service_score: faker.number.int({ min: 50, max: 95 }),
       });
     }
-    await supabaseAdmin.from('applicants').insert(applicantsToInsert);
-    console.log(`✅ Inserted ${applicantsToInsert.length} applicants.`);
+    const { data: createdApplicants } = await supabaseAdmin.from('applicants').insert(applicantsToInsert).select();
+    console.log(`✅ Inserted ${createdApplicants?.length || 0} applicants.`);
+
+    // Applicant Notes & Interviews
+    if (createdApplicants && createdApplicants.length > 0) {
+        console.log('🌱 Seeding Applicant Notes & Interviews...');
+        const notes = [];
+        const interviews = [];
+        for (const applicant of createdApplicants) {
+            if (faker.datatype.boolean()) {
+                notes.push({
+                    applicant_id: applicant.id,
+                    user_id: faker.helpers.arrayElement(createdUsers).id,
+                    author_name: faker.helpers.arrayElement(createdUsers).full_name,
+                    author_avatar: faker.image.avatar(),
+                    note: faker.lorem.sentence()
+                });
+            }
+            if (faker.datatype.boolean()) {
+                const interviewer = faker.helpers.arrayElement(createdUsers);
+                interviews.push({
+                    applicant_id: applicant.id,
+                    interviewer_id: interviewer.id,
+                    date: faker.date.future(),
+                    time: `${faker.number.int({min: 9, max: 17})}:00`,
+                    type: faker.helpers.arrayElement(['Video', 'Phone', 'In-person']),
+                    status: faker.helpers.arrayElement(['Scheduled', 'Completed', 'Canceled']),
+                    candidate_name: applicant.name,
+                    interviewer_name: interviewer.full_name,
+                    job_title: faker.helpers.arrayElement(createdJobs).title
+                });
+            }
+        }
+        await supabaseAdmin.from('applicant_notes').insert(notes);
+        await supabaseAdmin.from('interviews').insert(interviews);
+        console.log(`✅ Inserted ${notes.length} notes and ${interviews.length} interviews.`);
+    }
   }
 
-  // Employee Personal & Official Details
-  console.log('🌱 Seeding Employee Details...');
-  const personalDetails = createdEmployees.map(emp => ({
-      employee_id: emp.id,
-      gender: faker.person.gender(),
-      dob: faker.date.birthdate(),
-      blood_group: faker.helpers.arrayElement(['A+', 'B+', 'O+', 'AB+', 'A-', 'B-', 'O-', 'AB-']),
-      nationality: 'Indian',
-      marital_status: faker.helpers.arrayElement(['Single', 'Married']),
-      emergency_contact: faker.phone.number(),
-      address: faker.location.streetAddress(true),
-  }));
-  await supabaseAdmin.from('employee_personal_details').insert(personalDetails);
-  console.log(`✅ Inserted ${personalDetails.length} personal details records.`);
-
-  const officialDetails = createdEmployees.map(emp => ({
-      employee_id: emp.id,
-      pan_number: faker.string.alphanumeric(10).toUpperCase(),
-      aadhaar_number: faker.string.numeric(12),
-      account_number: faker.finance.accountNumber(),
-      ifsc_code: faker.finance.bic(),
-      bank_name: faker.company.name() + ' Bank',
-  }));
-  await supabaseAdmin.from('employee_official_details').insert(officialDetails);
-  console.log(`✅ Inserted ${officialDetails.length} official details records.`);
-
-
-  // Leave Types
-  console.log('🌱 Seeding Leave Types...');
-  const leaveTypes = [
-      { name: 'Sick Leave', max_days_per_year: 12, is_paid: true },
-      { name: 'Casual Leave', max_days_per_year: 12, is_paid: true },
-      { name: 'Earned Leave', max_days_per_year: 15, is_paid: true, carry_forward: true, carry_forward_limit: 10 },
-      { name: 'Unpaid Leave', max_days_per_year: 90, is_paid: false },
-  ];
-  const { data: createdLeaveTypes } = await supabaseAdmin.from('leave_types').insert(leaveTypes).select();
-  console.log(`✅ Inserted ${createdLeaveTypes?.length || 0} leave types.`);
-
-  // Leave Balances & Applications
-  if (createdLeaveTypes && createdLeaveTypes.length > 0) {
-      console.log('🌱 Seeding Leave Balances & Applications...');
-      const leaveBalances = [];
-      const leaveApplications = [];
-      for (const emp of createdEmployees) {
-          for (const lt of createdLeaveTypes) {
-              leaveBalances.push({
-                  employee_id: emp.id,
-                  leave_type_id: lt.id,
-                  balance_days: lt.max_days_per_year,
-                  year: new Date().getFullYear(),
-              });
-          }
-          // Create some leave history
-          for (let i = 0; i < 5; i++) {
-            const leaveType = faker.helpers.arrayElement(createdLeaveTypes);
-            const startDate = faker.date.past({ years: 1 });
-            const endDate = new Date(startDate.getTime() + faker.number.int({ min: 1, max: 5 }) * 24 * 60 * 60 * 1000);
-            leaveApplications.push({
-                employee_id: emp.id,
-                leave_type_id: leaveType.id,
-                start_date: startDate.toISOString().split('T')[0],
-                end_date: endDate.toISOString().split('T')[0],
-                reason: faker.lorem.sentence(),
-                status: faker.helpers.arrayElement(['approved', 'rejected', 'pending']),
-                approved_by: faker.helpers.arrayElement(createdEmployees).id,
-            });
-          }
+  // Leaves & Balances
+  console.log('🌱 Seeding Leaves & Balances...');
+  const leaveBalances = [];
+  const leaves = [];
+  for (const user of createdUsers) {
+      leaveBalances.push({ user_id: user.id, sick_leave: 12, casual_leave: 12, earned_leave: 15, unpaid_leave: 0 });
+      for (let i = 0; i < 3; i++) {
+        const startDate = faker.date.past();
+        leaves.push({
+            user_id: user.id,
+            leave_type: faker.helpers.arrayElement(['sick', 'casual', 'earned']),
+            start_date: startDate,
+            end_date: new Date(startDate.getTime() + faker.number.int({min: 1, max: 4}) * 86400000),
+            reason: faker.lorem.sentence(),
+            status: faker.helpers.arrayElement(['approved', 'rejected', 'pending']),
+            total_days: faker.number.int({min: 1, max: 5})
+        });
       }
-      await supabaseAdmin.from('leave_balances').insert(leaveBalances);
-      console.log(`✅ Inserted ${leaveBalances.length} leave balance records.`);
-      await supabaseAdmin.from('leave_applications').insert(leaveApplications);
-      console.log(`✅ Inserted ${leaveApplications.length} leave applications.`);
   }
-
-  // Performance Cycles, Goals, Reviews
-  console.log('🌱 Seeding Performance Data...');
-  const performanceCycles = [
-      { name: 'Annual Review 2023', start_date: '2023-04-01', end_date: '2024-03-31', status: 'completed' },
-      { name: 'H1 2024 Review', start_date: '2024-04-01', end_date: '2024-09-30', status: 'active' }
-  ];
-  const { data: createdCycles } = await supabaseAdmin.from('performance_cycles').insert(performanceCycles).select();
-  console.log(`✅ Inserted ${createdCycles?.length || 0} performance cycles.`);
-
-  if (createdCycles && createdCycles.length > 0) {
-      const goals = [];
-      const reviews = [];
-      for(const emp of createdEmployees) {
-          goals.push({
-              employee_id: emp.id,
-              cycle_id: createdCycles[1].id,
-              title: faker.lorem.sentence(),
-              description: faker.lorem.paragraph(),
-              status: 'approved'
-          });
-          reviews.push({
-              employee_id: emp.id,
-              reviewer_id: faker.helpers.arrayElement(createdEmployees).id,
-              cycle_id: createdCycles[0].id,
-              rating: faker.number.float({min: 2.5, max: 5.0, precision: 0.1}),
-              feedback: faker.lorem.paragraph(),
-              status: 'completed'
-          });
-      }
-      await supabaseAdmin.from('performance_goals').insert(goals);
-      console.log(`✅ Inserted ${goals.length} performance goals.`);
-      await supabaseAdmin.from('performance_reviews').insert(reviews);
-      console.log(`✅ Inserted ${reviews.length} performance reviews.`);
-  }
-
-  // Salary Components & Employee Salary
-  console.log('🌱 Seeding Salary Data...');
-  const salaryComponents = [
-      { name: 'Basic Salary', code: 'BASIC', component_type: 'earning', is_taxable: true },
-      { name: 'House Rent Allowance', code: 'HRA', component_type: 'earning', is_taxable: true },
-      { name: 'Provident Fund', code: 'PF', component_type: 'deduction' },
-      { name: 'Professional Tax', code: 'PT', component_type: 'deduction' },
-  ];
-  const { data: createdSalaryComponents } = await supabaseAdmin.from('salary_components').insert(salaryComponents).select();
-  console.log(`✅ Inserted ${createdSalaryComponents?.length || 0} salary components.`);
-
-  if (createdSalaryComponents && createdSalaryComponents.length > 0) {
-      const employeeSalaries = [];
-      for (const emp of createdEmployees) {
-          employeeSalaries.push({
-              employee_id: emp.id,
-              component_id: createdSalaryComponents.find(c => c.code === 'BASIC')?.id,
-              amount: faker.finance.amount({ min: 25000, max: 80000 }),
-              effective_from: emp.joining_date
-          });
-           employeeSalaries.push({
-              employee_id: emp.id,
-              component_id: createdSalaryComponents.find(c => c.code === 'HRA')?.id,
-              amount: faker.finance.amount({ min: 10000, max: 30000 }),
-              effective_from: emp.joining_date
-          });
-      }
-      await supabaseAdmin.from('employee_salary').insert(employeeSalaries);
-      console.log(`✅ Inserted ${employeeSalaries.length} employee salary records.`);
-  }
+  await supabaseAdmin.from('leave_balances').insert(leaveBalances);
+  await supabaseAdmin.from('leaves').insert(leaves);
+  console.log(`✅ Inserted ${leaveBalances.length} leave balances and ${leaves.length} leave records.`);
 
   console.log('✅ Database seeding process completed successfully!');
 }
