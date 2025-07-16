@@ -3,6 +3,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 import { applicantMatchScoring } from '@/ai/flows/applicant-match-scoring';
 import { createClient as createAdminClient } from '@/lib/supabase/admin';
@@ -695,4 +696,38 @@ export async function addTicketComment(ticketId: string, comment: string) {
 
 
     revalidatePath('/helpdesk');
+}
+
+export async function completeProfile(formData: FormData) {
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  const password = formData.get('password') as string;
+  const phone = formData.get('phone') as string;
+
+  if (password) {
+    const { error: passwordError } = await supabase.auth.updateUser({ password });
+    if (passwordError) {
+      throw new Error(`Password update failed: ${passwordError.message}`);
+    }
+  }
+
+  const { error: profileError } = await supabase
+    .from('users')
+    .update({ phone: phone, profile_setup_complete: true })
+    .eq('id', user.id);
+
+  if (profileError) {
+    throw new Error(`Profile update failed: ${profileError.message}`);
+  }
+  
+  await supabase.auth.refreshSession();
+
+  revalidatePath('/', 'layout');
+  redirect('/');
 }

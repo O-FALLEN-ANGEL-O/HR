@@ -33,6 +33,7 @@ import {
   WalletCards,
   MessageSquare,
   LifeBuoy,
+  Target,
 } from 'lucide-react';
 
 import {
@@ -88,15 +89,15 @@ const getNavLinks = (role: UserRole) => {
 
     // Company Wide
     { href: '/leaves', label: 'Leave System', icon: Clock, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern'] },
-    { href: '/expenses', label: 'Expenses', icon: WalletCards, roles: ['employee', 'manager', 'team_lead', 'hr_manager', 'super_hr', 'admin'] },
+    { href: '/expenses', label: 'Expenses', icon: WalletCards, roles: ['employee', 'manager', 'team_lead', 'hr_manager', 'super_hr', 'admin', 'finance'] },
     { href: '/company-feed', label: 'Company Feed', icon: Newspaper, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern'] },
     { href: '/performance', label: 'Performance', icon: BarChart3, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'employee'] },
-    { href: '/performance/okrs', label: 'OKRs', icon: BarChart3, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'employee'] },
+    { href: '/performance/okrs', label: 'OKRs', icon: Target, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'employee'] },
     { href: '/employee/directory', label: 'Directory', icon: Users, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern'] },
     { href: '/employee/documents', label: 'Documents', icon: FileText, roles: ['admin', 'super_hr', 'hr_manager', 'employee', 'intern'] },
     { href: '/employee/payslips', label: 'Payslips', icon: WalletCards, roles: ['hr_manager', 'super_hr', 'employee'] },
     { href: '/employee/kudos', label: 'Kudos', icon: Award, roles: ['super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern'] },
-    { href: '/helpdesk', label: 'Helpdesk', icon: LifeBuoy, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern', 'support', 'it_admin'] },
+    { href: '/helpdesk', label: 'Helpdesk', icon: LifeBuoy, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern', 'support', 'it_admin', 'finance'] },
 
     // AI Tools
     { href: '/ai-tools/applicant-scoring', label: 'AI Applicant Scoring', icon: Sparkles, roles: ['hr_manager', 'recruiter', 'super_hr'] },
@@ -120,6 +121,8 @@ export default function AppShell({
 
   const isActive = (path: string) => {
     if (path === '/performance' && pathname.startsWith('/performance')) return true;
+    if (path === '/performance/okrs' && pathname.startsWith('/performance/okrs')) return true;
+    if (path === '/performance' && pathname.startsWith('/performance/okrs')) return false;
     return pathname === path;
   }
   

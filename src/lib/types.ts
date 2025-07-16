@@ -27,6 +27,7 @@ export type UserProfile = {
   created_at: string;
   phone?: string | null;
   profile_setup_complete?: boolean;
+  job_title?: string;
 }
 
 export type Metric = {

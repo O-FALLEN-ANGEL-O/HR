@@ -99,7 +99,7 @@ export default function ExpensesClient({ initialReports }: { initialReports: Exp
                         <TableRow key={report.id}>
                             <TableCell className="font-medium">{report.title}</TableCell>
                             <TableCell>{report.users?.full_name}</TableCell>
-                            <TableCell>{isClient ? format(new Date(report.submitted_at), 'PPP') : ''}</TableCell>
+                            <TableCell>{isClient && report.submitted_at ? format(new Date(report.submitted_at), 'PPP') : ''}</TableCell>
                             <TableCell>{formatCurrency(report.total_amount)}</TableCell>
                             <TableCell>
                                 <Badge variant="secondary" className={`capitalize ${statusColors[report.status]}`}>{report.status}</Badge>
