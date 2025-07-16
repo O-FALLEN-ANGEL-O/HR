@@ -114,7 +114,7 @@ export default function LoginPage() {
                     <CardHeader>
                         <CardTitle className="text-xl text-primary-foreground">Demo Accounts</CardTitle>
                         <CardDescription className="text-primary-foreground/80">
-                            Use these credentials to explore different roles. The password for all accounts is: <span className="font-bold">password</span>
+                            Use these credentials to explore different roles. The password for all accounts is: <span className="font-bold">password123</span>
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-2 text-sm">
