@@ -78,7 +78,7 @@ export default function ReviewAnalyzerPage() {
   return (
     <>
       <Header title="AI Review Analyzer" />
-      <main className="p-4 md:p-6 grid grid-cols-1 gap-8 lg:grid-cols-2">
+      <main className="p-4 md:p-6 grid grid-cols-1 gap-8 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Performance Review Analysis</CardTitle>

@@ -73,8 +73,8 @@ export default function KudosClient({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-1">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="md:col-span-1">
         <Tabs defaultValue="give-kudos" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="give-kudos">Give Kudos</TabsTrigger>
@@ -156,7 +156,7 @@ export default function KudosClient({
           )}
         </Tabs>
       </div>
-      <div className="lg:col-span-2 space-y-6">
+      <div className="md:col-span-2 space-y-6">
         {initialWeeklyAward ? (
             <Card className="bg-gradient-to-br from-primary/10 to-background border-primary/20">
                 <CardHeader>

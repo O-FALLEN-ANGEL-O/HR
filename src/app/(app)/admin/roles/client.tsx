@@ -83,7 +83,6 @@ export default function RoleManagerClient({ users: initialUsers }: { users: User
   const handleRoleChange = async (userId: string, newRole: UserRole) => {
     const originalUsers = [...users];
     
-    // Optimistically update the UI
     setUsers(users.map(u => u.id === userId ? {...u, role: newRole} : u));
 
     try {
@@ -93,7 +92,6 @@ export default function RoleManagerClient({ users: initialUsers }: { users: User
         description: `User role has been updated to ${newRole}.`,
       });
     } catch (error: any) {
-      // Revert the UI on error
       setUsers(originalUsers);
       toast({
         variant: 'destructive',
@@ -105,7 +103,7 @@ export default function RoleManagerClient({ users: initialUsers }: { users: User
 
 
   return (
-    <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+    <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
       <Card>
         <CardHeader>
           <CardTitle>User Role Management</CardTitle>

@@ -28,7 +28,7 @@ export default function AdminDashboardPage() {
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {features.map((feature, index) => {
                 const card = (
-                  <Card key={index} className={`flex flex-col h-full transition-all duration-300 ${feature.enabled ? 'hover:shadow-lg hover:-translate-y-1' : 'opacity-60 cursor-not-allowed bg-muted/50'}`}>
+                  <Card key={index} className={`flex flex-col h-full transition-all duration-300 ${feature.enabled ? 'hover:shadow-lg hover:-translate-y-1' : 'opacity-60 cursor-not-allowed bg-card'}`}>
                       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
                           <div className="space-y-1">
                             <CardTitle className="text-base font-bold">{feature.title}</CardTitle>

@@ -43,6 +43,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2 } from 'lucide-react';
 import { createHelpdeskTicket, addTicketComment } from '@/app/actions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const statusColors: { [key: string]: string } = {
   Open: 'bg-blue-100 text-blue-800',
@@ -78,8 +79,8 @@ export default function HelpdeskClient({ initialTickets, currentUser }: { initia
   }, []);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-2">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="md:col-span-2">
         <Card>
           <CardHeader className="flex flex-row justify-between items-center">
             <div>
@@ -89,30 +90,32 @@ export default function HelpdeskClient({ initialTickets, currentUser }: { initia
             <NewTicketDialog onTicketCreated={() => {}} />
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Last Updated</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {tickets.map((ticket) => (
-                  <TableRow key={ticket.id} onClick={() => setSelectedTicket(ticket)} className="cursor-pointer">
-                    <TableCell className="font-medium">{ticket.subject}</TableCell>
-                    <TableCell><Badge variant="outline">{ticket.category}</Badge></TableCell>
-                    <TableCell><Badge variant="secondary" className={`capitalize ${statusColors[ticket.status]}`}>{ticket.status}</Badge></TableCell>
-                    <TableCell>{isClient ? formatDistanceToNow(new Date(ticket.updated_at), { addSuffix: true }) : ''}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <ScrollArea className="w-full">
+                <Table>
+                <TableHeader>
+                    <TableRow>
+                    <TableHead>Subject</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Last Updated</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {tickets.map((ticket) => (
+                    <TableRow key={ticket.id} onClick={() => setSelectedTicket(ticket)} className="cursor-pointer">
+                        <TableCell className="font-medium">{ticket.subject}</TableCell>
+                        <TableCell><Badge variant="outline">{ticket.category}</Badge></TableCell>
+                        <TableCell><Badge variant="secondary" className={`capitalize ${statusColors[ticket.status]}`}>{ticket.status}</Badge></TableCell>
+                        <TableCell>{isClient ? formatDistanceToNow(new Date(ticket.updated_at), { addSuffix: true }) : ''}</TableCell>
+                    </TableRow>
+                    ))}
+                </TableBody>
+                </Table>
+            </ScrollArea>
           </CardContent>
         </Card>
       </div>
-      <div className="lg:col-span-1">
+      <div className="md:col-span-1">
         {selectedTicket ? <TicketDetails ticket={selectedTicket} currentUser={currentUser} /> : <NoTicketSelected />}
       </div>
     </div>

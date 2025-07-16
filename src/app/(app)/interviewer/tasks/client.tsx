@@ -101,8 +101,8 @@ export default function InterviewList({ initialInterviews }: InterviewListProps)
 
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-2">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="md:col-span-2">
         <Tabs defaultValue="upcoming" className="w-full">
           <div className="flex items-center">
             <TabsList>
@@ -122,7 +122,7 @@ export default function InterviewList({ initialInterviews }: InterviewListProps)
           </TabsContent>
         </Tabs>
       </div>
-       <div className="lg:col-span-1">
+       <div className="md:col-span-1">
         <Card className="h-full flex flex-col">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><MessagesSquare/> Panel Chat</CardTitle>
@@ -183,95 +183,97 @@ function InterviewTable({ interviews, isClient }: { interviews: Interview[], isC
     return (
         <Card>
             <CardContent className="p-0">
-            <Table>
-                <TableHeader>
-                <TableRow>
-                    <TableHead>Candidate</TableHead>
-                    <TableHead>Interviewer</TableHead>
-                    <TableHead>Date &amp; Time</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                </TableRow>
-                </TableHeader>
-                <TableBody>
-                {interviews.map((interview) => (
-                    <TableRow key={interview.id}>
-                    <TableCell>
-                        <div className="flex items-center gap-3">
-                        <Avatar>
-                            <AvatarImage src={interview.candidate_avatar || undefined} />
-                            <AvatarFallback>
-                            {interview.candidate_name.charAt(0)}
-                            </AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <div className="font-medium">{interview.candidate_name}</div>
-                            <div className="text-sm text-muted-foreground">
-                            for {interview.job_title}
-                            </div>
-                        </div>
-                        </div>
-                    </TableCell>
-                    <TableCell>
-                        <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                            <AvatarImage src={interview.interviewer_avatar || undefined} />
-                            <AvatarFallback>
-                            {interview.interviewer_name.charAt(0)}
-                            </AvatarFallback>
-                        </Avatar>
-                        <span>{interview.interviewer_name}</span>
-                        </div>
-                    </TableCell>
-                    <TableCell>
-                        <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span>{isClient ? format(new Date(interview.date), 'PPP') : null}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                             <Clock className="h-4 w-4 ml-0.5" />
-                             <span className="ml-0.5">{interview.time}</span>
-                        </div>
-                    </TableCell>
-                    <TableCell>
-                        <div className="flex items-center gap-2">
-                        {typeIcons[interview.type]}
-                        <span>{interview.type}</span>
-                        </div>
-                    </TableCell>
-                    <TableCell>
-                        <Badge variant="secondary" className={statusColors[interview.status]}>
-                        {interview.status}
-                        </Badge>
-                    </TableCell>
-                    <TableCell>
-                        <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => router.push(`/hr/applicants/${interview.applicant_id}`)}>
-                                <Users className="mr-2" /> View Applicant
-                            </DropdownMenuItem>
-                            {interview.status === 'Scheduled' && (
-                                <>
-                                 <FeedbackDialog interviewId={interview.id} applicantId={interview.applicant_id} />
-                                 <DropdownMenuItem onClick={() => handleCancelInterview(interview.id)} className="text-red-500">
-                                    <Trash2 className="mr-2" /> Cancel Interview
-                                 </DropdownMenuItem>
-                                </>
-                            )}
-                        </DropdownMenuContent>
-                        </DropdownMenu>
-                    </TableCell>
-                    </TableRow>
-                ))}
-                </TableBody>
-            </Table>
+                <ScrollArea className="w-full">
+                    <Table>
+                        <TableHeader>
+                        <TableRow>
+                            <TableHead>Candidate</TableHead>
+                            <TableHead>Interviewer</TableHead>
+                            <TableHead>Date &amp; Time</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Actions</TableHead>
+                        </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                        {interviews.map((interview) => (
+                            <TableRow key={interview.id}>
+                            <TableCell>
+                                <div className="flex items-center gap-3">
+                                <Avatar>
+                                    <AvatarImage src={interview.candidate_avatar || undefined} />
+                                    <AvatarFallback>
+                                    {interview.candidate_name.charAt(0)}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <div className="font-medium">{interview.candidate_name}</div>
+                                    <div className="text-sm text-muted-foreground">
+                                    for {interview.job_title}
+                                    </div>
+                                </div>
+                                </div>
+                            </TableCell>
+                            <TableCell>
+                                <div className="flex items-center gap-3">
+                                <Avatar className="h-8 w-8">
+                                    <AvatarImage src={interview.interviewer_avatar || undefined} />
+                                    <AvatarFallback>
+                                    {interview.interviewer_name.charAt(0)}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <span>{interview.interviewer_name}</span>
+                                </div>
+                            </TableCell>
+                            <TableCell>
+                                <div className="flex items-center gap-2">
+                                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                                    <span>{isClient ? format(new Date(interview.date), 'PPP') : null}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Clock className="h-4 w-4 ml-0.5" />
+                                    <span className="ml-0.5">{interview.time}</span>
+                                </div>
+                            </TableCell>
+                            <TableCell>
+                                <div className="flex items-center gap-2">
+                                {typeIcons[interview.type]}
+                                <span>{interview.type}</span>
+                                </div>
+                            </TableCell>
+                            <TableCell>
+                                <Badge variant="secondary" className={statusColors[interview.status]}>
+                                {interview.status}
+                                </Badge>
+                            </TableCell>
+                            <TableCell>
+                                <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                    <span className="sr-only">Open menu</span>
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => router.push(`/hr/applicants/${interview.applicant_id}`)}>
+                                        <Users className="mr-2" /> View Applicant
+                                    </DropdownMenuItem>
+                                    {interview.status === 'Scheduled' && (
+                                        <>
+                                        <FeedbackDialog interviewId={interview.id} applicantId={interview.applicant_id} />
+                                        <DropdownMenuItem onClick={() => handleCancelInterview(interview.id)} className="text-red-500">
+                                            <Trash2 className="mr-2" /> Cancel Interview
+                                        </DropdownMenuItem>
+                                        </>
+                                    )}
+                                </DropdownMenuContent>
+                                </DropdownMenu>
+                            </TableCell>
+                            </TableRow>
+                        ))}
+                        </TableBody>
+                    </Table>
+                </ScrollArea>
             </CardContent>
         </Card>
     )

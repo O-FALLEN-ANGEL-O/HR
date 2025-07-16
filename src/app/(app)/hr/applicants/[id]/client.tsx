@@ -134,106 +134,107 @@ export default function ApplicantProfileClient({
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+    <div className="flex flex-1 flex-col">
       <Header title="Applicant Profile">
         <Button variant="outline">Schedule Interview</Button>
         <Button>Make Offer</Button>
       </Header>
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left Column */}
-        <div className="lg:col-span-1 space-y-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center gap-4">
-              <Avatar className="h-16 w-16">
-                <AvatarImage src={applicant.avatar || undefined} />
-                <AvatarFallback>{applicant.name.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <div>
-                <CardTitle className="text-2xl">{applicant.name}</CardTitle>
-                <CardDescription>Applying for {applicant.jobs?.title || 'N/A'}</CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Email:</span>
-                <span className="font-medium">{applicant.email}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Phone:</span>
-                <span className="font-medium">{applicant.phone}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Stage:</span>
-                <Badge variant="secondary" className={stageColors[applicant.stage]}>
-                    {applicant.stage}
-                </Badge>
-              </div>
-               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Source:</span>
-                <Badge variant="outline" className="capitalize">{applicant.source}</Badge>
-              </div>
-            </CardContent>
-          </Card>
+      <main className="flex-1 p-4 md:p-6">
+        <div className="grid gap-6 md:grid-cols-3">
+            <div className="md:col-span-1 space-y-6">
+            <Card>
+                <CardHeader className="flex flex-row items-center gap-4">
+                <Avatar className="h-16 w-16">
+                    <AvatarImage src={applicant.avatar || undefined} />
+                    <AvatarFallback>{applicant.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div>
+                    <CardTitle className="text-2xl">{applicant.name}</CardTitle>
+                    <CardDescription>Applying for {applicant.jobs?.title || 'N/A'}</CardDescription>
+                </div>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Email:</span>
+                    <span className="font-medium">{applicant.email}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Phone:</span>
+                    <span className="font-medium">{applicant.phone}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Stage:</span>
+                    <Badge variant="secondary" className={stageColors[applicant.stage]}>
+                        {applicant.stage}
+                    </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Source:</span>
+                    <Badge variant="outline" className="capitalize">{applicant.source}</Badge>
+                </div>
+                </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Assessments</CardTitle>
-            </CardHeader>
-             <CardContent>
-                <p>Coming Soon</p>
-             </CardContent>
-          </Card>
-          
-           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center justify-between">
-                <span>AI Compatibility</span>
-                <Sparkles className="h-5 w-5 text-primary"/>
-              </CardTitle>
-              <CardDescription>AI-powered analysis of the applicant's profile against the job description.</CardDescription>
-            </CardHeader>
-             <CardContent>
-                {applicant.ai_match_score !== null && applicant.ai_match_score !== undefined ? (
-                    <div>
-                        <div className="flex items-center gap-4 mb-4">
-                            <Progress value={applicant.ai_match_score} className="w-full" />
-                            <span className="text-2xl font-bold text-primary">{applicant.ai_match_score}%</span>
+            <Card>
+                <CardHeader>
+                <CardTitle className="text-lg">Assessments</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p>Coming Soon</p>
+                </CardContent>
+            </Card>
+            
+            <Card>
+                <CardHeader>
+                <CardTitle className="text-lg flex items-center justify-between">
+                    <span>AI Compatibility</span>
+                    <Sparkles className="h-5 w-5 text-primary"/>
+                </CardTitle>
+                <CardDescription>AI-powered analysis of the applicant's profile against the job description.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {applicant.ai_match_score !== null && applicant.ai_match_score !== undefined ? (
+                        <div>
+                            <div className="flex items-center gap-4 mb-4">
+                                <Progress value={applicant.ai_match_score} className="w-full" />
+                                <span className="text-2xl font-bold text-primary">{applicant.ai_match_score}%</span>
+                            </div>
+                            <h4 className="font-semibold mb-2 flex items-center gap-2"><Lightbulb className="h-4 w-4"/> Justification</h4>
+                            <p className="text-sm text-muted-foreground p-3 bg-muted/50 rounded-md border">{applicant.ai_justification}</p>
                         </div>
-                        <h4 className="font-semibold mb-2 flex items-center gap-2"><Lightbulb className="h-4 w-4"/> Justification</h4>
-                        <p className="text-sm text-muted-foreground p-3 bg-muted/50 rounded-md border">{applicant.ai_justification}</p>
-                    </div>
-                ) : (
-                    <div className="text-center text-muted-foreground py-4">
-                        <p className="mb-4">No AI score generated yet.</p>
-                        <Button onClick={handleGenerateScore} disabled={isGeneratingScore}>
-                           {isGeneratingScore ? <Loader2 className="mr-2 animate-spin" /> : <Sparkles className="mr-2" />}
-                           Generate Score
-                        </Button>
-                    </div>
-                )}
-             </CardContent>
-          </Card>
+                    ) : (
+                        <div className="text-center text-muted-foreground py-4">
+                            <p className="mb-4">No AI score generated yet.</p>
+                            <Button onClick={handleGenerateScore} disabled={isGeneratingScore}>
+                            {isGeneratingScore ? <Loader2 className="mr-2 animate-spin" /> : <Sparkles className="mr-2" />}
+                            Generate Score
+                            </Button>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+            </div>
+            
+            <div className="md:col-span-2">
+                <Tabs defaultValue="resume" className="w-full">
+                    <TabsList>
+                        <TabsTrigger value="resume"><FileText className="mr-2"/>Resume Details</TabsTrigger>
+                        <TabsTrigger value="notes"><MessageSquare className="mr-2"/>HR Notes</TabsTrigger>
+                        <TabsTrigger value="timeline"><Workflow className="mr-2"/>Timeline</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="resume">
+                        <ResumeDetails resume={applicant.resume_data} />
+                    </TabsContent>
+                    <TabsContent value="notes">
+                    <NotesSection applicantId={applicant.id} notes={notes} />
+                    </TabsContent>
+                    <TabsContent value="timeline">
+                        <Card><CardContent className="p-6 text-center text-muted-foreground">Application timeline feature coming soon.</CardContent></Card>
+                    </TabsContent>
+                </Tabs>
+            </div>
         </div>
-        {/* Right Column */}
-        <div className="lg:col-span-2">
-            <Tabs defaultValue="resume" className="w-full">
-                <TabsList>
-                    <TabsTrigger value="resume"><FileText className="mr-2"/>Resume Details</TabsTrigger>
-                    <TabsTrigger value="notes"><MessageSquare className="mr-2"/>HR Notes</TabsTrigger>
-                    <TabsTrigger value="timeline"><Workflow className="mr-2"/>Timeline</TabsTrigger>
-                </TabsList>
-                <TabsContent value="resume">
-                    <ResumeDetails resume={applicant.resume_data} />
-                </TabsContent>
-                <TabsContent value="notes">
-                   <NotesSection applicantId={applicant.id} notes={notes} />
-                </TabsContent>
-                 <TabsContent value="timeline">
-                    <Card><CardContent className="p-6 text-center text-muted-foreground">Application timeline feature coming soon.</CardContent></Card>
-                </TabsContent>
-            </Tabs>
-        </div>
-      </div>
+      </main>
     </div>
   );
 }

@@ -102,8 +102,8 @@ export default async function ManagerDashboardPage() {
               ))}
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <DashboardCard delay={0.4} className="lg:col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <DashboardCard delay={0.4} className="md:col-span-2">
                   <Card className="h-full">
                       <CardHeader>
                           <CardTitle>Team Members</CardTitle>
