@@ -1,4 +1,3 @@
-
 import type { ProcessResumeOutput } from "@/ai/flows/process-resume";
 
 export type UserRole = 
@@ -180,7 +179,7 @@ export type CompanyPost = {
     content: string;
     image_url?: string | null;
     created_at: string;
-    users: Pick<UserProfile, 'full_name' | 'avatar_url'>;
+    users: Pick<UserProfile, 'full_name' | 'avatar_url' | 'role' | 'department'>;
     post_comments: PostComment[];
 };
 
