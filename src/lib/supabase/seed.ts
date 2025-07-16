@@ -49,13 +49,16 @@ async function main() {
     'ticket_comments', 'helpdesk_tickets', 'expense_items', 'expense_reports', 
     'company_documents', 'payslips', 'weekly_awards', 'kudos', 'post_comments', 'company_posts', 
     'key_results', 'objectives', 'performance_reviews', 'onboarding_workflows', 'leaves', 
-    'leave_balances', 'interviews', 'applicant_notes', 'applicants', 'colleges', 'jobs', 'users'
+    'leave_balances', 'interviews', 'applicant_notes', 'applicants', 'colleges', 'jobs'
   ];
   for (const table of tablesToClean) {
     const { error } = await supabaseAdmin.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Dummy condition to delete all
     if (error) console.error(`🔴 Error cleaning table ${table}:`, error.message);
     else console.log(`- Cleaned ${table}`);
   }
+   const { error: usersError } = await supabaseAdmin.from('users').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  if (usersError) console.error(`🔴 Error cleaning table users:`, usersError.message);
+  else console.log(`- Cleaned users`);
   
   // --- 2. Clean up existing auth users for a fresh seed ---
   console.log('🧹 Deleting existing auth users...');
@@ -233,9 +236,9 @@ async function main() {
   console.log('🌱 Seeding Interviews...');
   const interviews: Omit<Interview, 'id'>[] = [];
   const interviewers = createdUsers.filter((u:any) => ['hr_manager', 'recruiter', 'interviewer', 'manager'].includes(u.role));
-  if (interviewers.length > 0) {
+  if (interviewers.length > 0 && createdApplicants && createdApplicants.length > 0) {
       for (let i = 0; i < 50; i++) {
-        const applicant = faker.helpers.arrayElement(createdApplicants || []);
+        const applicant = faker.helpers.arrayElement(createdApplicants);
         const interviewer = faker.helpers.arrayElement(interviewers);
         const job = createdJobs?.find(j => j.id === applicant.job_id);
 
@@ -256,7 +259,7 @@ async function main() {
       const { data: createdInterviews } = await supabaseAdmin.from('interviews').insert(interviews).select();
       console.log(`✅ Inserted ${createdInterviews?.length || 0} interviews`);
   } else {
-      console.log('⚠️ No interviewers found, skipping interview seeding.');
+      console.log('⚠️ Not enough data to seed interviews. Skipping.');
   }
 
   // Leave Balances
