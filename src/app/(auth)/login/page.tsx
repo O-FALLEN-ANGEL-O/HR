@@ -83,6 +83,7 @@ export default function LoginPage() {
 
   const demoUsers = [
     { role: 'Admin', email: 'john.admin@company.com' },
+    { role: 'Super HR', email: 'olivia.superhr@company.com' },
     { role: 'HR Manager', email: 'sarah.hr@company.com' },
     { role: 'Recruiter', email: 'mike.recruiter@company.com' },
     { role: 'Manager', email: 'emily.manager@company.com' },
@@ -90,7 +91,9 @@ export default function LoginPage() {
     { role: 'Employee', email: 'lisa.employee@company.com' },
     { role: 'Intern', email: 'tom.intern@company.com' },
     { role: 'Finance', email: 'rachel.finance@company.com' },
+    { role: 'IT Admin', email: 'james.it@company.com' },
     { role: 'Support', email: 'alex.support@company.com' },
+    { role: 'Interviewer', email: 'noah.interviewer@company.com' },
     { role: 'Auditor', email: 'emma.auditor@company.com' },
   ];
 
@@ -107,9 +110,9 @@ export default function LoginPage() {
                 transition={{ duration: 0.5, delay: 0.3 }}
                 className="w-full max-w-md mt-6"
             >
-                <Card className="bg-primary/20 border-primary-foreground/20 text-primary-foreground">
+                <Card className="bg-transparent border-primary-foreground/20 text-primary-foreground shadow-none">
                     <CardHeader>
-                        <CardTitle className="text-lg text-primary-foreground">Demo Accounts</CardTitle>
+                        <CardTitle className="text-xl text-primary-foreground">Demo Accounts</CardTitle>
                         <CardDescription className="text-primary-foreground/80">
                             Use these credentials to explore different roles. The password for all accounts is: <span className="font-bold">password</span>
                         </CardDescription>

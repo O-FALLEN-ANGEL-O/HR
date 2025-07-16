@@ -28,8 +28,8 @@ async function seed() {
     console.log('No existing auth users to delete.');
   }
 
-  // NOTE: The `public.users` table should be automatically cleaned by the cascade delete trigger.
-  // We will run a TRUNCATE just in case to be sure.
+  // The `public.users` table should be automatically cleaned by the cascade delete trigger.
+  // Truncating the public.users table just in case.
   const { error: truncateError } = await supabaseAdmin.from('users').delete().neq('id', '00000000-0000-0000-0000-000000000000');
   if (truncateError) {
       console.warn(`Could not truncate public.users table: ${truncateError.message}. This might be okay if cascade delete worked.`);
@@ -54,15 +54,20 @@ async function seed() {
     { email: 'james.it@company.com', role: 'it_admin', full_name: 'James IT', department: 'IT' },
   ];
 
-  console.log(`👤 Creating ${usersToCreate.length} users with password "password123"...`);
+  console.log(`👤 Creating ${usersToCreate.length} users with password "password"...`);
   let createdCount = 0;
   const publicUsersToInsert = [];
 
   for (const userData of usersToCreate) {
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: userData.email,
-      password: 'password123',
+      password: 'password', // Set the password here
       email_confirm: true,
+      user_metadata: {
+        full_name: userData.full_name,
+        role: userData.role,
+        department: userData.department,
+      },
     });
 
     if (authError) {
@@ -86,16 +91,21 @@ async function seed() {
     console.log(`\n✅ Successfully created ${createdCount} auth users.`);
     console.log(`✍️ Inserting ${publicUsersToInsert.length} profiles into public.users table...`);
     
-    const { error: insertPublicError } = await supabaseAdmin
-        .from('users')
-        .insert(publicUsersToInsert);
-    
-    if (insertPublicError) {
-        console.error(`🔴 Error inserting public user profiles: ${insertPublicError.message}`);
-        console.error('🔴 Seed process failed at public user insertion.');
-    } else {
-        console.log('✅ Successfully inserted public user profiles.');
+    // The public.users table is now populated by a trigger, so we check if it was already created.
+    // If not, we insert it manually. This is a robust way to handle both cases.
+    for (const publicUser of publicUsersToInsert) {
+        const { data: existingUser } = await supabaseAdmin.from('users').select('id').eq('id', publicUser.id).single();
+        if (!existingUser) {
+            const { error: insertPublicError } = await supabaseAdmin
+                .from('users')
+                .insert(publicUser);
+            if (insertPublicError) {
+                 console.error(`🔴 Error inserting public profile for ${publicUser.email}: ${insertPublicError.message}`);
+            }
+        }
     }
+    
+    console.log('✅ Public user profiles verified/inserted.');
   } else {
     console.error('\n🔴 Seed process failed. No auth users were created.');
   }
