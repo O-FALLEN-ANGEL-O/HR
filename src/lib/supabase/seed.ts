@@ -1,113 +1,87 @@
-// src/lib/supabase/seed.ts
-import { supabaseAdmin } from './admin';
 
-async function inspectSchema() {
-  console.log('🔍 Inspecting database schema...');
+'use server';
 
-  const { data: tables, error: tablesError } = await supabaseAdmin.rpc('get_public_tables');
+// A simple seed script to create users with different roles.
+// This script is intended to be run from the command line.
 
-  if (tablesError) {
-      console.error('🔴 Could not fetch table list:', tablesError.message);
-      return;
+import { createClient } from '@supabase/supabase-js';
+import { supabaseUrl, supabaseServiceRoleKey } from '@/lib/supabase/config';
+
+if (!supabaseUrl || !supabaseServiceRoleKey) {
+  throw new Error('Supabase URL or service role key is not defined.');
+}
+
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRole_key);
+
+async function seed() {
+  console.log('🌱 Starting database seed process...');
+  console.log('✅ Supabase admin client initialized.');
+
+  // 1. Clean up existing auth users
+  console.log('🧹 Deleting existing auth users...');
+  const { data: { users: authUsers }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+  if (listError) {
+    console.error('🔴 Error listing auth users:', listError.message);
+  } else if (authUsers.length > 0) {
+    console.log(`Found ${authUsers.length} auth users to delete...`);
+    for (const user of authUsers) {
+      await supabaseAdmin.auth.admin.deleteUser(user.id);
+    }
+    console.log(`✅ Deleted ${authUsers.length} auth users.`);
+  } else {
+    console.log('No existing auth users to delete.');
   }
-  
-  if (!tables || tables.length === 0) {
-      console.log('No tables found in the public schema.');
-      return;
-  }
 
-  for (const table of tables) {
-    const tableName = table.table_name;
-    console.log(`\n--- Table: ${tableName} ---`);
-    const { data, error } = await supabaseAdmin
-      .rpc('get_table_columns', { p_table_name: tableName });
+  const usersToCreate = [
+    { email: 'john.admin@company.com', role: 'admin', full_name: 'John Admin' },
+    { email: 'sarah.hr@company.com', role: 'hr_manager', full_name: 'Sarah HR' },
+    { email: 'mike.recruiter@company.com', role: 'recruiter', full_name: 'Mike Recruiter' },
+    { email: 'emily.manager@company.com', role: 'manager', full_name: 'Emily Manager' },
+    { email: 'david.teamlead@company.com', role: 'team_lead', full_name: 'David TeamLead' },
+    { email: 'lisa.employee@company.com', role: 'employee', full_name: 'Lisa Employee' },
+    { email: 'tom.intern@company.com', role: 'intern', full_name: 'Tom Intern' },
+    { email: 'rachel.finance@company.com', role: 'finance', full_name: 'Rachel Finance' },
+    { email: 'alex.support@company.com', role: 'support', full_name: 'Alex Support' },
+    { email: 'emma.auditor@company.com', role: 'auditor', full_name: 'Emma Auditor' },
+  ];
 
+  console.log(`👤 Creating ${usersToCreate.length} users with password "password123"...`);
+  let createdCount = 0;
 
-    if (error) {
-        console.error(`- Error inspecting table "${tableName}": ${error.message}`);
-    } else if (data.length === 0) {
-        console.log(`- Table not found or has no columns.`);
-    } else {
-      data.forEach((column: { column_name: string, data_type: string }) => {
-        console.log(`  - ${column.column_name}: ${column.data_type}`);
-      });
+  for (const userData of usersToCreate) {
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: userData.email,
+      password: 'password123',
+      email_confirm: true,
+      user_metadata: {
+        full_name: userData.full_name,
+        role: userData.role,
+      },
+    });
+
+    if (authError) {
+      console.error(`🔴 Error creating auth user ${userData.email}: ${authError.message}`);
+    } else if (authData.user) {
+      // The public.users table should be populated by the trigger.
+      // We can verify or update if needed, but the trigger is the primary mechanism.
+      console.log(`- Created auth user: ${authData.user.email}`);
+      createdCount++;
     }
   }
 
-  console.log('\n✅ Schema inspection complete.');
+  console.log(`✅ Successfully created ${createdCount} users.`);
+  
+  if (createdCount > 0) {
+    console.log('\n🎉 Seed process complete!');
+    console.log('You can now log in with any of the demo accounts using the password: password123');
+  } else {
+    console.error('\n🔴 Seed process failed. No users were created.');
+  }
 }
 
-async function main() {
-  console.log('🌱 Starting database schema inspection process...');
-
-  console.log('Setting up helper functions...');
-
-  const { error: rpcError1 } = await supabaseAdmin.rpc('execute_sql', { 
-      sql_statement: `
-        CREATE OR REPLACE FUNCTION get_table_columns(p_table_name TEXT)
-        RETURNS TABLE(column_name TEXT, data_type TEXT) AS $$
-        BEGIN
-            RETURN QUERY
-            SELECT 
-                c.column_name::text, 
-                c.data_type::text
-            FROM 
-                information_schema.columns c
-            WHERE 
-                c.table_schema = 'public'
-                AND c.table_name = p_table_name
-            ORDER BY 
-                c.ordinal_position;
-        END;
-        $$ LANGUAGE plpgsql;
-      `
-  });
-  
-  if (rpcError1) {
-      console.error('🔴 Failed to create get_table_columns helper function:', rpcError1.message);
-      return;
-  }
-  
-  const { error: rpcError2 } = await supabaseAdmin.rpc('execute_sql', {
-      sql_statement: `
-        CREATE OR REPLACE FUNCTION get_public_tables()
-        RETURNS TABLE(table_name TEXT) AS $$
-        BEGIN
-            RETURN QUERY
-            SELECT c.table_name::text FROM information_schema.tables c
-            WHERE c.table_schema = 'public' AND c.table_type = 'BASE TABLE'
-            ORDER BY c.table_name;
-        END;
-        $$ LANGUAGE plpgsql;
-      `
-  });
-
-  if (rpcError2) {
-      console.error('🔴 Failed to create get_public_tables helper function:', rpcError2.message);
-      return;
-  }
-
-  const { error: rpcError3 } = await supabaseAdmin.rpc('execute_sql', {
-      sql_statement: `
-        CREATE OR REPLACE FUNCTION execute_sql(sql_statement TEXT)
-        RETURNS void AS $$
-        BEGIN
-            EXECUTE sql_statement;
-        END;
-        $$ LANGUAGE plpgsql;
-      `
-  });
-   if (rpcError3) {
-      console.error('🔴 Failed to create execute_sql helper function:', rpcError3.message);
-      return;
-  }
-
-  console.log('✅ Helper functions created successfully.');
-
-  await inspectSchema();
-}
-
-main().catch(e => {
-    console.error("🔴 Script failed with an unhandled error:", e);
-    process.exit(1);
+seed().catch(e => {
+  console.error("🔴 Script failed with an unhandled error:", e);
+  process.exit(1);
 });
+
+    
