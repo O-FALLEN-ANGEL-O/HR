@@ -12,7 +12,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'HR+',
+  title: 'HR+ | Modern HRMS Platform',
   description: 'A comprehensive Human Resources management platform.',
   icons: {
     icon: '/favicon.svg',
@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={cn('font-body antialiased', inter.variable)}
+        className={cn('min-h-screen bg-background font-body antialiased', inter.variable)}
         suppressHydrationWarning={true}
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>

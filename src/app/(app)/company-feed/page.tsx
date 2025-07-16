@@ -26,13 +26,8 @@ export default async function CompanyFeedPage() {
     <div className="flex flex-1 flex-col">
       <Header title="Company Feed" />
       <main className="flex-1 p-4 md:p-6">
-        <div className="mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <div className="lg:col-span-3">
-             <CompanyFeedClient user={user} initialPosts={posts} />
-          </div>
-          <div className="hidden lg:block lg:col-span-1">
-             {/* Future content like filters or trending topics can go here */}
-          </div>
+        <div className="mx-auto w-full max-w-3xl">
+           <CompanyFeedClient user={user} initialPosts={posts} />
         </div>
       </main>
     </div>

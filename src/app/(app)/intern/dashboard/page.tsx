@@ -4,90 +4,51 @@ import { ClipboardCheck, BookOpen, Clock, Award, User, Wallet, BarChart } from '
 import Link from 'next/link';
 
 export default function InternDashboardPage() {
+  const features = [
+    { href: "/hr/onboarding", icon: ClipboardCheck, title: "Onboarding Tasks", description: "Complete your onboarding checklist.", enabled: true },
+    { href: "/leaves", icon: Clock, title: "Request Leave", description: "Apply for time off and track your requests.", enabled: true },
+    { href: "/employee/documents", icon: BookOpen, title: "Learning Materials", description: "Access training documents and project briefs.", enabled: true },
+    { href: "/employee/kudos", icon: Award, title: "Kudos", description: "Give and receive recognition.", enabled: true },
+    { href: "#", icon: User, title: "My Mentor", description: "View your assigned mentor's profile.", enabled: false },
+    { href: "#", icon: Wallet, title: "Stipend Tracker", description: "View stipend release date.", enabled: false },
+    { href: "#", icon: BarChart, title: "Progress Card", description: "Auto-generated report from mentor.", enabled: false },
+  ];
+  
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+    <>
       <Header title="Intern Welcome Hub" />
-       <div className="space-y-4">
-        <Card>
-            <CardHeader>
-                <CardTitle>Welcome to the Team!</CardTitle>
-                <CardDescription>This is your portal for your internship journey.</CardDescription>
-            </CardHeader>
-        </Card>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Link href="/hr/onboarding">
-                <Card className="hover:bg-muted/50 transition-colors">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Onboarding Tasks</CardTitle>
-                        <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-xs text-muted-foreground">Complete your onboarding checklist.</p>
-                    </CardContent>
-                </Card>
-            </Link>
-            <Link href="/leaves">
-                <Card className="hover:bg-muted/50 transition-colors">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Request Leave</CardTitle>
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-xs text-muted-foreground">Apply for time off and track your requests.</p>
-                    </CardContent>
-                </Card>
-            </Link>
-             <Card className="opacity-60 cursor-not-allowed">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">My Mentor</CardTitle>
-                    <User className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <p className="text-xs text-muted-foreground">View your assigned mentor's profile. (Coming Soon)</p>
-                </CardContent>
-            </Card>
-             <Card className="opacity-60 cursor-not-allowed">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Stipend Tracker</CardTitle>
-                    <Wallet className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <p className="text-xs text-muted-foreground">View stipend release date. (Coming Soon)</p>
-                </CardContent>
-            </Card>
-             <Card className="opacity-60 cursor-not-allowed">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Progress Card</CardTitle>
-                    <BarChart className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <p className="text-xs text-muted-foreground">Auto-generated report from mentor. (Coming Soon)</p>
-                </CardContent>
-            </Card>
-            <Link href="/employee/documents">
-              <Card className="hover:bg-muted/50 transition-colors">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Learning Materials</CardTitle>
-                      <BookOpen className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                      <p className="text-xs text-muted-foreground">Access training documents and project briefs.</p>
-                  </CardContent>
-              </Card>
-            </Link>
-            <Link href="/employee/kudos">
-              <Card className="hover:bg-muted/50 transition-colors">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Kudos</CardTitle>
-                      <Award className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                      <p className="text-xs text-muted-foreground">Give and receive recognition.</p>
-                  </CardContent>
-              </Card>
-            </Link>
+      <main className="flex-1 p-4 md:p-6 lg:p-8">
+        <div className="mx-auto max-w-7xl space-y-6">
+          <Card>
+              <CardHeader>
+                  <CardTitle>Welcome to the Team!</CardTitle>
+                  <CardDescription>This is your portal for your internship journey. Here are some quick links to get you started.</CardDescription>
+              </CardHeader>
+          </Card>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {features.map((feature, index) => {
+                const card = (
+                  <Card key={index} className={`flex flex-col h-full transition-all duration-300 ${feature.enabled ? 'hover:shadow-lg hover:-translate-y-1' : 'opacity-60 cursor-not-allowed bg-muted/50'}`}>
+                      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+                          <div className="space-y-1">
+                            <CardTitle className="text-base font-bold">{feature.title}</CardTitle>
+                            <CardDescription className="text-xs">{feature.description}</CardDescription>
+                          </div>
+                          <div className="p-2 bg-primary/10 rounded-lg">
+                            <feature.icon className="h-5 w-5 text-primary" />
+                          </div>
+                      </CardHeader>
+                      <CardContent className="flex-grow flex items-end">
+                          {!feature.enabled && <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">Coming Soon</p>}
+                      </CardContent>
+                  </Card>
+                );
+
+                return feature.enabled ? <Link href={feature.href} className="flex">{card}</Link> : card;
+              })}
+          </div>
         </div>
-      </div>
-    </div>
+      </main>
+    </>
   );
 }

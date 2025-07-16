@@ -9,6 +9,7 @@ import { cookies } from 'next/headers';
 import { getUser } from '@/lib/supabase/user';
 import type { UserProfile, Job, Leave, Interview } from '@/lib/types';
 import { format } from 'date-fns';
+import { DashboardCard } from '../../employee/dashboard/dashboard-card';
 
 async function getDashboardData(user: UserProfile | null) {
   if (!user?.department) return { 
@@ -23,7 +24,7 @@ async function getDashboardData(user: UserProfile | null) {
 
   const { data: teamMembers, count: teamCount } = await supabase
     .from('users')
-    .select('id, full_name, avatar_url, job_title:department', { count: 'exact' })
+    .select('id, full_name, avatar_url, role', { count: 'exact' })
     .eq('department', user.department)
     .neq('id', user.id);
 
@@ -64,112 +65,104 @@ export default async function ManagerDashboardPage() {
   const cookieStore = cookies();
   const user = await getUser(cookieStore);
   const { teamMembers, teamCount, openTeamPositions, pendingLeave, upcomingInterviews } = await getDashboardData(user);
+  
+  const stats = [
+    { title: "Total Team Members", value: teamCount, description: `in your department`, icon: Users },
+    { title: "Open Team Positions", value: openTeamPositions, link: "/recruiter/jobs", linkText: "View Jobs", icon: Briefcase },
+    { title: "Pending Leave Requests", value: pendingLeave, link: "/leaves", linkText: "Review Requests", icon: Clock },
+    { title: "Upcoming Interviews", value: upcomingInterviews.length, link: "/interviewer/tasks", linkText: "View Schedule", icon: CalendarCheck }
+  ];
+
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+    <>
       <Header title="Manager's Dashboard" />
-      <div className="space-y-6">
-        {/* Key Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Team Members</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{teamCount}</div>
-                    <p className="text-xs text-muted-foreground">in your department</p>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Open Team Positions</CardTitle>
-                    <Briefcase className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{openTeamPositions}</div>
-                    <Link href="/recruiter/jobs" className="text-xs text-muted-foreground hover:text-primary">View Jobs →</Link>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Pending Leave Requests</CardTitle>
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{pendingLeave}</div>
-                     <Link href="/leaves" className="text-xs text-muted-foreground hover:text-primary">Review Requests →</Link>
-                </CardContent>
-            </Card>
-             <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Upcoming Interviews</CardTitle>
-                    <CalendarCheck className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{upcomingInterviews.length}</div>
-                    <Link href="/interviewer/tasks" className="text-xs text-muted-foreground hover:text-primary">View Schedule →</Link>
-                </CardContent>
-            </Card>
-        </div>
-        
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-2">
-                <CardHeader>
-                    <CardTitle>Team Members</CardTitle>
-                    <CardDescription>An overview of all members in the {user?.department} department.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {teamMembers.map(member => (
-                            <div key={member.id} className="flex items-center gap-4 rounded-lg border p-3">
-                                <Avatar className="h-10 w-10">
-                                    <AvatarImage src={member.avatar_url || undefined} />
-                                    <AvatarFallback>{member.full_name?.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <p className="font-semibold">{member.full_name}</p>
-                                    <p className="text-sm text-muted-foreground">{member.job_title}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                     <Link href="/employee/directory">
-                        <p className="text-sm text-primary hover:underline mt-4">View Full Directory →</p>
-                    </Link>
-                </CardContent>
-            </Card>
+      <main className="flex-1 p-4 md:p-6 lg:p-8">
+        <div className="mx-auto max-w-7xl space-y-6">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              {stats.map((stat, i) => (
+                <DashboardCard key={i} delay={i * 0.1}>
+                  <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                          <stat.icon className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                          <div className="text-2xl font-bold">{stat.value}</div>
+                           {stat.link ? (
+                              <Link href={stat.link} className="text-xs text-muted-foreground hover:text-primary transition-colors">
+                                {stat.linkText} →
+                              </Link>
+                            ) : (
+                              <p className="text-xs text-muted-foreground">{stat.description}</p>
+                            )}
+                      </CardContent>
+                  </Card>
+                </DashboardCard>
+              ))}
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <DashboardCard delay={0.4} className="lg:col-span-2">
+                  <Card className="h-full">
+                      <CardHeader>
+                          <CardTitle>Team Members</CardTitle>
+                          <CardDescription>An overview of all members in the {user?.department} department.</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              {teamMembers.map(member => (
+                                  <div key={member.id} className="flex items-center gap-4 rounded-lg border p-3 hover:bg-muted/50 transition-colors">
+                                      <Avatar className="h-10 w-10">
+                                          <AvatarImage src={member.avatar_url || undefined} />
+                                          <AvatarFallback>{member.full_name?.charAt(0)}</AvatarFallback>
+                                      </Avatar>
+                                      <div>
+                                          <p className="font-semibold">{member.full_name}</p>
+                                          <p className="text-sm text-muted-foreground capitalize">{member.role.replace('_', ' ')}</p>
+                                      </div>
+                                  </div>
+                              ))}
+                          </div>
+                          <Link href="/employee/directory">
+                              <p className="text-sm text-primary hover:underline mt-4 inline-block">View Full Directory →</p>
+                          </Link>
+                      </CardContent>
+                  </Card>
+              </DashboardCard>
 
-             <Card>
-                <CardHeader>
-                    <CardTitle>Upcoming Interviews</CardTitle>
-                    <CardDescription>Your team's upcoming interview schedule.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {upcomingInterviews.length > 0 ? (
-                         <div className="space-y-4">
-                            {upcomingInterviews.map(interview => (
-                                <div key={interview.id} className="flex flex-col rounded-lg border p-3">
-                                    <p className="font-semibold">{interview.candidate_name}</p>
-                                    <p className="text-sm text-muted-foreground">{interview.job_title}</p>
-                                    <div className="flex justify-between items-center mt-2">
-                                        <Badge variant="outline">{format(new Date(interview.date), 'MMM dd, yyyy')}</Badge>
-                                        <span className="text-sm font-medium">{interview.time}</span>
-                                    </div>
-                                </div>
-                            ))}
-                         </div>
-                    ) : (
-                        <div className="text-center text-muted-foreground py-10">
-                            <UserCheck className="mx-auto h-8 w-8 mb-2" />
-                            <p>No upcoming interviews for your team.</p>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+              <DashboardCard delay={0.5}>
+                  <Card className="h-full">
+                      <CardHeader>
+                          <CardTitle>Upcoming Interviews</CardTitle>
+                          <CardDescription>Your team's upcoming interview schedule.</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                          {upcomingInterviews.length > 0 ? (
+                              <div className="space-y-4">
+                                  {upcomingInterviews.map(interview => (
+                                      <div key={interview.id} className="flex flex-col rounded-lg border p-3 hover:bg-muted/50 transition-colors">
+                                          <p className="font-semibold">{interview.candidate_name}</p>
+                                          <p className="text-sm text-muted-foreground">{interview.job_title}</p>
+                                          <div className="flex justify-between items-center mt-2">
+                                              <Badge variant="outline">{format(new Date(interview.date), 'MMM dd, yyyy')}</Badge>
+                                              <span className="text-sm font-medium">{interview.time}</span>
+                                          </div>
+                                      </div>
+                                  ))}
+                              </div>
+                          ) : (
+                              <div className="text-center text-muted-foreground py-10 flex flex-col items-center justify-center h-full">
+                                  <UserCheck className="mx-auto h-8 w-8 mb-2" />
+                                  <p>No upcoming interviews for your team.</p>
+                              </div>
+                          )}
+                      </CardContent>
+                  </Card>
+              </DashboardCard>
+          </div>
         </div>
-      </div>
-    </div>
+      </main>
+    </>
   );
 }

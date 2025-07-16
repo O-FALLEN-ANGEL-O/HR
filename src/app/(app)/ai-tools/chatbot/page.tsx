@@ -20,8 +20,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import type { ChatMessage, UserProfile } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Bot, Loader2, Send } from 'lucide-react';
+import { Bot, Loader2, Send, Sparkles } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { Header } from '@/components/header';
 
 
 const ChatSchema = z.object({
@@ -122,75 +123,87 @@ export default function AIChatbotPage() {
   };
 
   return (
-    <Card className="flex h-[calc(100vh-10rem)] flex-col">
-      <CardHeader>
-        <CardTitle>AI Chatbot</CardTitle>
-        <CardDescription>
-          Your personal AI assistant for HR-related questions.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex-1 overflow-hidden">
-        <ScrollArea className="h-full pr-4" ref={scrollAreaRef}>
-          <div className="space-y-4">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={cn(
-                  'flex items-start gap-3',
-                  message.role === 'user' && 'justify-end'
-                )}
-              >
-                {message.role === 'assistant' && (
-                  <Avatar className="h-8 w-8 border">
-                    <AvatarFallback>
-                      <Bot className="h-5 w-5 text-primary" />
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-                <div
-                  className={cn(
-                    'max-w-md rounded-lg px-4 py-2',
-                    message.role === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted'
-                  )}
-                >
-                  <p className="text-sm">{message.content}</p>
-                </div>
-                {message.role === 'user' && (
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={currentUser?.avatar_url || undefined} />
-                    <AvatarFallback>{currentUser?.full_name?.charAt(0)}</AvatarFallback>
-                  </Avatar>
+    <>
+      <Header title="AI Chatbot" />
+      <div className="flex-1 flex items-center justify-center p-4 md:p-6">
+        <Card className="flex flex-col w-full max-w-2xl h-[calc(100vh-12rem)] shadow-xl">
+          <CardHeader className="border-b">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-full">
+                 <Bot className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <CardTitle>AI HR Assistant</CardTitle>
+                <CardDescription>
+                  Your personal AI assistant for HR-related questions.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="flex-1 overflow-hidden p-0">
+            <ScrollArea className="h-full" ref={scrollAreaRef}>
+              <div className="space-y-6 p-4 md:p-6">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={cn(
+                      'flex items-start gap-3',
+                      message.role === 'user' && 'justify-end'
+                    )}
+                  >
+                    {message.role === 'assistant' && (
+                      <Avatar className="h-8 w-8 border">
+                        <AvatarFallback>
+                          <Bot className="h-5 w-5 text-primary" />
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
+                    <div
+                      className={cn(
+                        'max-w-md rounded-lg px-4 py-2 shadow-sm',
+                        message.role === 'user'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted'
+                      )}
+                    >
+                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                    </div>
+                    {message.role === 'user' && (
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={currentUser?.avatar_url || undefined} />
+                        <AvatarFallback>{currentUser?.full_name?.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                    )}
+                  </div>
+                ))}
+                {isLoading && (
+                     <div className="flex items-start gap-3">
+                        <Avatar className="h-8 w-8 border">
+                            <AvatarFallback>
+                                <Bot className="h-5 w-5 text-primary" />
+                            </AvatarFallback>
+                        </Avatar>
+                        <div className="bg-muted rounded-lg px-4 py-2 flex items-center shadow-sm">
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        </div>
+                    </div>
                 )}
               </div>
-            ))}
-            {isLoading && (
-                 <div className="flex items-start gap-3">
-                    <Avatar className="h-8 w-8 border">
-                        <AvatarFallback>
-                            <Bot className="h-5 w-5 text-primary" />
-                        </AvatarFallback>
-                    </Avatar>
-                    <div className="bg-muted rounded-lg px-4 py-2 flex items-center">
-                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                    </div>
-                </div>
-            )}
-          </div>
-        </ScrollArea>
-      </CardContent>
-      <CardFooter>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="flex w-full items-center gap-2"
-        >
-          <Input {...form.register('query')} placeholder="Type your message..." autoComplete='off' />
-          <Button type="submit" disabled={isLoading}>
-            <Send className="h-4 w-4" />
-          </Button>
-        </form>
-      </CardFooter>
-    </Card>
+            </ScrollArea>
+          </CardContent>
+          <CardFooter className="border-t p-4">
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="flex w-full items-center gap-2"
+            >
+              <Input {...form.register('query')} placeholder="Type your message..." autoComplete='off' className="flex-1" />
+              <Button type="submit" disabled={isLoading} size="icon">
+                <Send className="h-4 w-4" />
+              </Button>
+            </form>
+          </CardFooter>
+        </Card>
+      </div>
+    </>
   );
 }
