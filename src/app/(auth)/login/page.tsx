@@ -24,7 +24,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { login, loginWithGoogle } from '@/app/auth/actions';
-import { Loader2, LogIn, Building2 } from 'lucide-react';
+import { Loader2, LogIn, Building2, User, KeyRound } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const GoogleIcon = () => (
@@ -99,6 +99,19 @@ export default function LoginPage() {
 
   const isLoading = isSubmittingPassword || isSubmittingGoogle;
 
+  const demoUsers = [
+    { role: 'Admin', email: 'john.admin@company.com' },
+    { role: 'HR Manager', email: 'sarah.hr@company.com' },
+    { role: 'Recruiter', email: 'mike.recruiter@company.com' },
+    { role: 'Manager', email: 'emily.manager@company.com' },
+    { role: 'Team Lead', email: 'david.teamlead@company.com' },
+    { role: 'Employee', email: 'lisa.employee@company.com' },
+    { role: 'Intern', email: 'tom.intern@company.com' },
+    { role: 'Finance', email: 'rachel.finance@company.com' },
+    { role: 'Support', email: 'alex.support@company.com' },
+    { role: 'Auditor', email: 'emma.auditor@company.com' },
+  ];
+
   return (
     <div className="w-full min-h-screen grid grid-cols-1 md:grid-cols-2">
         <div className="hidden md:flex flex-col items-center justify-center bg-gradient-to-br from-primary to-emerald-800 p-8 text-white relative">
@@ -120,14 +133,14 @@ export default function LoginPage() {
                 <h2 className="text-3xl font-bold pt-8">HURRY UP! LOG IN & START NOW</h2>
             </motion.div>
         </div>
-        <div className="flex items-center justify-center p-4">
+        <div className="flex flex-col items-center justify-center p-4">
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
-                className="w-full"
+                className="w-full max-w-md"
             >
-                <Card className="w-full max-w-md mx-auto">
+                <Card className="w-full">
                 <CardHeader className="text-center">
                     <div className="flex justify-center mb-2">
                         <Building2 className="h-10 w-10 text-primary"/>
@@ -190,6 +203,29 @@ export default function LoginPage() {
                     Sign in with Google
                     </Button>
                 </CardContent>
+                </Card>
+            </motion.div>
+             <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+                className="w-full max-w-md mt-6"
+            >
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-lg">Demo Accounts</CardTitle>
+                        <CardDescription>
+                            Use these credentials to explore different roles. The password for all accounts is: <span className="font-bold text-foreground">password</span>
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                        {demoUsers.map(user => (
+                            <div key={user.role} className="flex items-center justify-between rounded-md border p-2">
+                                <p className="font-medium">{user.role}</p>
+                                <p className="text-muted-foreground">{user.email}</p>
+                            </div>
+                        ))}
+                    </CardContent>
                 </Card>
             </motion.div>
         </div>
