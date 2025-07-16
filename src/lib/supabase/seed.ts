@@ -54,13 +54,14 @@ async function main() {
   }
 
   // --- 2. Clean up public tables ---
-  // The 'users' table is cleaned automatically by the trigger on `auth.users` deletion.
+  // The 'users' table is cleaned automatically by the trigger on `auth.users` deletion,
+  // but we explicitly clean all tables to be safe.
   console.log('🧹 Cleaning up public table data...');
-  const tablesToClean = [
+   const tablesToClean = [
       'ticket_comments', 'helpdesk_tickets', 'expense_items', 'expense_reports',
       'company_documents', 'payslips', 'weekly_awards', 'kudos', 'post_comments', 'company_posts',
       'key_results', 'objectives', 'onboarding_workflows', 'leaves', 'leave_balances', 
-      'interviews', 'applicant_notes', 'applicants', 'colleges', 'jobs'
+      'interviews', 'applicant_notes', 'applicants', 'colleges', 'jobs', 'users'
   ];
   
   for (const table of tablesToClean) {
@@ -68,6 +69,7 @@ async function main() {
     if (error) console.warn(`🟠 Could not clean table ${table}:`, error.message);
     else console.log(`- Cleaned ${table}`);
   }
+
 
   // --- 3. Create users ---
   const usersToCreate: { email: string; role: UserRole; fullName: string, department: string }[] = [
@@ -114,7 +116,18 @@ async function main() {
     if (error) {
       console.error(`🔴 Error creating user ${userData.email}: ${error.message}`);
     } else if (data.user) {
-      const { data: userProfile } = await supabaseAdmin.from('users').select('*').eq('id', data.user.id).single();
+      // The public.users record is created by a trigger, so we fetch it to get the full profile
+      // It might take a moment to propagate, so we'll add a small retry mechanism.
+      let userProfile = null;
+      for (let i=0; i<3; i++) {
+          const { data: profile } = await supabaseAdmin.from('users').select('*').eq('id', data.user.id).single();
+          if (profile) {
+              userProfile = profile;
+              break;
+          }
+          await new Promise(res => setTimeout(res, 200)); // wait 200ms
+      }
+      
       if (userProfile) {
         createdUsers.push(userProfile);
       } else {
@@ -534,6 +547,26 @@ async function main() {
   } else {
       console.warn('⚠️ No ticket resolvers found, skipping helpdesk tickets seeding.');
   }
+  
+  // Performance Reviews
+    console.log('🌱 Seeding Performance Reviews...');
+    const performanceReviews: Omit<PerformanceReview, 'id' | 'users'>[] = [];
+    if (createdUsers.length > 0) {
+        for (let i = 0; i < 40; i++) {
+            const user = faker.helpers.arrayElement(createdUsers);
+            performanceReviews.push({
+                user_id: user.id,
+                review_date: faker.date.past({ years: 1 }).toISOString().split('T')[0],
+                status: faker.helpers.arrayElement(['Pending', 'In Progress', 'Completed']),
+                job_title: user.department || 'Employee',
+            });
+        }
+        const { data: createdReviews } = await supabaseAdmin.from('performance_reviews').insert(performanceReviews).select();
+        console.log(`✅ Inserted ${createdReviews?.length || 0} performance reviews`);
+    } else {
+        console.warn('⚠️ No users to create performance reviews for.');
+    }
+
 
   console.log('✅ Database seeding process completed successfully!');
 }
