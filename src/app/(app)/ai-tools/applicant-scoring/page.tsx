@@ -30,6 +30,7 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles } from 'lucide-react';
+import { Header } from '@/components/header';
 
 const FormSchema = z.object({
   jobDescription: z.string().min(50, 'Job description must be at least 50 characters.'),
@@ -68,7 +69,9 @@ export default function ApplicantScoringPage() {
   };
 
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+    <>
+    <Header title="AI Applicant Scoring" />
+    <main className="p-4 md:p-6 grid grid-cols-1 gap-8 lg:grid-cols-2">
       <Card>
         <CardHeader>
           <CardTitle>Applicant Match Scoring</CardTitle>
@@ -165,6 +168,7 @@ export default function ApplicantScoringPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </main>
+    </>
   );
 }

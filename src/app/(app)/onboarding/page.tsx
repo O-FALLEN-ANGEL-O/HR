@@ -20,11 +20,13 @@ export default async function OnboardingPage() {
     }
 
     return (
-        <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+        <div className="flex flex-1 flex-col">
             <Header title="Complete Your Onboarding" />
-            <div className="mx-auto w-full max-w-4xl">
-                 <OnboardingForm user={user} />
-            </div>
+            <main className="flex-1 p-4 md:p-6">
+              <div className="mx-auto w-full max-w-4xl">
+                   <OnboardingForm user={user} />
+              </div>
+            </main>
         </div>
     );
 }

@@ -5,8 +5,9 @@ import Link from 'next/link';
 
 export default function SuperHrDashboardPage() {
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+    <>
       <Header title="Super HR Dashboard" />
+      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
        <div className="space-y-4">
         <Card>
             <CardHeader>
@@ -14,7 +15,7 @@ export default function SuperHrDashboardPage() {
                 <CardDescription>Oversee advanced HR functions and manage system roles.</CardDescription>
             </CardHeader>
         </Card>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <Link href="/hr/dashboard">
                 <Card className="hover:bg-muted/50 transition-colors">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -75,6 +76,7 @@ export default function SuperHrDashboardPage() {
             </Card>
         </div>
       </div>
-    </div>
+      </main>
+    </>
   );
 }

@@ -79,8 +79,9 @@ const features = [
 
 export default function EmployeeDashboardPage() {
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+    <>
       <Header title="My Dashboard" />
+      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
        <div className="space-y-4">
         <Card>
             <CardHeader>
@@ -88,7 +89,7 @@ export default function EmployeeDashboardPage() {
                 <CardDescription>This is your personal employee dashboard. Access all your tools and information from here.</CardDescription>
             </CardHeader>
         </Card>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {features.map((feature) => {
                  const cardContent = (
                     <Card className={`${!feature.comingSoon && 'hover:bg-muted/50 transition-colors'} h-full`}>
@@ -111,6 +112,7 @@ export default function EmployeeDashboardPage() {
             })}
         </div>
       </div>
-    </div>
+      </main>
+    </>
   );
 }
