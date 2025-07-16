@@ -1,32 +1,30 @@
 // src/lib/supabase/seed.ts
-import { createClient } from './admin';
-
-const supabaseAdmin = createClient();
+import { supabaseAdmin } from './admin';
 
 async function inspectSchema() {
   console.log('🔍 Inspecting database schema...');
 
-  const tables = [
-    'users', 'jobs', 'colleges', 'applicants', 'applicant_notes',
-    'interviews', 'leave_balances', 'leaves', 'onboarding_workflows',
-    'performance_reviews', 'objectives', 'key_results', 'company_posts',
-    'post_comments', 'kudos', 'weekly_awards', 'payslips',
-    'company_documents', 'expense_reports', 'expense_items',
-    'helpdesk_tickets', 'ticket_comments'
-  ];
+  const { data: tables, error: tablesError } = await supabaseAdmin.rpc('get_public_tables');
 
-  for (const tableName of tables) {
+  if (tablesError) {
+      console.error('🔴 Could not fetch table list:', tablesError.message);
+      return;
+  }
+  
+  if (!tables || tables.length === 0) {
+      console.log('No tables found in the public schema.');
+      return;
+  }
+
+  for (const table of tables) {
+    const tableName = table.table_name;
     console.log(`\n--- Table: ${tableName} ---`);
     const { data, error } = await supabaseAdmin
       .rpc('get_table_columns', { p_table_name: tableName });
 
 
     if (error) {
-        if (error.message.includes('relation "information_schema.columns" does not exist')) {
-             console.error(`🔴 Error: Insufficient permissions to read information_schema.columns. Please check your database user permissions.`);
-        } else {
-            console.error(`- Table not found or error inspecting: ${error.message}`);
-        }
+        console.error(`- Error inspecting table "${tableName}": ${error.message}`);
     } else if (data.length === 0) {
         console.log(`- Table not found or has no columns.`);
     } else {
@@ -42,32 +40,69 @@ async function inspectSchema() {
 async function main() {
   console.log('🌱 Starting database schema inspection process...');
 
-  console.log('Setting up helper function...');
-  const { error: rpcError } = await supabaseAdmin.sql`
-    CREATE OR REPLACE FUNCTION get_table_columns(p_table_name TEXT)
-    RETURNS TABLE(column_name TEXT, data_type TEXT) AS $$
-    BEGIN
-        RETURN QUERY
-        SELECT 
-            c.column_name::text, 
-            c.data_type::text
-        FROM 
-            information_schema.columns c
-        WHERE 
-            c.table_schema = 'public'
-            AND c.table_name = p_table_name
-        ORDER BY 
-            c.ordinal_position;
-    END;
-    $$ LANGUAGE plpgsql;
-  `;
+  console.log('Setting up helper functions...');
 
-  if (rpcError) {
-      console.error('🔴 Failed to create helper function for schema inspection:', rpcError.message);
-      console.log('Please ensure your database user has permission to create functions. Aborting.');
+  const { error: rpcError1 } = await supabaseAdmin.rpc('execute_sql', { 
+      sql_statement: `
+        CREATE OR REPLACE FUNCTION get_table_columns(p_table_name TEXT)
+        RETURNS TABLE(column_name TEXT, data_type TEXT) AS $$
+        BEGIN
+            RETURN QUERY
+            SELECT 
+                c.column_name::text, 
+                c.data_type::text
+            FROM 
+                information_schema.columns c
+            WHERE 
+                c.table_schema = 'public'
+                AND c.table_name = p_table_name
+            ORDER BY 
+                c.ordinal_position;
+        END;
+        $$ LANGUAGE plpgsql;
+      `
+  });
+  
+  if (rpcError1) {
+      console.error('🔴 Failed to create get_table_columns helper function:', rpcError1.message);
       return;
   }
-  console.log('✅ Helper function created successfully.');
+  
+  const { error: rpcError2 } = await supabaseAdmin.rpc('execute_sql', {
+      sql_statement: `
+        CREATE OR REPLACE FUNCTION get_public_tables()
+        RETURNS TABLE(table_name TEXT) AS $$
+        BEGIN
+            RETURN QUERY
+            SELECT c.table_name::text FROM information_schema.tables c
+            WHERE c.table_schema = 'public' AND c.table_type = 'BASE TABLE'
+            ORDER BY c.table_name;
+        END;
+        $$ LANGUAGE plpgsql;
+      `
+  });
+
+  if (rpcError2) {
+      console.error('🔴 Failed to create get_public_tables helper function:', rpcError2.message);
+      return;
+  }
+
+  const { error: rpcError3 } = await supabaseAdmin.rpc('execute_sql', {
+      sql_statement: `
+        CREATE OR REPLACE FUNCTION execute_sql(sql_statement TEXT)
+        RETURNS void AS $$
+        BEGIN
+            EXECUTE sql_statement;
+        END;
+        $$ LANGUAGE plpgsql;
+      `
+  });
+   if (rpcError3) {
+      console.error('🔴 Failed to create execute_sql helper function:', rpcError3.message);
+      return;
+  }
+
+  console.log('✅ Helper functions created successfully.');
 
   await inspectSchema();
 }

@@ -8,24 +8,19 @@
 // NEVER expose this client or the SERVICE_ROLE_KEY to the browser or client-side code.
 
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-import { supabaseUrl } from './config';
+import { supabaseUrl, supabaseAnonKey } from './config';
 
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseServiceRoleKey) {
   throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set in environment variables. This is required for admin operations.');
 }
 
 // This is the admin client, created once and reused.
-const adminClient = createSupabaseClient(supabaseUrl, supabaseServiceRoleKey, {
+// It is exported directly for use in server-side scripts.
+export const supabaseAdmin = createSupabaseClient(supabaseUrl, supabaseServiceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false
     }
 });
-
-// We export a function that returns the singleton instance.
-// This is a more robust pattern than exporting the client directly.
-export function createClient() {
-    return adminClient;
-}
