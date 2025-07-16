@@ -1,185 +1,221 @@
 
 // src/lib/supabase/seed.ts
-import { createClient } from './admin';
+import { createClient as createAdminClient } from './admin';
 import { faker } from '@faker-js/faker';
-import type { UserRole } from '../types';
+import type { UserProfile, UserRole } from '../types';
 
-// IMPORTANT: This password will be used for all created users.
-const DEFAULT_PASSWORD = 'password';
+const supabaseAdmin = createAdminClient();
 
-const definedUsers: { email: string; fullName: string; role: UserRole; department: string, avatar: string }[] = [
-  { email: 'admin@hrplus.com', fullName: 'Admin User', role: 'admin', department: 'Executive', avatar: faker.image.avatar() },
-  { email: 'super_hr@hrplus.com', fullName: 'Super HR User', role: 'super_hr', department: 'Human Resources', avatar: faker.image.avatar() },
-  { email: 'hr_manager@hrplus.com', fullName: 'HR Manager', role: 'hr_manager', department: 'Human Resources', avatar: faker.image.avatar() },
-  { email: 'recruiter@hrplus.com', fullName: 'Recruiter User', role: 'recruiter', department: 'Human Resources', avatar: faker.image.avatar() },
-  { email: 'finance@hrplus.com', fullName: 'Finance User', role: 'finance', department: 'Finance', avatar: faker.image.avatar() },
-  { email: 'it_admin@hrplus.com', fullName: 'IT Admin', role: 'it_admin', department: 'IT', avatar: faker.image.avatar() },
-  { email: 'support@hrplus.com', fullName: 'Support User', role: 'support', department: 'IT', avatar: faker.image.avatar() },
-  { email: 'manager@hrplus.com', fullName: 'Manager User', role: 'manager', department: 'Engineering', avatar: faker.image.avatar() },
-  { email: 'team_lead@hrplus.com', fullName: 'Team Lead User', role: 'team_lead', department: 'Engineering', avatar: faker.image.avatar() },
-  { email: 'interviewer@hrplus.com', fullName: 'Interviewer User', role: 'interviewer', department: 'Engineering', avatar: faker.image.avatar() },
-  { email: 'employee@hrplus.com', fullName: 'Employee User', role: 'employee', department: 'Engineering', avatar: faker.image.avatar() },
-  { email: 'intern@hrplus.com', fullName: 'Intern User', role: 'intern', department: 'Engineering', avatar: faker.image.avatar() },
+const definedUsers: { email: string; fullName: string; role: UserRole; department: string }[] = [
+  { email: 'admin@hrplus.com', fullName: 'Admin User', role: 'admin', department: 'Executive' },
+  { email: 'super_hr@hrplus.com', fullName: 'Super HR User', role: 'super_hr', department: 'Human Resources' },
+  { email: 'hr_manager@hrplus.com', fullName: 'HR Manager', role: 'hr_manager', department: 'Human Resources' },
+  { email: 'recruiter@hrplus.com', fullName: 'Recruiter User', role: 'recruiter', department: 'Human Resources' },
+  { email: 'finance@hrplus.com', fullName: 'Finance User', role: 'finance', department: 'Finance' },
+  { email: 'it_admin@hrplus.com', fullName: 'IT Admin', role: 'it_admin', department: 'IT' },
+  { email: 'support@hrplus.com', fullName: 'Support User', role: 'support', department: 'IT' },
+  { email: 'manager@hrplus.com', fullName: 'Manager User', role: 'manager', department: 'Engineering' },
+  { email: 'team_lead@hrplus.com', fullName: 'Team Lead User', role: 'team_lead', department: 'Engineering' },
+  { email: 'interviewer@hrplus.com', fullName: 'Interviewer User', role: 'interviewer', department: 'Engineering' },
+  { email: 'employee@hrplus.com', fullName: 'Employee User', role: 'employee', department: 'Engineering' },
+  { email: 'intern@hrplus.com', fullName: 'Intern User', role: 'intern', department: 'Engineering' },
 ];
 
-const departments = ['Engineering', 'Product', 'Design', 'Sales', 'Marketing', 'Human Resources', 'Finance', 'IT'];
+async function cleanUp() {
+    console.log('🧹 Cleaning up public table data...');
+    const tables = [
+      'ticket_comments', 'helpdesk_tickets', 'expense_items', 'expense_reports',
+      'company_documents', 'payslips', 'weekly_awards', 'kudos', 'post_comments',
+      'company_posts', 'key_results', 'objectives', 'onboarding_workflows',
+      'leaves', 'leave_balances', 'interviews', 'applicant_notes', 'applicants',
+      'colleges', 'jobs', 'users'
+    ];
+
+    for (const table of tables) {
+        const { error } = await supabaseAdmin.from(table).delete().gt('created_at', '1900-01-01');
+        if (error) console.warn(`🟠 Could not clean table ${table}: ${error.message}`);
+        else console.log(`- Cleaned ${table}`);
+    }
+}
 
 async function seed() {
   console.log('🌱 Starting database seed process...');
-  const supabaseAdmin = createClient();
-  console.log('✅ Supabase admin client initialized.');
 
-  // --- 1. CLEANUP ---
-  console.log('🧹 Deleting existing auth users...');
-  const { data: { users: authUsers }, error: listUsersError } = await supabaseAdmin.auth.admin.listUsers();
-  if (listUsersError) {
-    console.error('🔴 Error listing auth users:', listUsersError.message);
-  } else {
-    console.log(`Found ${authUsers.length} users to delete...`);
-    const deletePromises = authUsers.map(user => supabaseAdmin.auth.admin.deleteUser(user.id, true));
-    await Promise.all(deletePromises);
-    console.log(`✅ Deleted ${authUsers.length} auth users.`);
-  }
-
-  // --- 2. CREATE USERS (Auth and Public) ---
-  console.log(`👤 Creating ${definedUsers.length} users with password "${DEFAULT_PASSWORD}"...`);
-  const createdUsers = [];
-
-  for (const user of definedUsers) {
-    // Create the auth user first
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: user.email,
-      password: DEFAULT_PASSWORD,
-      email_confirm: true,
-      user_metadata: {
-        full_name: user.fullName,
-        role: user.role,
-        department: user.department,
-        profile_setup_complete: true,
-      }
-    });
-
-    if (authError) {
-      console.error(`🔴 Error creating auth user ${user.email}:`, authError.message);
-      continue; // Skip this user and move to the next
-    }
-
-    if (authData.user) {
-        // Manually insert into public users table
-        const { error: publicUserError } = await supabaseAdmin.from('users').insert({
-            id: authData.user.id,
-            full_name: user.fullName,
-            email: user.email,
-            avatar_url: user.avatar,
-            role: user.role,
-            department: user.department,
-            profile_setup_complete: true
-        });
-
-        if (publicUserError) {
-            console.error(`🔴 Error inserting public user profile for ${user.email}:`, publicUserError.message);
-            // If public profile fails, delete the auth user to keep things clean
-            await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-        } else {
-            createdUsers.push({
-                id: authData.user.id,
-                ...user
-            });
-        }
-    }
-  }
-
-  if (createdUsers.length === 0) {
-    console.error('🔴 No users were created, cannot seed dependent data. Aborting.');
+  // --- 1. GET USERS ---
+  console.log('👤 Fetching existing users...');
+  const { data: users, error: userError } = await supabaseAdmin.from('users').select('*');
+  
+  if (userError || !users || users.length === 0) {
+    console.error('🔴 No users found in the database. Please create users first before running this script.');
+    console.log('💡 Tip: You can run a SQL script in the Supabase Editor to add the necessary users.');
     return;
   }
   
-  console.log(`✅ Successfully created ${createdUsers.length} users.`);
-  
-  // --- 3. SEED DEPENDENT DATA ---
-  const getRandomUserId = () => faker.helpers.arrayElement(createdUsers).id;
+  const createdUsers: UserProfile[] = users;
+  console.log(`✅ Found ${createdUsers.length} users.`);
 
+  // --- 2. SEED DEPENDENT DATA ---
+  const getRandomUser = (role?: UserRole) => {
+    const filtered = role ? createdUsers.filter(u => u.role === role) : createdUsers;
+    return faker.helpers.arrayElement(filtered.length > 0 ? filtered : createdUsers);
+  };
+  
   // Seed Jobs
   console.log('Job Seeding...');
-  const jobs = Array.from({ length: 5 }, () => ({
+  const jobs = Array.from({ length: 15 }, () => ({
     title: faker.person.jobTitle(),
-    department: faker.helpers.arrayElement(departments),
+    department: faker.helpers.arrayElement(['Engineering', 'Product', 'Design', 'Sales', 'Marketing', 'Human Resources']),
     description: faker.lorem.paragraphs(3),
-    status: 'Open' as const,
+    status: faker.helpers.arrayElement(['Open', 'Closed', 'On hold'] as const),
     posted_date: faker.date.past(),
-    applicants: 0,
   }));
   const { data: seededJobs, error: jobsError } = await supabaseAdmin.from('jobs').insert(jobs).select();
-  if (jobsError) console.error('Jobs seeding error:', jobsError);
+  if (jobsError) console.error('🔴 Jobs seeding error:', jobsError.message);
   else console.log(`✅ Seeded ${seededJobs?.length || 0} jobs.`);
+
+  // Seed Colleges
+  console.log('College Seeding...');
+  const colleges = Array.from({ length: 10 }, () => ({
+      name: `${faker.location.city()} University`,
+      status: faker.helpers.arrayElement(['Invited', 'Confirmed', 'Attended', 'Declined'] as const),
+      contact_email: faker.internet.email(),
+      last_contacted: faker.date.past(),
+  }));
+  const { data: seededColleges, error: collegesError } = await supabaseAdmin.from('colleges').insert(colleges).select();
+  if(collegesError) console.error('🔴 Colleges seeding error:', collegesError.message);
+  else console.log(`✅ Seeded ${seededColleges?.length || 0} colleges.`);
 
   // Seed Applicants
   if (seededJobs && seededJobs.length > 0) {
     console.log('Applicant Seeding...');
     const applicants = seededJobs.flatMap(job => 
-      Array.from({ length: 3 }, () => ({
+      Array.from({ length: faker.number.int({ min: 2, max: 8 }) }, () => ({
         name: faker.person.fullName(),
         email: faker.internet.email(),
         phone: faker.phone.number(),
         job_id: job.id,
-        stage: 'Applied' as const,
+        stage: faker.helpers.arrayElement(['Sourced', 'Applied', 'Phone Screen', 'Interview', 'Offer', 'Hired', 'Rejected'] as const),
         applied_date: faker.date.between({ from: job.posted_date, to: new Date() }),
-        source: 'walk-in' as const,
+        source: faker.helpers.arrayElement(['walk-in', 'college', 'email', 'manual'] as const),
         avatar: faker.image.avatar(),
+        college_id: faker.helpers.maybe(() => faker.helpers.arrayElement(seededColleges).id, { probability: 0.3 })
       }))
     );
     const { data: seededApplicants, error: applicantsError } = await supabaseAdmin.from('applicants').insert(applicants).select();
-    if (applicantsError) console.error('Applicants seeding error:', applicantsError);
+    if (applicantsError) console.error('🔴 Applicants seeding error:', applicantsError.message);
     else console.log(`✅ Seeded ${seededApplicants?.length || 0} applicants.`);
+
+    // Seed Interviews & Notes for Applicants
+    if(seededApplicants && seededApplicants.length > 0) {
+        console.log('Interview & Applicant Notes Seeding...');
+        const interviews = seededApplicants.filter(a => ['Interview', 'Offer', 'Hired'].includes(a.stage)).map(app => ({
+            applicant_id: app.id,
+            interviewer_id: getRandomUser('interviewer').id,
+            date: faker.date.soon({ refDate: app.applied_date }),
+            time: `${faker.number.int({min: 9, max: 17})}:00`,
+            type: faker.helpers.arrayElement(['Video', 'Phone', 'In-person'] as const),
+            status: 'Scheduled' as const,
+            candidate_name: app.name,
+            interviewer_name: getRandomUser('interviewer').full_name,
+            job_title: seededJobs.find(j => j.id === app.job_id)?.title || 'N/A'
+        }));
+        const { error: interviewsError } = await supabaseAdmin.from('interviews').insert(interviews);
+        if(interviewsError) console.error('🔴 Interviews seeding error:', interviewsError.message);
+        else console.log(`✅ Seeded ${interviews.length} interviews.`);
+        
+        const applicantNotes = seededApplicants.map(app => ({
+            applicant_id: app.id,
+            user_id: getRandomUser('recruiter').id,
+            author_name: getRandomUser('recruiter').full_name,
+            author_avatar: getRandomUser('recruiter').avatar_url,
+            note: faker.lorem.sentence(),
+        }));
+        const { error: notesError } = await supabaseAdmin.from('applicant_notes').insert(applicantNotes);
+        if(notesError) console.error('🔴 Applicant Notes seeding error:', notesError.message);
+        else console.log(`✅ Seeded ${applicantNotes.length} applicant notes.`);
+    }
   }
-
-  // Seed Leave Balances and Leaves
-  console.log('Leave Seeding...');
-  const leaveBalances = createdUsers.map(user => ({
-      user_id: user.id,
-      sick_leave: 12,
-      casual_leave: 12,
-      earned_leave: 15,
-      unpaid_leave: 0,
-  }));
-  const { error: leaveBalancesError } = await supabaseAdmin.from('leave_balances').insert(leaveBalances);
-  if(leaveBalancesError) console.error('Leave Balances seeding error:', leaveBalancesError);
-  else console.log(`✅ Seeded ${leaveBalances.length} leave balances.`);
   
-  const leaves = createdUsers.slice(0, 5).map(user => {
-      const startDate = faker.date.past();
-      return {
-          user_id: user.id,
-          leave_type: 'casual' as const,
-          start_date: startDate,
-          end_date: faker.date.soon({ days: 2, refDate: startDate }),
-          reason: faker.lorem.sentence(),
-          status: 'approved' as const,
-          total_days: 2,
-          approver_id: createdUsers.find(u => u.role === 'manager')?.id || createdUsers[0].id
-      }
-  });
-  const { error: leavesError } = await supabaseAdmin.from('leaves').insert(leaves);
-  if (leavesError) console.error('Leaves seeding error:', leavesError);
-  else console.log(`✅ Seeded ${leaves.length} leave records.`);
-
-
   // Seed Company Posts
   console.log('Company Feed Seeding...');
-  const posts = Array.from({ length: 5 }, () => ({
-    user_id: createdUsers.find(u => u.role === 'hr_manager')?.id || createdUsers[0].id,
+  const hrUser = getRandomUser('hr_manager');
+  const posts = Array.from({ length: 8 }, () => ({
+    user_id: hrUser.id,
     content: faker.lorem.paragraph(),
     image_url: `https://placehold.co/600x400.png`
   }));
   const { data: seededPosts, error: postsError } = await supabaseAdmin.from('company_posts').insert(posts).select();
-  if (postsError) console.error('Company Posts seeding error:', postsError);
+  if (postsError) console.error('🔴 Company Posts seeding error:', postsError.message);
   else console.log(`✅ Seeded ${seededPosts?.length || 0} company posts.`);
 
+  // Seed Post Comments
+  if(seededPosts && seededPosts.length > 0) {
+      const comments = seededPosts.flatMap(post => Array.from({length: faker.number.int({min: 1, max: 5})}, () => ({
+          post_id: post.id,
+          user_id: getRandomUser().id,
+          comment: faker.lorem.sentence()
+      })));
+      const { error: commentsError } = await supabaseAdmin.from('post_comments').insert(comments);
+      if(commentsError) console.error('🔴 Post Comments seeding error:', commentsError.message);
+      else console.log(`✅ Seeded ${comments.length} post comments.`);
+  }
+
+  // Seed Kudos
+  console.log('Kudos Seeding...');
+  const kudos = createdUsers.flatMap(userFrom => 
+    faker.helpers.arrayElements(createdUsers.filter(u => u.id !== userFrom.id), 2)
+    .map(userTo => ({
+      from_user_id: userFrom.id,
+      to_user_id: userTo.id,
+      value: faker.helpers.arrayElement(['Team Player', 'Innovation', 'Customer First', 'Ownership']),
+      message: faker.company.catchPhrase()
+    }))
+  );
+  const { error: kudosError } = await supabaseAdmin.from('kudos').insert(kudos);
+  if (kudosError) console.error('🔴 Kudos seeding error:', kudosError.message);
+  else console.log(`✅ Seeded ${kudos.length} kudos.`);
+
+  // Seed Helpdesk Tickets
+  console.log('Helpdesk Seeding...');
+  const tickets = Array.from({ length: 20 }, () => ({
+    user_id: getRandomUser().id,
+    subject: faker.hacker.phrase(),
+    description: faker.lorem.paragraph(),
+    category: faker.helpers.arrayElement(['IT', 'HR', 'Finance', 'General'] as const),
+    status: faker.helpers.arrayElement(['Open', 'In Progress', 'Resolved', 'Closed'] as const),
+    priority: faker.helpers.arrayElement(['Low', 'Medium', 'High', 'Urgent'] as const),
+    resolver_id: faker.helpers.maybe(() => getRandomUser('support').id)
+  }));
+  const { data: seededTickets, error: ticketsError } = await supabaseAdmin.from('helpdesk_tickets').insert(tickets).select();
+  if (ticketsError) console.error('🔴 Helpdesk Tickets seeding error:', ticketsError.message);
+  else console.log(`✅ Seeded ${seededTickets?.length || 0} tickets.`);
+
+  // Seed Ticket Comments
+  if(seededTickets && seededTickets.length > 0) {
+      const ticketComments = seededTickets.flatMap(ticket => Array.from({length: faker.number.int({min: 1, max: 4})}, () => ({
+          ticket_id: ticket.id,
+          user_id: faker.helpers.arrayElement([ticket.user_id, ticket.resolver_id].filter(Boolean) as string[]),
+          comment: faker.lorem.sentence(),
+      })));
+      const { error: ticketCommentsError } = await supabaseAdmin.from('ticket_comments').insert(ticketComments);
+      if(ticketCommentsError) console.error('🔴 Ticket Comments seeding error:', ticketCommentsError.message);
+      else console.log(`✅ Seeded ${ticketComments.length} ticket comments.`);
+  }
 
   console.log('🎉 Seed process completed!');
 }
 
-seed().catch(e => {
+async function main() {
+    // Check for FORCE_DB_SEED flag
+    if (process.env.FORCE_DB_SEED !== 'true') {
+        console.log('🚫 Seed script aborted. To run the seed script, use: npm run seed:force');
+        return;
+    }
+    await cleanUp();
+    await seed();
+}
+
+main().catch(e => {
     console.error("🔴 Seeding failed with an unhandled error:", e);
     process.exit(1);
 });
