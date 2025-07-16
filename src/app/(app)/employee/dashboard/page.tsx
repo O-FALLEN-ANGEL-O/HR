@@ -1,118 +1,168 @@
 import { Header } from '@/components/header';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Clock, Users, FileText, Award, FolderKanban, LifeBuoy, User, GitCommit, Handshake, BarChart, BadgePercent } from 'lucide-react';
+import { Clock, Users, FileText, Award, LifeBuoy, Handshake, Newspaper, Calendar } from 'lucide-react';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
+import { getUser } from '@/lib/supabase/user';
+import type { UserProfile, LeaveBalance, CompanyPost } from '@/lib/types';
+import CompanyFeedClient from '@/app/(app)/company-feed/client';
+import { Button } from '@/components/ui/button';
+import { LeaveDialog } from '@/components/leave-dialog';
+import { DashboardCard } from './dashboard-card';
 
-const features = [
-    {
-        title: "My Profile",
-        description: "View and manage your personal information.",
-        icon: User,
-        href: "#",
-        comingSoon: true,
-    },
-    {
-        title: "Leave Manager",
-        description: "Apply for leave and view balance.",
-        icon: Clock,
-        href: "/leaves",
-    },
-     {
-        title: "Leave Forecast",
-        description: "AI suggests best dates for vacation.",
-        icon: GitCommit,
-        href: "#",
-        comingSoon: true,
-    },
-    {
-        title: "Employee Directory",
-        description: "Find and connect with your colleagues.",
-        icon: Users,
-        href: "/employee/directory",
-    },
-    {
-        title: "Payslips",
-        description: "Access and download your monthly payslips.",
-        icon: FileText,
-        href: "/employee/payslips",
-    },
-    {
-        title: "Salary Breakdown",
-        description: "Interactive chart of your CTC vs in-hand.",
-        icon: BarChart,
-        href: "#",
-        comingSoon: true,
-    },
-    {
-        title: "Kudos",
-        description: "Recognize your peers for their great work.",
-        icon: Award,
-        href: "/employee/kudos",
-    },
-    {
-        title: "Peer Endorsements",
-        description: "Give skill-based endorsements to peers.",
-        icon: Handshake,
-        href: "#",
-        comingSoon: true,
-    },
-    {
-        title: "Engagement Polls",
-        description: "Quick one-question polls from HR.",
-        icon: BadgePercent,
-        href: "#",
-        comingSoon: true,
-    },
-    {
-        title: "Company Policies",
-        description: "Read and acknowledge company documents.",
-        icon: FolderKanban,
-        href: "/employee/documents",
-    },
-     {
-        title: "Helpdesk",
-        description: "Submit a ticket to IT or HR for assistance.",
-        icon: LifeBuoy,
-        href: "/helpdesk",
-    },
-]
+async function getDashboardData(user: UserProfile | null) {
+    if (!user) {
+        return {
+            balance: null,
+            posts: [],
+            teamMembers: [],
+        };
+    }
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
 
-export default function EmployeeDashboardPage() {
+    const balanceQuery = supabase
+        .from('leave_balances')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+    
+    const postsQuery = supabase
+        .from('company_posts')
+        .select('*, users (full_name, avatar_url), post_comments(*, users(full_name, avatar_url))')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+    const teamMembersQuery = supabase
+        .from('users')
+        .select('full_name, avatar_url, department')
+        .eq('department', user.department)
+        .neq('id', user.id)
+        .limit(4);
+
+    const [balanceRes, postsRes, teamRes] = await Promise.all([balanceQuery, postsQuery, teamMembersQuery]);
+
+    return {
+        balance: balanceRes.data as LeaveBalance | null,
+        posts: (postsRes.data as CompanyPost[]) || [],
+        teamMembers: (teamRes.data as UserProfile[]) || [],
+    }
+}
+
+
+export default async function EmployeeDashboardPage() {
+  const cookieStore = cookies();
+  const user = await getUser(cookieStore);
+  const { balance, posts, teamMembers } = await getDashboardData(user);
+
   return (
-    <>
-      <Header title="My Dashboard" />
-      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-       <div className="space-y-4">
-        <Card>
-            <CardHeader>
-                <CardTitle>Welcome!</CardTitle>
-                <CardDescription>This is your personal employee dashboard. Access all your tools and information from here.</CardDescription>
-            </CardHeader>
-        </Card>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {features.map((feature) => {
-                 const cardContent = (
-                    <Card className={`${!feature.comingSoon && 'hover:bg-muted/50 transition-colors'} h-full`}>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">{feature.title}</CardTitle>
-                            <feature.icon className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-xs text-muted-foreground">{feature.description}</p>
-                            {feature.comingSoon && <p className="text-xs font-bold text-primary mt-2">Coming Soon</p>}
-                        </CardContent>
-                    </Card>
-                );
+    <div className="flex flex-1 flex-col">
+      <Header title={`Welcome, ${user?.full_name?.split(' ')[0] || 'Employee'}!`} />
+      <main className="flex-1 p-4 md:p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Left Column */}
+          <div className="lg:col-span-1 space-y-6">
+             <DashboardCard delay={0.1}>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-lg">Quick Links</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 gap-2 text-center">
+                        <Link href="/leaves" className="p-2 rounded-lg hover:bg-muted">
+                            <Clock className="mx-auto h-6 w-6 mb-1"/>
+                            <span className="text-xs font-medium">Leave</span>
+                        </Link>
+                         <Link href="/employee/payslips" className="p-2 rounded-lg hover:bg-muted">
+                            <FileText className="mx-auto h-6 w-6 mb-1"/>
+                            <span className="text-xs font-medium">Payslips</span>
+                        </Link>
+                         <Link href="/employee/kudos" className="p-2 rounded-lg hover:bg-muted">
+                            <Award className="mx-auto h-6 w-6 mb-1"/>
+                            <span className="text-xs font-medium">Kudos</span>
+                        </Link>
+                         <Link href="/employee/documents" className="p-2 rounded-lg hover:bg-muted">
+                            <Handshake className="mx-auto h-6 w-6 mb-1"/>
+                            <span className="text-xs font-medium">Policies</span>
+                        </Link>
+                         <Link href="/employee/directory" className="p-2 rounded-lg hover:bg-muted">
+                            <Users className="mx-auto h-6 w-6 mb-1"/>
+                            <span className="text-xs font-medium">Directory</span>
+                        </Link>
+                         <Link href="/helpdesk" className="p-2 rounded-lg hover:bg-muted">
+                            <LifeBuoy className="mx-auto h-6 w-6 mb-1"/>
+                            <span className="text-xs font-medium">Helpdesk</span>
+                        </Link>
+                    </CardContent>
+                </Card>
+            </DashboardCard>
+             <DashboardCard delay={0.2}>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-lg">My Team</CardTitle>
+                        <CardDescription>Members in the {user?.department} department.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                        {teamMembers.length > 0 ? teamMembers.map(member => (
+                            <div key={member.full_name} className="flex items-center gap-2">
+                                <img src={member.avatar_url || `https://i.pravatar.cc/150?u=${member.email}`} alt={member.full_name || ''} className="h-8 w-8 rounded-full" />
+                                <span className="text-sm font-medium">{member.full_name}</span>
+                            </div>
+                        )) : (
+                            <p className="text-sm text-muted-foreground">No other team members found.</p>
+                        )}
+                    </CardContent>
+                </Card>
+            </DashboardCard>
+          </div>
 
-                return feature.comingSoon ? <div key={feature.title} className="cursor-not-allowed opacity-60">{cardContent}</div> : (
-                     <Link href={feature.href} key={feature.title}>
-                        {cardContent}
-                    </Link>
-                )
-            })}
+          {/* Center Column (Main Content) */}
+          <div className="lg:col-span-2 space-y-6">
+            <DashboardCard delay={0}>
+                <div className="h-full">
+                    <CompanyFeedClient user={user} initialPosts={posts} />
+                </div>
+            </DashboardCard>
+          </div>
+          
+          {/* Right Column */}
+          <div className="lg:col-span-1 space-y-6">
+            <DashboardCard delay={0.3}>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-lg">My Leave Balance</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                        <div className="flex justify-between items-center"><span className="text-sm">Casual Leave</span><span className="font-bold">{balance?.casual_leave ?? 0}</span></div>
+                        <div className="flex justify-between items-center"><span className="text-sm">Sick Leave</span><span className="font-bold">{balance?.sick_leave ?? 0}</span></div>
+                        <div className="flex justify-between items-center"><span className="text-sm">Earned Leave</span><span className="font-bold">{balance?.earned_leave ?? 0}</span></div>
+                    </CardContent>
+                    <CardFooter>
+                         <LeaveDialog user={user} balance={balance} onLeaveApplied={() => {}}>
+                            <Button className="w-full">Apply for Leave</Button>
+                        </LeaveDialog>
+                    </CardFooter>
+                </Card>
+            </DashboardCard>
+             <DashboardCard delay={0.4}>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-lg">Company Calendar</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex items-center justify-center p-4">
+                          <Calendar
+                            mode="single"
+                            selected={new Date()}
+                            className="rounded-md border"
+                          />
+                        </div>
+                    </CardContent>
+                </Card>
+            </DashboardCard>
+          </div>
         </div>
-      </div>
       </main>
-    </>
+    </div>
   );
 }

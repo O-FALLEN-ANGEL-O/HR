@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import CompanyFeedClient from './client';
 import { createClient } from '@/lib/supabase/server';
 import type { CompanyPost } from '@/lib/types';
+import { DashboardCard } from '../employee/dashboard/dashboard-card';
 
 export default async function CompanyFeedPage() {
   const cookieStore = cookies();
@@ -22,9 +23,15 @@ export default async function CompanyFeedPage() {
   const posts: CompanyPost[] = data || [];
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+    <div className="flex flex-1 flex-col">
       <Header title="Company Feed" />
-      <CompanyFeedClient user={user} initialPosts={posts} />
+      <main className="flex-1 p-4 md:p-6">
+        <div className="mx-auto max-w-2xl">
+          <DashboardCard>
+            <CompanyFeedClient user={user} initialPosts={posts} />
+          </DashboardCard>
+        </div>
+      </main>
     </div>
   );
 }

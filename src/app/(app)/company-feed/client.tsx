@@ -95,55 +95,52 @@ export default function CompanyFeedClient({ user, initialPosts }: CompanyFeedCli
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div className="md:col-span-2">
-        <ScrollArea className="h-[calc(100vh-12rem)]">
-        <div className="space-y-6 pr-4">
+    <div className="space-y-6">
+        {canPost && (
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-lg">Create a Post</CardTitle>
+                </CardHeader>
+                <CardContent>
+                     <Dialog onOpenChange={(open) => !open && formRef.current?.reset()}>
+                        <DialogTrigger asChild>
+                            <div className="flex items-center gap-3 border p-3 rounded-lg cursor-text hover:bg-muted/50">
+                                <Avatar>
+                                    <AvatarImage src={user?.avatar_url || undefined} />
+                                    <AvatarFallback>{user?.full_name?.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <span className="text-muted-foreground text-sm">What's happening?</span>
+                            </div>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Create a new post</DialogTitle>
+                                <DialogDescription>Share an update with the rest of the company.</DialogDescription>
+                            </DialogHeader>
+                            <form action={handleNewPost} ref={formRef}>
+                                <div className="grid gap-4 py-4">
+                                    <Textarea name="content" placeholder="What's happening?" required />
+                                    <Input name="image" type="file" accept="image/*" />
+                                </div>
+                                <DialogFooter>
+                                    <DialogClose asChild>
+                                        <Button type="submit" disabled={isSubmitting}>
+                                            {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : <Send className="mr-2" />}
+                                            Post
+                                        </Button>
+                                    </DialogClose>
+                                </DialogFooter>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
+                </CardContent>
+            </Card>
+        )}
+        <div className="space-y-6">
           {posts.map((post) => (
             <PostCard key={post.id} post={post} currentUser={user} />
           ))}
         </div>
-        </ScrollArea>
-      </div>
-      <div className="md:col-span-1">
-        <Card className="sticky top-4 md:top-20">
-          <CardHeader>
-            <CardTitle>About The Feed</CardTitle>
-            <CardDescription>This is your place for all official company announcements and updates.</CardDescription>
-          </CardHeader>
-          <CardContent>
-             {canPost && (
-                <Dialog onOpenChange={(open) => !open && formRef.current?.reset()}>
-                    <DialogTrigger asChild>
-                        <Button className="w-full">
-                            <PlusCircle className="mr-2" /> New Post
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Create a new post</DialogTitle>
-                            <DialogDescription>Share an update with the rest of the company.</DialogDescription>
-                        </DialogHeader>
-                        <form action={handleNewPost} ref={formRef}>
-                            <div className="grid gap-4 py-4">
-                                <Textarea name="content" placeholder="What's happening?" required />
-                                <Input name="image" type="file" accept="image/*" />
-                            </div>
-                            <DialogFooter>
-                                <DialogClose asChild>
-                                    <Button type="submit" disabled={isSubmitting}>
-                                        {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : <Send className="mr-2" />}
-                                        Post
-                                    </Button>
-                                </DialogClose>
-                            </DialogFooter>
-                        </form>
-                    </DialogContent>
-                </Dialog>
-             )}
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }

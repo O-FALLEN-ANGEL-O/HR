@@ -64,7 +64,6 @@ type LeaveDialogProps = {
 
 export function LeaveDialog({ children, onLeaveApplied, user, balance }: LeaveDialogProps) {
   const [open, setOpen] = React.useState(false);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof FormSchema>>({
@@ -77,7 +76,6 @@ export function LeaveDialog({ children, onLeaveApplied, user, balance }: LeaveDi
         return;
     }
 
-    setIsSubmitting(true);
     const serverFormData = new FormData();
     serverFormData.append('leave_type', formData.leave_type);
     serverFormData.append('start_date', format(formData.start_date, 'yyyy-MM-dd'));
@@ -92,8 +90,6 @@ export function LeaveDialog({ children, onLeaveApplied, user, balance }: LeaveDi
       form.reset();
     } catch (error: any) {
       toast({ title: 'Error', description: `Failed to submit request: ${error.message}`, variant: 'destructive' });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -167,8 +163,8 @@ export function LeaveDialog({ children, onLeaveApplied, user, balance }: LeaveDi
             )}/>
             <DialogFooter>
               <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Submit Request
               </Button>
             </DialogFooter>
