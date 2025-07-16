@@ -44,6 +44,8 @@ async function seed() {
 
   // Clean up existing data
   console.log('🧹 Cleaning up old data...');
+  
+  // 1. Delete all auth users. The `on delete cascade` should handle public.users.
   const { data: { users: authUsers } } = await supabaseAdmin.auth.admin.listUsers();
   console.log(`Found ${authUsers.length} auth users to delete...`);
   for (const user of authUsers) {
@@ -51,27 +53,27 @@ async function seed() {
   }
   console.log('✅ Finished deleting auth users.');
 
-  // The public.users table is cleaned by the cascade delete from auth.users.
-  // We only need to clean the other tables.
+  // 2. Clean all other public tables
   const tablesToClean = [
       'ticket_comments', 'helpdesk_tickets', 'expense_items', 'expense_reports',
       'company_documents', 'payslips', 'weekly_awards', 'kudos', 'post_comments',
       'company_posts', 'key_results', 'objectives', 'performance_reviews', 'onboarding_workflows',
-      'leaves', 'leave_balances', 'interviews', 'applicant_notes', 'applicants', 'colleges', 'jobs'
+      'leaves', 'leave_balances', 'interviews', 'applicant_notes', 'applicants', 'colleges', 'jobs',
+      'users' // Also explicitly clean users table as a fallback
   ];
 
   for (const table of tablesToClean) {
-    const { error: deleteError } = await supabaseAdmin.from(table).delete().gt('id', 0); // Use a condition that is always true for tables with integer PKs, or adjust as needed. For UUIDs, a different approach is better.
+    // Delete all rows from the table without a filter
+    const { error: deleteError } = await supabaseAdmin.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Use a condition that is always true for UUIDs to delete all rows
      if (deleteError) {
-      // It's often better to ignore "relation does not exist" and continue
-      if (!deleteError.message.includes('does not exist')) {
-        console.warn(`🟡 Could not clean table ${table}: ${deleteError.message}`);
-      }
+        if (!deleteError.message.includes('does not exist')) {
+            console.warn(`🟡 Could not clean table ${table}: ${deleteError.message}`);
+        }
     }
   }
   console.log('✅ Finished cleaning public tables.');
   
-  // Seed Users
+  // 3. Seed Users
   console.log('👤 Creating auth users and public profiles...');
   const createdUsers: UserProfile[] = [];
   for (const userData of demoUsers) {
@@ -91,7 +93,6 @@ async function seed() {
           continue;
       }
       
-      // The trigger should handle this, but we insert manually to be safe if trigger is disabled/missing.
       const { error: profileError } = await supabaseAdmin.from('users').insert({
           id: authData.user.id,
           full_name: userData.fullName,
@@ -105,32 +106,25 @@ async function seed() {
       if (profileError) {
           console.error(`🔴 Error creating public profile for ${userData.email}:`, profileError.message);
       } else {
-          const userProfile: UserProfile = {
+          createdUsers.push({
             id: authData.user.id,
             full_name: userData.fullName,
             email: userData.email,
             role: userData.role,
             department: userData.department,
-            avatar_url: '', // Will be updated by faker
+            avatar_url: '', 
             created_at: new Date().toISOString()
-          };
-          createdUsers.push(userProfile);
+          });
       }
   }
   console.log(`✅ Created ${createdUsers.length} users.`);
   
   if (createdUsers.length === 0) {
-      const { data: existingUsers } = await supabaseAdmin.from('users').select('*');
-      if (existingUsers && existingUsers.length > 0) {
-          console.log('🟡 Seeding other tables with existing users...');
-          createdUsers.push(...(existingUsers as UserProfile[]));
-      } else {
-        console.error('🔴 No users found or created. Aborting seed of other tables.');
-        return;
-      }
+      console.error('🔴 No users were created. Aborting seed of other tables.');
+      return;
   }
 
-  // Seed all other tables
+  // 4. Seed all other tables
   console.log('🚀 Starting data generation for other tables...');
   try {
     const managers = createdUsers.filter(u => ['manager', 'team_lead', 'super_hr'].includes(u.role));
