@@ -24,19 +24,17 @@ async function seed() {
   if (listError) {
     console.error('🔴 Error listing auth users:', listError.message);
   } else if (existingAuthUsers.length > 0) {
-    console.log(`Found ${existingAuthUsers.length} auth users to delete...`);
-    for (const user of existingAuthUsers) {
-        if (!user.email?.endsWith('@example.com')) { // Safety check
-             await supabaseAdmin.auth.admin.deleteUser(user.id);
-        }
+    const usersToDelete = existingAuthUsers.filter(u => u.email?.endsWith('@company.com'));
+    console.log(`Found ${usersToDelete.length} auth users to delete...`);
+    for (const user of usersToDelete) {
+      await supabaseAdmin.auth.admin.deleteUser(user.id);
     }
-    console.log(`✅ Deleted ${existingAuthUsers.length} auth users.`);
+    console.log(`✅ Deleted ${usersToDelete.length} auth users.`);
   } else {
     console.log('No existing auth users to delete.');
   }
 
   // The `public.users` table should be automatically cleaned by the cascade delete trigger.
-  // We'll also truncate it just in case, for a perfectly clean slate.
   const { error: truncateError } = await supabaseAdmin.from('users').delete().neq('id', '00000000-0000-0000-0000-000000000000');
   if (truncateError) {
       console.warn(`Could not truncate public.users table: ${truncateError.message}. This might be okay if cascade delete worked.`);
@@ -80,7 +78,7 @@ async function seed() {
     } else if (authData.user) {
         console.log(`- Created auth user: ${authData.user.email}`);
         
-        // Now, manually insert into the public.users table
+        // Manually insert into the public.users table
         const { error: insertPublicError } = await supabaseAdmin
             .from('users')
             .insert({
@@ -95,7 +93,7 @@ async function seed() {
 
         if (insertPublicError) {
              console.error(`🔴 Error inserting public profile for ${userData.email}: ${insertPublicError.message}`);
-             // If this fails, we should delete the auth user we just created to avoid orphans
+             // Rollback: If this fails, delete the auth user we just created to avoid orphans
              await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
         } else {
             createdCount++;
