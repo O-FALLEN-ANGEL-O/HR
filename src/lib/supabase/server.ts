@@ -1,13 +1,12 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { supabasePublicUrl, supabasePublicAnonKey } from './config'
 
 export function createClient(cookieStore: ReturnType<typeof cookies>) {
   // Use the public variables for the server-side client.
   // This is safe because RLS is enforced on the database.
   return createServerClient(
-    supabasePublicUrl,
-    supabasePublicAnonKey,
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         get(name: string) {

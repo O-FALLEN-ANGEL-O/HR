@@ -1,7 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { type NextRequest, NextResponse } from 'next/server'
 import type { UserProfile } from '../types';
-import { supabasePublicUrl, supabasePublicAnonKey } from './config';
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
@@ -11,9 +10,10 @@ export async function updateSession(request: NextRequest) {
   })
 
   // The middleware runs in the Edge runtime, which requires the public variables.
+  // We read them directly from process.env here to ensure they are available.
   const supabase = createServerClient(
-    supabasePublicUrl,
-    supabasePublicAnonKey,
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         get(name: string) {

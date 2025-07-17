@@ -8,17 +8,17 @@
 // NEVER expose this client or the SERVICE_ROLE_KEY to the browser or client-side code.
 
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-import { supabasePublicUrl } from './config';
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabasePublicUrl || !supabaseServiceRoleKey) {
+if (!supabaseUrl || !supabaseServiceRoleKey) {
   throw new Error('NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are not set in environment variables. This is required for admin operations.');
 }
 
 // This is the admin client, created once and reused.
 // It is exported directly for use in server-side scripts.
-export const supabaseAdmin = createSupabaseClient(supabasePublicUrl, supabaseServiceRoleKey, {
+export const supabaseAdmin = createSupabaseClient(supabaseUrl, supabaseServiceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false
