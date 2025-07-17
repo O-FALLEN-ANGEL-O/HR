@@ -64,7 +64,7 @@ export default function UpdatePasswordPage() {
     } else {
         toast({
             title: 'Password Updated!',
-            description: 'You can now log in with your new password.',
+            description: 'You will now be redirected to login.',
         });
         router.push('/login');
     }

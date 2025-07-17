@@ -4,12 +4,26 @@
 import { createClient } from '@/lib/supabase/server';
 import { headers, cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import type { UserRole } from '@/lib/types';
+
+function getHomePathForRole(role: UserRole): string {
+    const dashboardMap: Partial<Record<UserRole, string>> = {
+        admin: '/admin/dashboard',
+        super_hr: '/super_hr/dashboard',
+        hr_manager: '/hr/dashboard',
+        recruiter: '/recruiter/dashboard',
+        manager: '/manager/dashboard',
+        team_lead: '/team-lead/dashboard',
+        intern: '/intern/dashboard',
+    };
+    return dashboardMap[role] || '/employee/dashboard';
+}
 
 export async function login(formData: any) {
   const cookieStore = cookies();
   const supabase = createClient(cookieStore);
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
       email: formData.email,
       password: formData.password,
   });
@@ -19,6 +33,9 @@ export async function login(formData: any) {
     return { error: `Authentication Error: ${error.message}` };
   }
   
+  // The middleware will now handle the redirect after the session is set.
+  // We just need to revalidate the path to trigger the middleware.
+  revalidatePath('/', 'layout');
   redirect('/');
 }
 
