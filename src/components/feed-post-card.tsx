@@ -38,7 +38,7 @@ export default function FeedPostCard({ post, currentUser }: FeedPostCardProps) {
           <div className="flex-1">
             <CardTitle className="text-base font-semibold">{post.users?.full_name}</CardTitle>
             <CardDescription className="text-xs">
-              {post.users?.role.replace(/_/g, ' ')} &bull; {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+              {post.users?.role ? post.users.role.replace(/_/g, ' ') : 'User'} &bull; {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
             </CardDescription>
           </div>
           <Button variant="ghost" size="icon" className="h-8 w-8">
