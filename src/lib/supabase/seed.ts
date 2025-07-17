@@ -35,17 +35,31 @@ async function createAndSeedUser(userData: Partial<UserProfile>): Promise<UserPr
         },
     });
 
-    if (authError || !authData.user) {
-        if (authError && authError.message.includes('already exists')) {
-            // User already exists, fetch them
-            const { data: existingUser, error: fetchError } = await supabaseAdmin.from('users').select('*').eq('email', email).single();
+    if (authError) {
+        // If user already exists, fetch their profile from public.users table.
+        if (authError.message.includes('already been registered')) {
+            const { data: existingUser, error: fetchError } = await supabaseAdmin
+                .from('users')
+                .select('*')
+                .eq('email', email)
+                .single();
+            
             if (fetchError) {
-                console.error(`🔴 Failed to fetch existing user ${email}:`, fetchError.message);
-                return null;
+                 console.error(`🔴 User auth exists but failed to fetch profile for ${email}:`, fetchError.message);
+                 return null;
             }
-            return existingUser;
+            if (existingUser) {
+                // console.log(`🟡 User ${email} already exists. Fetching profile.`);
+                return existingUser;
+            }
         }
-        console.error(`🔴 Error creating auth user ${email}:`, authError?.message);
+        // For any other auth error, log it and fail.
+        console.error(`🔴 Error creating auth user ${email}:`, authError.message);
+        return null;
+    }
+    
+    if (!authData.user) {
+        console.error(`🔴 User was not created for ${email} and no error was thrown.`);
         return null;
     }
 
@@ -67,6 +81,9 @@ async function createAndSeedUser(userData: Partial<UserProfile>): Promise<UserPr
     
     if (profileError) {
         console.error(`🔴 Error creating profile for ${email}:`, profileError.message);
+        // Attempt to clean up the orphaned auth user
+        await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+        console.error(`🧹 Cleaned up orphaned auth user for ${email}.`);
         return null;
     }
     
@@ -135,8 +152,8 @@ async function seed() {
   
   // 3. Fetch all users to work with (including any that already existed)
   const { data: allUsers, error: usersError } = await supabaseAdmin.from('users').select('*');
-  if (usersError || !allUsers) {
-    console.error('🔴 Could not fetch users after seeding. Aborting.', usersError?.message);
+  if (usersError || !allUsers || allUsers.length === 0) {
+    console.error('🔴 Could not fetch users after seeding, or no users found. Aborting rest of seed.', usersError?.message);
     return;
   }
   
@@ -152,12 +169,15 @@ async function seed() {
     await seedColleges();
     const { data: colleges } = await supabaseAdmin.from('colleges').select('id');
 
-    if (jobs && colleges) {
+    if (jobs && jobs.length > 0 && colleges && colleges.length > 0) {
       await seedApplicants(jobs, colleges);
       const { data: applicants } = await supabaseAdmin.from('applicants').select('id, name, email');
-      if (applicants) {
+      if (applicants && applicants.length > 0) {
          await seedApplicantNotes(applicants, allUsers);
-         await seedInterviews(applicants, allUsers.filter(u => ['interviewer', 'manager'].includes(u.role)));
+         const interviewers = allUsers.filter(u => ['interviewer', 'manager', 'hr_manager', 'recruiter'].includes(u.role));
+         if (interviewers.length > 0) {
+            await seedInterviews(applicants, interviewers);
+         }
       }
     }
     
@@ -509,5 +529,3 @@ seed().catch(e => {
   console.error("🔴 Script failed with an unhandled error:", e);
   process.exit(1);
 });
-
-    
