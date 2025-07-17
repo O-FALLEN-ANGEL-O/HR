@@ -60,6 +60,10 @@ const roleOptions: UserRole[] = [
   'employee',
   'intern',
   'guest',
+  'finance',
+  'it_admin',
+  'support',
+  'auditor'
 ];
 
 
@@ -120,7 +124,9 @@ HR Team
 
   const handleClose = () => {
     setOpen(false);
-    setSetupInfo(null);
+    setTimeout(() => {
+        setSetupInfo(null);
+    }, 200);
   }
 
   return (

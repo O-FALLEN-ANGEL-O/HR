@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
-import type { UserProfile } from '@/lib/types';
 import RoleManagerClient from './client';
+import { Header } from '@/components/header';
 
 export default async function RoleManagerPage() {
   const cookieStore = cookies();
@@ -14,8 +14,14 @@ export default async function RoleManagerPage() {
 
   if (error) {
     console.error('Error fetching users:', error);
-    // Handle error appropriately
   }
 
-  return <RoleManagerClient users={users || []} />;
+  return (
+    <>
+      <Header title="User & Role Management" />
+      <main className="flex-1 p-4 md:p-6">
+        <RoleManagerClient users={users || []} />
+      </main>
+    </>
+  );
 }

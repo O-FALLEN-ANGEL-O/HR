@@ -33,6 +33,7 @@ import type { PredictLeaveSpikesOutput } from '@/ai/flows/predict-leave-spikes';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const LeaveDialog = dynamic(() => import('@/components/leave-dialog').then(mod => mod.LeaveDialog), {
+    ssr: false,
     loading: () => <Button disabled><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Apply for Leave</Button>
 });
 
@@ -87,16 +88,35 @@ export function LeaveClient({
   const [balance, setBalance] = React.useState(initialBalance);
   const [stats, setStats] = React.useState(initialStats);
   const { toast } = useToast();
+  const supabase = createClient();
 
-  React.useEffect(() => {
-    setLeaves(initialLeaves);
-    setBalance(initialBalance);
-    setStats(initialStats);
-  }, [initialLeaves, initialBalance, initialStats]);
+  const refetchData = React.useCallback(async () => {
+    // In a real app, this would be a more targeted fetch based on the user's role.
+    // For the demo, reloading the data from the server ensures everything is consistent.
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+        let leavesQuery = supabase.from('leaves').select('*, users(full_name, avatar_url, department)');
+        if (currentUser.role === 'manager' || currentUser.role === 'team_lead') {
+            if (currentUser.department) {
+                const { data: teamMembers } = await supabase.from('users').select('id').eq('department', currentUser.department);
+                const teamMemberIds = teamMembers?.map(tm => tm.id) || [currentUser.id];
+                leavesQuery = leavesQuery.in('user_id', teamMemberIds);
+            } else {
+                leavesQuery = leavesQuery.eq('user_id', currentUser.id);
+            }
+        } else if (currentUser.role === 'employee' || currentUser.role === 'intern') {
+            leavesQuery = leavesQuery.eq('user_id', currentUser.id);
+        }
+        const { data: leavesData } = await leavesQuery.order('created_at', { ascending: false });
+        setLeaves(leavesData || []);
+
+        const { data: balanceData } = await supabase.from('leave_balances').select('*').eq('user_id', user.id).single();
+        setBalance(balanceData || null);
+    }
+  }, [supabase, currentUser]);
 
   // Real-time updates
   React.useEffect(() => {
-    const supabase = createClient();
     const channel = supabase
       .channel('realtime-leaves')
       .on(
@@ -104,8 +124,7 @@ export function LeaveClient({
         { event: '*', schema: 'public', table: 'leaves' },
         (payload) => {
           toast({ title: 'Leave records updated.' });
-          // Very basic refetch, a more advanced implementation would selectively update the state
-          window.location.reload(); 
+          refetchData();
         }
       )
       .subscribe();
@@ -113,7 +132,7 @@ export function LeaveClient({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [toast]);
+  }, [toast, supabase, refetchData]);
   
   const isAdmin = currentUser.role === 'admin' || currentUser.role === 'super_hr' || currentUser.role === 'hr_manager';
   const isManager = currentUser.role === 'manager' || currentUser.role === 'team_lead';
@@ -121,7 +140,7 @@ export function LeaveClient({
   const renderContent = () => {
     if (isAdmin) return <AdminLeaveView leaves={leaves} stats={stats} />;
     if (isManager) return <ManagerLeaveView leaves={leaves.filter(l => l.users?.department === currentUser.department)} currentUser={currentUser} leaveOverlap={leaveOverlap}/>;
-    return <EmployeeLeaveView leaves={leaves.filter(l => l.user_id === currentUser.id)} balance={balance} user={currentUser} />;
+    return <EmployeeLeaveView leaves={leaves.filter(l => l.user_id === currentUser.id)} balance={balance} user={currentUser} onLeaveApplied={refetchData} />;
   };
 
   return <div>{renderContent()}</div>;
@@ -137,7 +156,6 @@ function AdminLeaveView({ leaves, stats }: { leaves: Leave[], stats: LeaveClient
         setIsPredicting(true);
         setPrediction(null);
         try {
-            // Filter leaves to include only future or pending leaves for more accurate prediction
             const today = new Date();
             today.setHours(0, 0, 0, 0); 
             
@@ -160,7 +178,7 @@ function AdminLeaveView({ leaves, stats }: { leaves: Leave[], stats: LeaveClient
             const result = await predictLeaveSpikes({
                 leaveRecords: records,
                 analysisPeriod: 'Next 30 days',
-                country: 'India' // This could be dynamic in a real app
+                country: 'India'
             });
             setPrediction(result);
             toast({ title: "Prediction Complete", description: "AI analysis of leave spikes is ready." });
@@ -290,7 +308,7 @@ function ManagerLeaveView({ leaves, currentUser, leaveOverlap }: { leaves: Leave
     )
 }
 
-function EmployeeLeaveView({ leaves, balance, user }: { leaves: Leave[], balance: LeaveBalance | null, user: UserProfile }) {
+function EmployeeLeaveView({ leaves, balance, user, onLeaveApplied }: { leaves: Leave[], balance: LeaveBalance | null, user: UserProfile, onLeaveApplied: () => void }) {
     return (
         <div className="space-y-6">
             <Card>
@@ -299,7 +317,7 @@ function EmployeeLeaveView({ leaves, balance, user }: { leaves: Leave[], balance
                         <CardTitle>My Leave Balances</CardTitle>
                         <CardDescription>Your available leave days as of today.</CardDescription>
                     </div>
-                    <LeaveDialog user={user} balance={balance} onLeaveApplied={() => window.location.reload()}>
+                    <LeaveDialog user={user} balance={balance} onLeaveApplied={onLeaveApplied}>
                         <Button>Apply for Leave</Button>
                     </LeaveDialog>
                 </CardHeader>
@@ -309,28 +327,28 @@ function EmployeeLeaveView({ leaves, balance, user }: { leaves: Leave[], balance
                             <CardTitle className="text-sm font-medium">Sick Leave</CardTitle>
                             <Umbrella className="h-4 w-4 text-blue-500"/>
                         </CardHeader>
-                        <CardContent><div className="text-2xl font-bold">{balance?.sick_leave || 0}</div></CardContent>
+                        <CardContent><div className="text-2xl font-bold">{balance?.sick_leave ?? 0}</div></CardContent>
                     </Card>
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Casual Leave</CardTitle>
                             <Sun className="h-4 w-4 text-yellow-500"/>
                         </CardHeader>
-                        <CardContent><div className="text-2xl font-bold">{balance?.casual_leave || 0}</div></CardContent>
+                        <CardContent><div className="text-2xl font-bold">{balance?.casual_leave ?? 0}</div></CardContent>
                     </Card>
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Earned Leave</CardTitle>
                             <Briefcase className="h-4 w-4 text-green-500"/>
                         </CardHeader>
-                        <CardContent><div className="text-2xl font-bold">{balance?.earned_leave || 0}</div></CardContent>
+                        <CardContent><div className="text-2xl font-bold">{balance?.earned_leave ?? 0}</div></CardContent>
                     </Card>
                      <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Unpaid Leave</CardTitle>
                             <User className="h-4 w-4 text-gray-500"/>
                         </CardHeader>
-                        <CardContent><div className="text-2xl font-bold">{balance?.unpaid_leave || 0}</div></CardContent>
+                        <CardContent><div className="text-2xl font-bold">{balance?.unpaid_leave ?? 0}</div></CardContent>
                     </Card>
                 </CardContent>
             </Card>

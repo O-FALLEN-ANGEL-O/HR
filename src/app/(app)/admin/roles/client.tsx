@@ -47,13 +47,26 @@ export default function RoleManagerClient({ users: initialUsers }: { users: User
   const [users, setUsers] = React.useState(initialUsers);
   const { toast } = useToast();
   const [isClient, setIsClient] = React.useState(false);
+  const supabase = createClient();
 
   React.useEffect(() => {
     setIsClient(true);
   }, []);
 
+  const fetchUsers = async () => {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      toast({ title: "Error", description: "Could not refresh user list."});
+    } else {
+      setUsers(data || []);
+    }
+  }
+
   React.useEffect(() => {
-    const supabase = createClient();
     const channel = supabase
       .channel('realtime-users')
       .on(
@@ -64,17 +77,7 @@ export default function RoleManagerClient({ users: initialUsers }: { users: User
             title: 'User Data Updated',
             description: 'The list of users has been refreshed.',
           });
-          if (payload.eventType === 'INSERT') {
-            setUsers((prev) => [payload.new as UserProfile, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            setUsers((prev) =>
-              prev.map((user) =>
-                user.id === payload.new.id ? { ...user, ...(payload.new as UserProfile) } : user
-              )
-            );
-          } else if (payload.eventType === 'DELETE') {
-            setUsers((prev) => prev.filter((user) => user.id !== (payload.old as any).id));
-          }
+          fetchUsers();
         }
       )
       .subscribe();
@@ -82,7 +85,7 @@ export default function RoleManagerClient({ users: initialUsers }: { users: User
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [toast]);
+  }, [supabase, toast]);
 
   const handleRoleChange = async (userId: string, newRole: UserRole) => {
     const originalUsers = [...users];
@@ -107,14 +110,14 @@ export default function RoleManagerClient({ users: initialUsers }: { users: User
 
 
   return (
-    <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-      <Card>
+    <div className="grid gap-6 grid-cols-1 md:grid-cols-3">
+      <Card className="md:col-span-2">
         <CardHeader>
           <CardTitle>User Role Management</CardTitle>
           <CardDescription>View and manage user roles across the application.</CardDescription>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[65vh]">
+          <ScrollArea className="h-[65vh] w-full">
             <Table>
               <TableHeader>
                 <TableRow>
