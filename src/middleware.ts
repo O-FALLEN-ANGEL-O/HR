@@ -37,8 +37,9 @@ const roleHomePaths: Record<UserRole, string> = {
   auditor: '/employee/dashboard',
 };
 
-function getHomePathForRole(role: UserRole): string {
-  return roleHomePaths[role] || '/employee/dashboard';
+function getHomePathForRole(role?: UserRole | null): string {
+    if (!role) return '/login';
+    return roleHomePaths[role] || '/employee/dashboard';
 }
 
 export async function middleware(request: NextRequest) {
@@ -58,31 +59,29 @@ export async function middleware(request: NextRequest) {
   }
   
   // If user is logged in
-  if (user) {
-    // Check if user has set a password. The sign_in_count is 1 for the first magic link login.
-    const { data: { session } } = await supabase.auth.getSession();
-    const isFirstLogin = session?.user?.sign_in_count === 1 && session.user.app_metadata.provider === 'email';
-    
-    if (isFirstLogin && pathname !== '/auth/update-password') {
-      return NextResponse.redirect(new URL('/auth/update-password', request.url));
+  // Check if user has set a password. The sign_in_count is 1 for the first magic link login.
+  const { data: { session } } = await supabase.auth.getSession();
+  const isFirstLogin = session?.user?.sign_in_count === 1 && session.user.app_metadata.provider === 'email';
+  
+  if (isFirstLogin && pathname !== '/auth/update-password') {
+    return NextResponse.redirect(new URL('/auth/update-password', request.url));
+  }
+  
+  // Check if profile setup is complete
+  if (!user.profile_setup_complete && !isFirstLogin) {
+    if (pathname !== '/onboarding') {
+      return NextResponse.redirect(new URL('/onboarding', request.url));
     }
-    
-    // Check if profile setup is complete
-    if (!user.profile_setup_complete && !isFirstLogin) {
-      if (pathname !== '/onboarding') {
-        return NextResponse.redirect(new URL('/onboarding', request.url));
-      }
-    }
+  }
 
-    // If onboarding is complete, prevent access to onboarding page
-    if (user.profile_setup_complete && pathname === '/onboarding') {
-      return NextResponse.redirect(new URL(getHomePathForRole(user.role), request.url));
-    }
+  // If onboarding is complete, prevent access to onboarding page
+  if (user.profile_setup_complete && pathname === '/onboarding') {
+    return NextResponse.redirect(new URL(getHomePathForRole(user.role), request.url));
+  }
 
-    // If user is logged in, prevent access to login page
-    if (pathname === '/login') {
+  // If user is logged in, prevent access to login page
+  if (pathname === '/login' || (pathname === '/' && user.profile_setup_complete)) {
       return NextResponse.redirect(new URL(getHomePathForRole(user.role), request.url));
-    }
   }
 
   return response;
