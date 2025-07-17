@@ -36,8 +36,12 @@ async function createAndSeedUser(userData: Partial<UserProfile>): Promise<UserPr
         return existingProfile;
     }
     
-    // 2. Create the user in Supabase Auth
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    // 2. Check if the user exists in auth. If not, create them.
+    let { data: { users: existingAuthUsers }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ email });
+    let authUser = existingAuthUsers && existingAuthUsers.length > 0 ? existingAuthUsers[0] : null;
+
+    if (!authUser) {
+      const { data, error: creationError } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
         email_confirm: true,
@@ -45,23 +49,16 @@ async function createAndSeedUser(userData: Partial<UserProfile>): Promise<UserPr
             full_name: fullName,
             avatar_url: faker.image.avatar(),
         },
-    });
+      });
 
-    // Handle case where user already exists in auth
-    if (authError && authError.message.includes('already been registered')) {
-        // console.log(`🟡 Auth user for ${email} already exists. Fetching...`);
-        const { data: { users: existingUsers }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ email });
-        if (listError || !existingUsers || existingUsers.length === 0) {
-            console.error(`🔴 Auth user exists but failed to fetch for ${email}:`, listError?.message);
-            return null;
-        }
-        authData.user = existingUsers[0];
-    } else if (authError) {
-        console.error(`🔴 Error creating auth user ${email}:`, authError.message);
+      if (creationError) {
+        console.error(`🔴 Error creating auth user ${email}:`, creationError.message);
         return null;
+      }
+      authUser = data.user;
     }
-    
-    if (!authData.user) {
+
+    if (!authUser) {
         console.error(`🔴 Auth user for ${email} could not be found or created.`);
         return null;
     }
@@ -70,10 +67,10 @@ async function createAndSeedUser(userData: Partial<UserProfile>): Promise<UserPr
     const { data: profileData, error: profileError } = await supabaseAdmin
         .from('users')
         .insert({
-            id: authData.user.id,
+            id: authUser.id,
             full_name: fullName,
             email,
-            avatar_url: authData.user.user_metadata.avatar_url || faker.image.avatar(),
+            avatar_url: authUser.user_metadata.avatar_url || faker.image.avatar(),
             department,
             role,
             phone: faker.phone.number(),
@@ -83,12 +80,6 @@ async function createAndSeedUser(userData: Partial<UserProfile>): Promise<UserPr
         .single();
     
     if (profileError) {
-        // This might happen if the profile was created in a race condition.
-        // Let's try to fetch it again.
-        if (profileError.code === '23505') { // unique_violation
-            const { data: finalProfile } = await supabaseAdmin.from('users').select('*').eq('email', email).single();
-            if (finalProfile) return finalProfile;
-        }
         console.error(`🔴 Error creating profile for ${email}:`, profileError.message);
         return null;
     }
