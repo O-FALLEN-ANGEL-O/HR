@@ -1,6 +1,6 @@
 import { Header } from '@/components/header';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Clock, Users, FileText, Award, LifeBuoy, Handshake, Newspaper, Calendar } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Clock, Users, FileText, Award, LifeBuoy, Handshake, Newspaper, Calendar, Sun } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
@@ -10,6 +10,8 @@ import CompanyFeedClient from '@/app/(app)/company-feed/client';
 import { Button } from '@/components/ui/button';
 import { LeaveDialog } from '@/components/leave-dialog';
 import { DashboardCard } from './dashboard-card';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { format } from 'date-fns';
 
 async function getDashboardData(user: UserProfile | null) {
     if (!user) {
@@ -36,7 +38,7 @@ async function getDashboardData(user: UserProfile | null) {
 
     const teamMembersQuery = supabase
         .from('users')
-        .select('full_name, avatar_url, department')
+        .select('full_name, avatar_url, department, email')
         .eq('department', user.department)
         .neq('id', user.id)
         .limit(4);
@@ -50,6 +52,13 @@ async function getDashboardData(user: UserProfile | null) {
     }
 }
 
+// In a real app, this might come from a database or an API
+const upcomingHolidays = [
+    { date: '2024-08-15', name: 'Independence Day' },
+    { date: '2024-10-02', name: 'Gandhi Jayanti' },
+    { date: '2024-10-31', name: 'Diwali' },
+    { date: '2024-12-25', name: 'Christmas' },
+]
 
 export default async function EmployeeDashboardPage() {
   const cookieStore = cookies();
@@ -114,6 +123,26 @@ export default async function EmployeeDashboardPage() {
                     </CardContent>
                 </Card>
             </DashboardCard>
+            <DashboardCard delay={0.5}>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-lg">Upcoming Holidays</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                       {upcomingHolidays.map(holiday => (
+                            <div key={holiday.name} className="flex items-center gap-3">
+                                <div className="p-2 bg-primary/10 rounded-lg">
+                                    <Sun className="h-5 w-5 text-primary"/>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium">{holiday.name}</p>
+                                    <p className="text-xs text-muted-foreground">{format(new Date(holiday.date), "EEEE, MMMM do")}</p>
+                                </div>
+                            </div>
+                       ))}
+                    </CardContent>
+                </Card>
+            </DashboardCard>
           </div>
 
           {/* Center Column (Main Content) */}
@@ -151,7 +180,7 @@ export default async function EmployeeDashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="flex items-center justify-center p-4">
-                          <Calendar
+                          <CalendarComponent
                             mode="single"
                             selected={new Date()}
                             className="rounded-md border"

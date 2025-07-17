@@ -1,6 +1,6 @@
 import { Header } from '@/components/header';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Users, Briefcase, Clock, CalendarCheck, UserCheck } from 'lucide-react';
+import { Users, Briefcase, Clock, CalendarCheck, UserCheck, UserX } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +16,8 @@ async function getDashboardData(user: UserProfile | null) {
       teamMembers: [], 
       openTeamPositions: 0, 
       pendingLeave: 0, 
-      upcomingInterviews: [] 
+      upcomingInterviews: [],
+      onLeaveToday: []
   };
   
   const cookieStore = cookies();
@@ -52,19 +53,29 @@ async function getDashboardData(user: UserProfile | null) {
     .order('time', { ascending: true })
     .limit(4);
 
+    const today = new Date().toISOString().split('T')[0];
+    const { data: onLeaveToday } = await supabase
+        .from('leaves')
+        .select('users(full_name, avatar_url)')
+        .in('user_id', [...teamMemberIds, user.id])
+        .eq('status', 'approved')
+        .lte('start_date', today)
+        .gte('end_date', today);
+
   return {
     teamMembers: (teamMembers as any[] as UserProfile[]) || [],
     teamCount: teamCount || 0,
     openTeamPositions: openTeamPositions || 0,
     pendingLeave: pendingLeave || 0,
     upcomingInterviews: (upcomingInterviews as Interview[]) || [],
+    onLeaveToday: (onLeaveToday as any[] as {users: UserProfile}[]) || [],
   };
 }
 
 export default async function ManagerDashboardPage() {
   const cookieStore = cookies();
   const user = await getUser(cookieStore);
-  const { teamMembers, teamCount, openTeamPositions, pendingLeave, upcomingInterviews } = await getDashboardData(user);
+  const { teamMembers, teamCount, openTeamPositions, pendingLeave, upcomingInterviews, onLeaveToday } = await getDashboardData(user);
   
   const stats = [
     { title: "Total Team Members", value: teamCount, description: `in your department`, icon: Users },
@@ -131,35 +142,35 @@ export default async function ManagerDashboardPage() {
                   </Card>
               </DashboardCard>
 
-              <DashboardCard delay={0.5}>
-                  <Card className="h-full">
-                      <CardHeader>
-                          <CardTitle>Upcoming Interviews</CardTitle>
-                          <CardDescription>Your team's upcoming interview schedule.</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                          {upcomingInterviews.length > 0 ? (
-                              <div className="space-y-4">
-                                  {upcomingInterviews.map(interview => (
-                                      <div key={interview.id} className="flex flex-col rounded-lg border p-3 hover:bg-muted/50 transition-colors">
-                                          <p className="font-semibold">{interview.candidate_name}</p>
-                                          <p className="text-sm text-muted-foreground">{interview.job_title}</p>
-                                          <div className="flex justify-between items-center mt-2">
-                                              <Badge variant="outline">{format(new Date(interview.date), 'MMM dd, yyyy')}</Badge>
-                                              <span className="text-sm font-medium">{interview.time}</span>
-                                          </div>
+                <DashboardCard delay={0.5}>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Team Status Today</CardTitle>
+                            <CardDescription>Who's in and who's out.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-sm font-semibold mb-2">On Leave Today:</p>
+                             {onLeaveToday.length > 0 ? (
+                              <div className="space-y-2">
+                                  {onLeaveToday.map(leave => (
+                                      <div key={leave.users.full_name} className="flex items-center gap-3">
+                                          <Avatar className="h-9 w-9">
+                                              <AvatarImage src={leave.users.avatar_url || undefined} />
+                                              <AvatarFallback>{leave.users.full_name?.charAt(0)}</AvatarFallback>
+                                          </Avatar>
+                                          <span className="font-medium text-sm">{leave.users.full_name}</span>
                                       </div>
                                   ))}
                               </div>
                           ) : (
-                              <div className="text-center text-muted-foreground py-10 flex flex-col items-center justify-center h-full">
+                              <div className="text-center text-muted-foreground py-4 flex flex-col items-center justify-center">
                                   <UserCheck className="mx-auto h-8 w-8 mb-2" />
-                                  <p>No upcoming interviews for your team.</p>
+                                  <p>Everyone is available.</p>
                               </div>
                           )}
-                      </CardContent>
-                  </Card>
-              </DashboardCard>
+                        </CardContent>
+                    </Card>
+                </DashboardCard>
           </div>
         </div>
       </main>

@@ -39,6 +39,7 @@ import {
   ClipboardCopy,
   User,
   CalendarPlus,
+  Sparkles,
 } from 'lucide-react';
 import {
   Select,
@@ -252,6 +253,7 @@ export default function ApplicantList({
                   <TableHead>Applied Date</TableHead>
                   <TableHead>Stage</TableHead>
                   <TableHead>Source</TableHead>
+                  <TableHead>AI Score</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -290,6 +292,18 @@ export default function ApplicantList({
                       <Badge variant="outline" className="capitalize">
                         {applicant.source || 'N/A'}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1 font-semibold">
+                        {applicant.ai_match_score ? (
+                           <>
+                            <Sparkles className="h-4 w-4 text-primary" />
+                            {applicant.ai_match_score}%
+                           </>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">N/A</span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>

@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
-import { PlusCircle, Upload } from 'lucide-react';
+import { ArrowRight, PlusCircle, Upload, User } from 'lucide-react';
 import { format } from 'date-fns';
 import type { Onboarding, UserProfile } from '@/lib/types';
 import { Header } from '@/components/header';
@@ -26,6 +26,12 @@ import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { StartOnboardingDialog } from '@/components/start-onboarding-dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 type OnboardingClientProps = {
   initialWorkflows: Onboarding[];
@@ -133,11 +139,34 @@ export default function OnboardingClient({ initialWorkflows, users }: Onboarding
                     {isClient ? format(new Date(workflow.start_date), 'PPP') : ''}
                   </TableCell>
                   <TableCell>
-                    <div>
-                      <span className="font-medium">M:</span> {workflow.manager_name}
-                    </div>
-                    <div>
-                      <span className="font-medium">B:</span> {workflow.buddy_name}
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger>
+                                    <Avatar className="h-6 w-6">
+                                        <AvatarFallback className="bg-primary/10 text-primary">M</AvatarFallback>
+                                    </Avatar>
+                                </TooltipTrigger>
+                                <TooltipContent>Manager: {workflow.manager_name}</TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                        <ArrowRight className="h-4 w-4" />
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger>
+                                     <Avatar className="h-6 w-6">
+                                        {workflow.buddy_name ? (
+                                            <AvatarFallback className="bg-secondary text-secondary-foreground">B</AvatarFallback>
+                                        ) : (
+                                            <AvatarFallback className="bg-muted text-muted-foreground">?</AvatarFallback>
+                                        )}
+                                    </Avatar>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    {workflow.buddy_name ? `Buddy: ${workflow.buddy_name}` : 'No Buddy Assigned'}
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
                     </div>
                   </TableCell>
                   <TableCell>{workflow.current_step}</TableCell>
