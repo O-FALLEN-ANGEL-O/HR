@@ -4,18 +4,8 @@
 // By centralizing them here, we ensure consistency across the different
 // client initialization files (server, client, middleware).
 
-// Note: process.env.SUPABASE_URL is not prefixed with NEXT_PUBLIC_
-// and will only be available in server-side environments. This is secure.
-export const supabaseUrl =
-  process.env.SUPABASE_URL!;
-
-// Note: process.env.SUPABASE_ANON_KEY is not prefixed with NEXT_PUBLIC_
-// and will only be available in server-side environments. This is secure.
-export const supabaseAnonKey =
-  process.env.SUPABASE_ANON_KEY!;
-
-// The following variables are prefixed with NEXT_PUBLIC_ because they need
-// to be accessible in the browser (client-side) and in Edge middleware.
+// These variables are safe to be exposed to the browser and are used by
+// all Supabase clients (server, client, middleware).
 export const supabasePublicUrl =
   process.env.NEXT_PUBLIC_SUPABASE_URL!;
 export const supabasePublicAnonKey =
