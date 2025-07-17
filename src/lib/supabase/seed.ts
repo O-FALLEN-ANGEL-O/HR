@@ -18,25 +18,10 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
 
 // Function to create a user, both in auth and in the public table
 async function createAndSeedUser(userData: Partial<UserProfile>): Promise<UserProfile | null> {
-    const email = userData.email || faker.internet.email();
-    const password = 'password123'; // Standard password for all seeded users
-    const fullName = userData.full_name || faker.person.fullName();
-    const department = userData.department || faker.commerce.department();
-    const role = userData.role || 'employee';
-
-    // 1. Check if user profile already exists in public.users table
-    let { data: existingProfile } = await supabaseAdmin
-      .from('users')
-      .select('*')
-      .eq('email', email)
-      .maybeSingle();
-
-    if (existingProfile) {
-        // console.log(`🟡 Profile for ${email} already exists. Skipping creation.`);
-        return existingProfile;
-    }
+    const email = userData.email!;
+    const password = 'password123';
     
-    // 2. Check if the user exists in auth. If not, create them.
+    // Step 1: Check if the user exists in auth and create if not.
     let { data: { users: existingAuthUsers }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ email });
     let authUser = existingAuthUsers && existingAuthUsers.length > 0 ? existingAuthUsers[0] : null;
 
@@ -46,8 +31,8 @@ async function createAndSeedUser(userData: Partial<UserProfile>): Promise<UserPr
         password,
         email_confirm: true,
         user_metadata: {
-            full_name: fullName,
-            avatar_url: faker.image.avatar(),
+            full_name: userData.full_name || faker.person.fullName(),
+            avatar_url: userData.avatar_url || faker.image.avatar(),
         },
       });
 
@@ -63,28 +48,37 @@ async function createAndSeedUser(userData: Partial<UserProfile>): Promise<UserPr
         return null;
     }
     
-    // 3. Insert into public.users table using the auth user's ID
-    const { data: profileData, error: profileError } = await supabaseAdmin
+    // Step 2: Check if the user profile exists in public.users and create if not.
+    let { data: publicProfile, error: profileSelectError } = await supabaseAdmin
         .from('users')
-        .insert({
-            id: authUser.id,
-            full_name: fullName,
-            email,
-            avatar_url: authUser.user_metadata.avatar_url || faker.image.avatar(),
-            department,
-            role,
-            phone: faker.phone.number(),
-            profile_setup_complete: true,
-        })
-        .select()
+        .select('*')
+        .eq('id', authUser.id)
         .single();
     
-    if (profileError) {
-        console.error(`🔴 Error creating profile for ${email}:`, profileError.message);
-        return null;
+    if (!publicProfile) {
+        const { data: newProfile, error: profileInsertError } = await supabaseAdmin
+            .from('users')
+            .insert({
+                id: authUser.id,
+                full_name: authUser.user_metadata.full_name,
+                email,
+                avatar_url: authUser.user_metadata.avatar_url,
+                department: userData.department || faker.commerce.department(),
+                role: userData.role || 'employee',
+                phone: faker.phone.number(),
+                profile_setup_complete: true,
+            })
+            .select()
+            .single();
+
+        if (profileInsertError) {
+            console.error(`🔴 Error creating public profile for ${email}:`, profileInsertError.message);
+            return null;
+        }
+        publicProfile = newProfile;
     }
-    
-    return profileData;
+
+    return publicProfile;
 }
 
 const seedUsersConfig = [
