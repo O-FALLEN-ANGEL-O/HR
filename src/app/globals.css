@@ -32,7 +32,7 @@
     --input: 240 5.9% 90%;
     --ring: 242 78% 58%; /* #4F46E5 */
 
-    --radius: 0.5rem;
+    --radius: 0.75rem; /* Increased from 0.5rem */
     
     --chart-1: 242 78% 58%;
     --chart-2: 180 80% 35%;

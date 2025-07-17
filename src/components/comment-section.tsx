@@ -21,6 +21,11 @@ export default function CommentSection({ comments, postId, currentUser }: Commen
   const [isCommenting, setIsCommenting] = React.useState(false);
   const formRef = React.useRef<HTMLFormElement>(null);
   const { toast } = useToast();
+  const [isClient, setIsClient] = React.useState(false);
+
+    React.useEffect(() => {
+        setIsClient(true);
+    }, []);
 
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +82,7 @@ export default function CommentSection({ comments, postId, currentUser }: Commen
                 <div className="flex items-center justify-between mb-0.5">
                   <p className="font-semibold text-xs">{comment.users.full_name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                    {isClient ? formatDistanceToNow(new Date(comment.created_at), { addSuffix: true }) : ''}
                   </p>
                 </div>
                 <p className="text-sm">{comment.comment}</p>

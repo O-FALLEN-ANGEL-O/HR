@@ -74,6 +74,11 @@ export default function HrDashboardClient({ initialMetrics, initialRecentHires, 
     const [metrics, setMetrics] = React.useState(initialMetrics);
     const [recentHires, setRecentHires] = React.useState(initialRecentHires);
     const { toast } = useToast();
+    const [isClient, setIsClient] = React.useState(false);
+
+    React.useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     React.useEffect(() => {
         setMetrics(initialMetrics);
@@ -184,7 +189,7 @@ export default function HrDashboardClient({ initialMetrics, initialRecentHires, 
                                 </TableCell>
                                 <TableCell>{employee.department}</TableCell>
                                 <TableCell className="whitespace-nowrap">
-                                    {format(new Date(employee.created_at!), 'PPP')}
+                                    {isClient ? format(new Date(employee.created_at!), 'PPP') : ''}
                                 </TableCell>
                             </TableRow>
                             ))}
