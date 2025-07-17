@@ -12,8 +12,8 @@ import { supabaseUrl, supabaseAnonKey } from './config';
 
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseServiceRoleKey) {
-  throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set in environment variables. This is required for admin operations.');
+if (!supabaseUrl || !supabaseServiceRoleKey) {
+  throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are not set in environment variables. This is required for admin operations.');
 }
 
 // This is the admin client, created once and reused.

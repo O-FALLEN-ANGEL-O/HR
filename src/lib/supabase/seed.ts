@@ -1,7 +1,8 @@
 
 'use server';
 import { config } from 'dotenv';
-config({ path: '.env.local' });
+// Load environment variables from .env file, not just .env.local
+config({ path: '.env' });
 
 import { createClient } from '@supabase/supabase-js';
 import { faker } from '@faker-js/faker';
@@ -25,6 +26,13 @@ async function createAndSeedUser(userData: Partial<UserProfile>): Promise<UserPr
     let { data: { users: existingAuthUsers }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ email });
     let authUser = existingAuthUsers && existingAuthUsers.length > 0 ? existingAuthUsers[0] : null;
 
+    if (listError && listError.message.includes('not a function')) {
+        // Fallback for older library versions or issues
+        const { data: { user: foundUser } } = await supabaseAdmin.auth.admin.createUser({ email: `search-${Date.now()}@test.com`, password: 'password' }); // temporary user
+        if (foundUser) await supabaseAdmin.auth.admin.deleteUser(foundUser.id);
+    }
+    
+
     if (!authUser) {
       const { data, error: creationError } = await supabaseAdmin.auth.admin.createUser({
         email,
@@ -37,10 +45,20 @@ async function createAndSeedUser(userData: Partial<UserProfile>): Promise<UserPr
       });
 
       if (creationError) {
-        console.error(`🔴 Error creating auth user ${email}:`, creationError.message);
-        return null;
+        if (creationError.message.includes('already been registered')) {
+             const { data: { users: existing }, error: fetchError } = await supabaseAdmin.auth.admin.listUsers({ email });
+             if (fetchError || !existing || existing.length === 0) {
+                 console.error(`🔴 Auth user exists but could not be fetched for ${email}: ${fetchError?.message}`);
+                 return null;
+             }
+             authUser = existing[0];
+        } else {
+            console.error(`🔴 Error creating auth user ${email}:`, creationError.message);
+            return null;
+        }
+      } else {
+        authUser = data.user;
       }
-      authUser = data.user;
     }
 
     if (!authUser) {
