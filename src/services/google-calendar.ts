@@ -10,19 +10,24 @@ const GOOGLE_SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL ||
 // In this format, newline characters are replaced with '\\n'.
 const GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY = (process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY || '').replace(/\\n/g, '\n');
 
-if (!GOOGLE_CALENDAR_ID || !GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY) {
-  console.warn('Google Calendar environment variables are not fully set. Calendar integration will be disabled.');
+let calendar: calendar_v3.Calendar | null = null;
+
+if (GOOGLE_CALENDAR_ID && GOOGLE_SERVICE_ACCOUNT_EMAIL && GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY) {
+    try {
+        const auth = new google.auth.GoogleAuth({
+        credentials: {
+            client_email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+            private_key: GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY,
+        },
+        scopes: ['https://www.googleapis.com/auth/calendar'],
+        });
+        calendar = google.calendar({ version: 'v3', auth });
+    } catch (error) {
+        console.error("Failed to initialize Google Calendar API:", error);
+    }
+} else {
+    console.warn('Google Calendar environment variables are not fully set. Calendar integration will be disabled.');
 }
-
-const auth = new google.auth.GoogleAuth({
-  credentials: {
-    client_email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
-    private_key: GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY,
-  },
-  scopes: ['https://www.googleapis.com/auth/calendar'],
-});
-
-const calendar = google.calendar({ version: 'v3', auth });
 
 type CalendarEventOptions = {
     summary: string;
@@ -32,9 +37,9 @@ type CalendarEventOptions = {
 }
 
 export async function createCalendarEvent({ summary, description, start, attendees }: CalendarEventOptions): Promise<string | null> {
-  // Check if credentials are set before proceeding
-  if (!GOOGLE_CALENDAR_ID || !GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY) {
-    console.log('Skipping calendar event creation due to missing configuration.');
+  // Check if calendar was initialized successfully
+  if (!calendar) {
+    console.log('Skipping calendar event creation due to missing or invalid configuration.');
     return null;
   }
 

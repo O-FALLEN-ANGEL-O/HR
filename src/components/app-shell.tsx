@@ -15,18 +15,14 @@ import {
   Building2,
   ClipboardCheck,
   Clock,
-  FolderKanban,
   GraduationCap,
   LayoutDashboard,
   LogOut,
   Newspaper,
-  PenSquare,
-  ScanSearch,
   Settings,
   Sparkles,
   Users,
   BarChart3,
-  UserCheck,
   FileText,
   ShieldCheck,
   UserCog,
@@ -64,16 +60,20 @@ import {
 
 
 const getNavLinks = (role: UserRole) => {
-  const allLinks = [
-    // Dashboards
-    { href: '/admin/dashboard', label: 'Dashboard', icon: ShieldCheck, roles: ['admin'] },
-    { href: '/super_hr/dashboard', label: 'Dashboard', icon: UserCog, roles: ['super_hr'] },
-    { href: '/hr/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['hr_manager'] },
-    { href: '/recruiter/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['recruiter'] },
-    { href: '/manager/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['manager'] },
-    { href: '/team-lead/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['team_lead'] },
-    { href: '/intern/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['intern'] },
+  const dashboards = [
+    { href: '/admin/dashboard', label: 'Admin Dashboard', icon: ShieldCheck, roles: ['admin'] },
+    { href: '/super_hr/dashboard', label: 'Super HR Dashboard', icon: UserCog, roles: ['super_hr'] },
+    { href: '/hr/dashboard', label: 'HR Dashboard', icon: LayoutDashboard, roles: ['hr_manager'] },
+    { href: '/recruiter/dashboard', label: 'Recruiter Dashboard', icon: LayoutDashboard, roles: ['recruiter'] },
+    { href: '/manager/dashboard', label: 'Manager Dashboard', icon: LayoutDashboard, roles: ['manager'] },
+    { href: '/team-lead/dashboard', label: 'Team Lead Dashboard', icon: LayoutDashboard, roles: ['team_lead'] },
+    { href: '/intern/dashboard', label: 'Intern Hub', icon: LayoutDashboard, roles: ['intern'] },
     { href: '/employee/dashboard', label: 'Home', icon: LayoutDashboard, roles: ['employee', 'finance', 'it_admin', 'support', 'auditor', 'interviewer'] },
+  ];
+  
+  const allLinks = [
+    // Unique Dashboards first
+    ...dashboards.filter(link => link.roles.includes(role)),
     
     // Admin
     { href: '/admin/roles', label: 'Users & Roles', icon: Users, roles: ['admin', 'super_hr'] },
@@ -85,11 +85,10 @@ const getNavLinks = (role: UserRole) => {
     { href: '/hr/onboarding', label: 'Onboarding', icon: ClipboardCheck, roles: ['hr_manager', 'super_hr'] },
     { href: '/interviewer/tasks', label: 'Interviews', icon: MessageSquare, roles: ['interviewer', 'hr_manager', 'recruiter', 'super_hr', 'manager'] },
 
-
     // Manager / Team Lead
     { href: '/manager/team', label: 'My Team', icon: Users, roles: ['manager', 'team_lead'], comingSoon: true },
 
-    // Company Wide
+    // Company Wide (visible to almost everyone)
     { href: '/leaves', label: 'Leave System', icon: Clock, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern'] },
     { href: '/expenses', label: 'Expenses', icon: WalletCards, roles: ['employee', 'manager', 'team_lead', 'hr_manager', 'super_hr', 'admin', 'finance'] },
     { href: '/company-feed', label: 'Company Feed', icon: Newspaper, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern'] },
@@ -104,11 +103,19 @@ const getNavLinks = (role: UserRole) => {
     // AI Tools
     { href: '/ai-tools/applicant-scoring', label: 'AI Applicant Scoring', icon: Sparkles, roles: ['hr_manager', 'recruiter', 'super_hr'] },
     { href: '/ai-tools/review-analyzer', label: 'AI Review Analyzer', icon: Sparkles, roles: ['hr_manager', 'super_hr', 'manager'] },
-    { href: '/ai-tools/chatbot', label: 'AI HR Chatbot', icon: Bot, roles: ['employee', 'intern'] },
-
+    { href: '/ai-tools/chatbot', label: 'AI HR Chatbot', icon: Bot, roles: ['employee', 'intern', 'manager', 'team_lead', 'hr_manager', 'super_hr', 'admin'] },
   ];
 
-  return allLinks.filter(link => link.roles.includes(role));
+  // Filter links based on role and remove dashboard duplicates
+  const userLinks = allLinks.filter(link => link.roles.includes(role));
+  const uniqueLinks = userLinks.reduce((acc, current) => {
+      if (!acc.find(item => item.href === current.href)) {
+        acc.push(current);
+      }
+      return acc;
+    }, [] as typeof allLinks);
+
+  return uniqueLinks;
 };
 
 
@@ -122,9 +129,7 @@ export default function AppShell({
   const pathname = usePathname();
 
   const isActive = (path: string) => {
-    // Exact match for the path
     if (path === pathname) return true;
-    // Handle nested routes: if the path is a parent of the current pathname
     if (path !== '/' && pathname.startsWith(path + '/')) return true;
     return false;
   }
@@ -159,7 +164,7 @@ export default function AppShell({
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2 p-1 h-auto">
                    <Avatar className="h-8 w-8">
-                    <AvatarImage src={user?.avatar_url || undefined} alt={user?.full_name || ''} />
+                    <AvatarImage src={user?.avatar_url || undefined} alt={user?.full_name || ''} data-ai-hint="person" />
                     <AvatarFallback>{user?.full_name?.charAt(0) || 'U'}</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col text-sm items-start">

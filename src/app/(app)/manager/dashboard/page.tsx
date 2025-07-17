@@ -125,7 +125,7 @@ export default async function ManagerDashboardPage() {
                               {teamMembers.map(member => (
                                   <div key={member.id} className="flex items-center gap-4 rounded-lg border p-3 hover:bg-muted/50 transition-colors">
                                       <Avatar className="h-10 w-10">
-                                          <AvatarImage src={member.avatar_url || undefined} />
+                                          <AvatarImage src={member.avatar_url || undefined} data-ai-hint="person avatar" />
                                           <AvatarFallback>{member.full_name?.charAt(0)}</AvatarFallback>
                                       </Avatar>
                                       <div>
@@ -155,7 +155,7 @@ export default async function ManagerDashboardPage() {
                                   {onLeaveToday.map(leave => (
                                       <div key={leave.users.full_name} className="flex items-center gap-3">
                                           <Avatar className="h-9 w-9">
-                                              <AvatarImage src={leave.users.avatar_url || undefined} />
+                                              <AvatarImage src={leave.users.avatar_url || undefined} data-ai-hint="person avatar" />
                                               <AvatarFallback>{leave.users.full_name?.charAt(0)}</AvatarFallback>
                                           </Avatar>
                                           <span className="font-medium text-sm">{leave.users.full_name}</span>
