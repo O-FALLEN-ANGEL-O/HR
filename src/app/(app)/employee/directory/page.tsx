@@ -1,3 +1,4 @@
+
 import { Header } from '@/components/header';
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
@@ -10,21 +11,14 @@ export default async function EmployeeDirectoryPage() {
 
   const { data, error } = await supabase
     .from('users')
-    .select('id, full_name, email, department, avatar_url')
+    .select('id, full_name, email, department, avatar_url, phone, profile_setup_complete')
     .order('full_name', { ascending: true });
 
   if (error) {
     console.error('Error fetching users:', error);
   }
 
-  const users: Omit<UserProfile, 'role' | 'created_at'>[] = (data || []).map(u => ({
-    id: u.id,
-    full_name: u.full_name,
-    email: u.email,
-    department: u.department,
-    avatar_url: u.avatar_url,
-    profile_setup_complete: u.profile_setup_complete,
-  }));
+  const users: UserProfile[] = data || [];
   
   return (
     <div className="flex flex-1 flex-col">

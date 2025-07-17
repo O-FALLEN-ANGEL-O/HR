@@ -1,6 +1,7 @@
+
 import { Header } from '@/components/header';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Clock, Users, FileText, Award, LifeBuoy, Handshake, Newspaper, Calendar, Sun } from 'lucide-react';
+import { Clock, Users, FileText, Award, LifeBuoy, Handshake, Newspaper, Calendar as CalendarIcon, Sun } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
@@ -10,7 +11,7 @@ import CompanyFeedClient from '@/app/(app)/company-feed/client';
 import { Button } from '@/components/ui/button';
 import { LeaveDialog } from '@/components/leave-dialog';
 import { DashboardCard } from './dashboard-card';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 
 async function getDashboardData(user: UserProfile | null) {
@@ -36,19 +37,19 @@ async function getDashboardData(user: UserProfile | null) {
         .order('created_at', { ascending: false })
         .limit(5);
 
-    const teamMembersQuery = supabase
+    const teamMembersQuery = user.department ? supabase
         .from('users')
-        .select('full_name, avatar_url, department, email')
+        .select('full_name, avatar_url, email')
         .eq('department', user.department)
         .neq('id', user.id)
-        .limit(4);
+        .limit(4) : Promise.resolve({ data: [], error: null });
 
     const [balanceRes, postsRes, teamRes] = await Promise.all([balanceQuery, postsQuery, teamMembersQuery]);
 
     return {
         balance: balanceRes.data as LeaveBalance | null,
         posts: (postsRes.data as CompanyPost[]) || [],
-        teamMembers: (teamRes.data as UserProfile[]) || [],
+        teamMembers: (teamRes.data as Pick<UserProfile, 'full_name' | 'avatar_url' | 'email'>[]) || [],
     }
 }
 
@@ -109,16 +110,16 @@ export default async function EmployeeDashboardPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-lg">My Team</CardTitle>
-                        <CardDescription>Members in the {user?.department} department.</CardDescription>
+                        {user?.department && <CardDescription>Members in the {user.department} department.</CardDescription>}
                     </CardHeader>
                     <CardContent className="space-y-2">
                         {teamMembers.length > 0 ? teamMembers.map(member => (
                             <div key={member.email} className="flex items-center gap-2">
-                                <img src={member.avatar_url || `https://i.pravatar.cc/150?u=${member.email}`} alt={member.full_name || ''} className="h-8 w-8 rounded-full" />
+                                <img src={member.avatar_url || `https://i.pravatar.cc/40?u=${member.email}`} alt={member.full_name || ''} className="h-8 w-8 rounded-full" />
                                 <span className="text-sm font-medium">{member.full_name}</span>
                             </div>
                         )) : (
-                            <p className="text-sm text-muted-foreground">No other team members found.</p>
+                            <p className="text-sm text-muted-foreground">No other team members found in your department.</p>
                         )}
                     </CardContent>
                 </Card>
@@ -162,9 +163,9 @@ export default async function EmployeeDashboardPage() {
                         <CardTitle className="text-lg">My Leave Balance</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
-                        <div className="flex justify-between items-center"><span className="text-sm">Casual Leave</span><span className="font-bold">{balance?.casual_leave ?? 0}</span></div>
-                        <div className="flex justify-between items-center"><span className="text-sm">Sick Leave</span><span className="font-bold">{balance?.sick_leave ?? 0}</span></div>
-                        <div className="flex justify-between items-center"><span className="text-sm">Earned Leave</span><span className="font-bold">{balance?.earned_leave ?? 0}</span></div>
+                        <div className="flex justify-between items-center"><span className="text-sm">Casual Leave</span><span className="font-bold">{balance?.casual_leave ?? 'N/A'}</span></div>
+                        <div className="flex justify-between items-center"><span className="text-sm">Sick Leave</span><span className="font-bold">{balance?.sick_leave ?? 'N/A'}</span></div>
+                        <div className="flex justify-between items-center"><span className="text-sm">Earned Leave</span><span className="font-bold">{balance?.earned_leave ?? 'N/A'}</span></div>
                     </CardContent>
                     <CardFooter>
                          <LeaveDialog user={user} balance={balance} onLeaveApplied={() => {}}>
@@ -178,14 +179,12 @@ export default async function EmployeeDashboardPage() {
                     <CardHeader>
                         <CardTitle className="text-lg">Company Calendar</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center justify-center p-4">
-                          <CalendarComponent
-                            mode="single"
-                            selected={new Date()}
-                            className="rounded-md border"
-                          />
-                        </div>
+                    <CardContent className="flex items-center justify-center">
+                      <Calendar
+                        mode="single"
+                        selected={new Date()}
+                        className="rounded-md border p-0"
+                      />
                     </CardContent>
                 </Card>
             </DashboardCard>

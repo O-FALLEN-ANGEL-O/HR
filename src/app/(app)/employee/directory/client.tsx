@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -20,11 +21,10 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Search } from 'lucide-react';
 import type { UserProfile } from '@/lib/types';
-
-type DirectoryUser = Omit<UserProfile, 'role' | 'created_at'>;
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 type EmployeeDirectoryClientProps = {
-  users: DirectoryUser[];
+  users: UserProfile[];
 };
 
 export default function EmployeeDirectoryClient({ users }: EmployeeDirectoryClientProps) {
@@ -55,32 +55,36 @@ export default function EmployeeDirectoryClient({ users }: EmployeeDirectoryClie
         </div>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Department</TableHead>
-              <TableHead>Email</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredUsers.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarImage src={user.avatar_url || undefined} />
-                      <AvatarFallback>{user.full_name?.charAt(0) || 'U'}</AvatarFallback>
-                    </Avatar>
-                    <span className="font-medium">{user.full_name}</span>
-                  </div>
-                </TableCell>
-                <TableCell>{user.department || 'N/A'}</TableCell>
-                <TableCell>{user.email}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <ScrollArea className="h-[60vh]">
+            <Table>
+            <TableHeader>
+                <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Department</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Phone</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {filteredUsers.map((user) => (
+                <TableRow key={user.id}>
+                    <TableCell>
+                    <div className="flex items-center gap-3">
+                        <Avatar>
+                        <AvatarImage src={user.avatar_url || undefined} />
+                        <AvatarFallback>{user.full_name?.charAt(0) || 'U'}</AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium">{user.full_name}</span>
+                    </div>
+                    </TableCell>
+                    <TableCell>{user.department || 'N/A'}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.phone || 'N/A'}</TableCell>
+                </TableRow>
+                ))}
+            </TableBody>
+            </Table>
+        </ScrollArea>
       </CardContent>
     </Card>
   );
