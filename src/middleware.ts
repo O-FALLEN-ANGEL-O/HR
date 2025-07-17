@@ -19,18 +19,8 @@ const publicRoutes = [
 ];
 
 function getHomePathForRole(role: UserRole): string {
-  switch (role) {
-    case 'admin': return '/admin/dashboard';
-    case 'super_hr': return '/super_hr/dashboard';
-    case 'hr_manager': return '/hr/dashboard';
-    case 'recruiter': return '/recruiter/dashboard';
-    case 'interviewer': return '/interviewer/tasks';
-    case 'manager': return '/manager/dashboard';
-    case 'team_lead': return '/team-lead/dashboard';
-    case 'employee': return '/employee/dashboard';
-    case 'intern': return '/intern/dashboard';
-    default: return '/login';
-  }
+  // Redirect all roles to the unified employee dashboard
+  return '/employee/dashboard';
 }
 
 export async function middleware(request: NextRequest) {
