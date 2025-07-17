@@ -27,6 +27,7 @@ import { login, loginWithGoogle } from '@/app/auth/actions';
 import { Loader2, LogIn, Building2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useRouter } from 'next/navigation';
 
 const GoogleIcon = () => (
   <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -46,6 +47,7 @@ type LoginSchema = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const { toast } = useToast();
+  const router = useRouter();
   const [isSubmittingPassword, setIsSubmittingPassword] = React.useState(false);
   const [isSubmittingGoogle, setIsSubmittingGoogle] = React.useState(false);
 
@@ -53,6 +55,13 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
   });
+
+  // --- TEMPORARY FIX FOR DEMO ---
+  // Automatically redirect to the app, bypassing login.
+  React.useEffect(() => {
+    router.push('/');
+  }, [router]);
+  // --- END TEMPORARY FIX ---
   
   const handlePasswordSubmit = async (values: LoginSchema) => {
     setIsSubmittingPassword(true);
@@ -178,59 +187,12 @@ export default function LoginPage() {
               <CardDescription>Sign in to access your HR+ Pro dashboard.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(handlePasswordSubmit)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input placeholder="your.email@example.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <FormControl>
-                          <Input type="password" placeholder="••••••••" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <Button type="submit" disabled={isLoading} className="w-full">
-                    {isSubmittingPassword ? <Loader2 className="animate-spin mr-2" /> : <LogIn className="mr-2" />}
-                    Sign in with Password
-                  </Button>
-                </form>
-              </Form>
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">
-                    Or continue with
-                  </span>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={handleGoogleLogin}
-                disabled={isLoading}
-              >
-                {isSubmittingGoogle ? <Loader2 className="animate-spin mr-2" /> : <GoogleIcon />}
-                Sign in with Google
-              </Button>
+                 {/* --- TEMPORARY FIX FOR DEMO --- */}
+                 <div className="flex items-center justify-center p-4 text-center">
+                    <Loader2 className="mr-2 animate-spin" />
+                    <p className="text-muted-foreground">Redirecting to demo...</p>
+                 </div>
+                 {/* --- END TEMPORARY FIX --- */}
             </CardContent>
           </Card>
         </motion.div>

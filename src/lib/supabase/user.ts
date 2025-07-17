@@ -3,6 +3,21 @@ import { type ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension
 import type { UserProfile } from '../types';
 
 export async function getUser(cookieStore: ReadonlyRequestCookies): Promise<UserProfile | null> {
+  // --- TEMPORARY FIX FOR DEMO ---
+  // Return a hardcoded admin user to bypass login and test the app's functionality.
+  const hardcodedAdminUser: UserProfile = {
+    id: '00000000-0000-0000-0000-000000000000',
+    full_name: 'Admin Demo User',
+    email: 'admin.demo@company.com',
+    avatar_url: 'https://placehold.co/100x100.png',
+    role: 'admin',
+    department: 'Executive',
+    created_at: new Date().toISOString(),
+    profile_setup_complete: true,
+  };
+  return Promise.resolve(hardcodedAdminUser);
+  // --- END TEMPORARY FIX ---
+
   const supabase = createClient(cookieStore);
   const { data: { user } } = await supabase.auth.getUser();
   
