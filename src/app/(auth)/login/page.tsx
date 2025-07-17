@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -25,6 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { login, loginWithGoogle } from '@/app/auth/actions';
 import { Loader2, LogIn, Building2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const GoogleIcon = () => (
   <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -97,9 +99,9 @@ export default function LoginPage() {
   ];
 
   return (
-    <div className="w-full min-h-screen grid grid-cols-1 md:grid-cols-2">
-        <div className="hidden md:flex flex-col items-center justify-center bg-gradient-to-br from-primary to-emerald-800 p-8 text-white relative">
-            <div className="absolute top-8 left-8 flex items-center gap-2">
+    <div className="w-full min-h-screen grid grid-cols-1 lg:grid-cols-2">
+        <div className="flex flex-col items-center justify-center bg-gradient-to-br from-primary to-emerald-800 p-4 sm:p-8 text-white relative">
+             <div className="absolute top-8 left-8 flex items-center gap-2">
                  <Building2 className="h-8 w-8" />
                  <span className="text-2xl font-bold">HR+ Pro</span>
             </div>
@@ -107,7 +109,7 @@ export default function LoginPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.3 }}
-                className="w-full max-w-md mt-6"
+                className="w-full max-w-md my-16 lg:my-0"
             >
                 <Card className="bg-transparent border-primary-foreground/20 text-primary-foreground shadow-none">
                     <CardHeader>
@@ -116,13 +118,17 @@ export default function LoginPage() {
                             Use these credentials to explore different roles. The password for all accounts is: <span className="font-bold">password123</span>
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-2 text-sm">
-                        {demoUsers.map(user => (
-                            <div key={user.role} className="flex items-center justify-between rounded-md border border-primary-foreground/20 p-2">
-                                <p className="font-medium text-primary-foreground">{user.role}</p>
-                                <p className="text-primary-foreground/80">{user.email}</p>
+                    <CardContent>
+                        <ScrollArea className="h-72 w-full">
+                            <div className="space-y-2 text-sm pr-4">
+                                {demoUsers.map(user => (
+                                    <div key={user.role} className="flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-md border border-primary-foreground/20 p-2">
+                                        <p className="font-medium text-primary-foreground">{user.role}</p>
+                                        <p className="text-primary-foreground/80">{user.email}</p>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
+                        </ScrollArea>
                     </CardContent>
                 </Card>
             </motion.div>
@@ -136,7 +142,7 @@ export default function LoginPage() {
             >
                 <Card className="w-full">
                 <CardHeader className="text-center">
-                    <div className="flex justify-center mb-2">
+                    <div className="flex justify-center mb-2 lg:hidden">
                         <Building2 className="h-10 w-10 text-primary"/>
                     </div>
                     <CardTitle className="text-2xl">Welcome!</CardTitle>
