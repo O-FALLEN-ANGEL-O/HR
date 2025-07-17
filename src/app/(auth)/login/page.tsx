@@ -100,31 +100,27 @@ export default function LoginPage() {
 
   return (
     <div className="w-full min-h-screen grid grid-cols-1 lg:grid-cols-2">
-      <div className="hidden lg:flex flex-col items-center justify-center bg-muted/50 p-4 sm:p-8 relative">
-        <div className="absolute top-8 left-8 flex items-center gap-2 text-foreground">
-          <Building2 className="h-8 w-8" />
-          <span className="text-2xl font-bold">HR+ Pro</span>
-        </div>
+      <div className="hidden lg:flex flex-col items-center justify-center bg-gradient-to-br from-teal-700 to-teal-900 p-4 sm:p-8 relative">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
           className="w-full max-w-md my-16 lg:my-0"
         >
-          <Card className="bg-background/80 backdrop-blur-sm">
+          <Card className="bg-black/20 backdrop-blur-sm border-white/20 text-white">
             <CardHeader>
               <CardTitle className="text-xl">Demo Accounts</CardTitle>
-              <CardDescription className="text-foreground/80">
-                Use these credentials to explore different roles. The password for all accounts is: <span className="font-bold text-foreground">password123</span>
+              <CardDescription className="text-white/80">
+                Use these credentials to explore different roles. The password for all accounts is: <span className="font-bold text-white">password123</span>
               </CardDescription>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-72 w-full">
                 <div className="space-y-2 text-sm pr-4">
                   {demoUsers.map(user => (
-                    <div key={user.role} className="flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-md border p-2">
-                      <p className="font-semibold text-black dark:text-white">{user.role}</p>
-                      <p className="text-black/80 dark:text-white/80">{user.email}</p>
+                    <div key={user.role} className="flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-md border border-white/20 p-2">
+                      <p className="font-semibold text-white">{user.role}</p>
+                      <p className="text-white/80">{user.email}</p>
                     </div>
                   ))}
                 </div>
@@ -133,14 +129,14 @@ export default function LoginPage() {
           </Card>
         </motion.div>
       </div>
-      <div className="flex flex-col items-center justify-center p-4">
+      <div className="flex flex-col items-center justify-center p-4 bg-background">
         {/* Demo accounts for mobile */}
         <div className="lg:hidden w-full max-w-md mb-8">
-            <Card className="bg-background/80 backdrop-blur-sm">
+            <Card>
             <CardHeader>
               <CardTitle className="text-xl">Demo Accounts</CardTitle>
-              <CardDescription className="text-foreground/80">
-                Use these credentials to explore. The password for all accounts is: <span className="font-bold text-foreground">password123</span>
+              <CardDescription>
+                Use these credentials to explore. The password for all accounts is: <span className="font-bold">password123</span>
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -148,8 +144,8 @@ export default function LoginPage() {
                 <div className="space-y-2 text-sm pr-4">
                   {demoUsers.map(user => (
                     <div key={user.role} className="flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-md border p-2">
-                      <p className="font-semibold text-black dark:text-white">{user.role}</p>
-                      <p className="text-black/80 dark:text-white/80">{user.email}</p>
+                      <p className="font-semibold">{user.role}</p>
+                      <p className="text-muted-foreground">{user.email}</p>
                     </div>
                   ))}
                 </div>
@@ -166,7 +162,7 @@ export default function LoginPage() {
         >
           <Card className="w-full">
             <CardHeader className="text-center">
-              <div className="flex justify-center mb-2 lg:hidden">
+              <div className="flex justify-center mb-2">
                 <Building2 className="h-10 w-10 text-primary" />
               </div>
               <CardTitle className="text-2xl">Welcome!</CardTitle>
