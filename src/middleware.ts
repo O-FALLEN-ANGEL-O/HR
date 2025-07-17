@@ -15,59 +15,75 @@ const publicRoutes = [
   '/comprehensive-test',
   '/english-grammar-test',
   '/customer-service-test',
-  '/start-test',
-  '/update-password',
+  '/auth/update-password',
 ];
 
+const roleHomePaths: Record<UserRole, string> = {
+  admin: '/admin/dashboard',
+  super_hr: '/super_hr/dashboard',
+  hr_manager: '/hr/dashboard',
+  recruiter: '/recruiter/dashboard',
+  manager: '/manager/dashboard',
+  team_lead: '/team-lead/dashboard',
+  employee: '/employee/dashboard',
+  intern: '/intern/dashboard',
+  interviewer: '/interviewer/tasks',
+  // Default fallbacks for other roles
+  guest: '/login',
+  finance: '/employee/dashboard',
+  it_admin: '/employee/dashboard',
+  support: '/helpdesk',
+  auditor: '/employee/dashboard',
+};
+
 function getHomePathForRole(role: UserRole): string {
-    const dashboardMap: Partial<Record<UserRole, string>> = {
-        admin: '/admin/dashboard',
-        super_hr: '/super_hr/dashboard',
-        hr_manager: '/hr/dashboard',
-        recruiter: '/recruiter/dashboard',
-        manager: '/manager/dashboard',
-        team_lead: '/team-lead/dashboard',
-        intern: '/intern/dashboard',
-    };
-    // Default to employee dashboard for all other roles
-    return dashboardMap[role] || '/employee/dashboard';
+  return roleHomePaths[role] || '/employee/dashboard';
 }
 
 export async function middleware(request: NextRequest) {
-  const { response, user } = await updateSession(request);
   const { pathname } = request.nextUrl;
 
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
+  const { response, user, supabase } = await updateSession(request);
 
-  // If user is not logged in
+  const isPublic = publicRoutes.some(route => pathname.startsWith(route));
+
+  // If no user is logged in
   if (!user) {
-    if (!isPublicRoute) {
-      // And is trying to access a protected route, redirect to login
-      return NextResponse.redirect(new URL('/login', request.url));
+    // Allow access to public routes, otherwise redirect to login
+    if (isPublic) {
+      return response;
     }
-    // Otherwise, allow access to public routes
-    return response;
-  }
-
-  // User is logged in
-  const homePath = getHomePathForRole(user.role);
-
-  // Onboarding check
-  if (!user.profile_setup_complete) {
-    // If onboarding is not complete, redirect to /onboarding, unless they are already there.
-    if (pathname !== '/onboarding') {
-      return NextResponse.redirect(new URL('/onboarding', request.url));
-    }
-    return response;
+    return NextResponse.redirect(new URL('/login', request.url));
   }
   
-  // If user is fully onboarded and tries to access a public route or the root
-  if (pathname === '/' || isPublicRoute) {
-    // send them to their dashboard
-    return NextResponse.redirect(new URL(homePath, request.url));
+  // If user is logged in
+  if (user) {
+    // Check if user has set a password. The sign_in_count is 1 for the first magic link login.
+    const { data: { session } } = await supabase.auth.getSession();
+    const isFirstLogin = session?.user?.sign_in_count === 1 && session.user.app_metadata.provider === 'email';
+    
+    if (isFirstLogin && pathname !== '/auth/update-password') {
+      return NextResponse.redirect(new URL('/auth/update-password', request.url));
+    }
+    
+    // Check if profile setup is complete
+    if (!user.profile_setup_complete && !isFirstLogin) {
+      if (pathname !== '/onboarding') {
+        return NextResponse.redirect(new URL('/onboarding', request.url));
+      }
+    }
+
+    // If onboarding is complete, prevent access to onboarding page
+    if (user.profile_setup_complete && pathname === '/onboarding') {
+      return NextResponse.redirect(new URL(getHomePathForRole(user.role), request.url));
+    }
+
+    // Redirect from root or login to the correct dashboard if profile is complete
+    if ((pathname === '/' || pathname === '/login') && user.profile_setup_complete) {
+       return NextResponse.redirect(new URL(getHomePathForRole(user.role), request.url));
+    }
   }
 
-  // Allow access to all other protected routes
   return response;
 }
 
@@ -77,9 +93,9 @@ export const config = {
      * Match all request paths except for the ones starting with:
      * - _next/static (static files)
      * - _next/image (image optimization files)
-     * - favicon.svg (favicon file)
+     * - favicon.ico (favicon file)
      * - anything with a file extension
      */
-    '/((?!_next/static|_next/image|favicon.svg|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

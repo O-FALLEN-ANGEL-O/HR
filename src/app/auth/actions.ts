@@ -4,50 +4,22 @@
 import { createClient } from '@/lib/supabase/server';
 import { headers, cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import type { UserProfile, UserRole } from '@/lib/types';
-import { getUser } from '@/lib/supabase/user';
-import { revalidatePath } from 'next/cache';
-
-function getHomePathForRole(role: UserRole): string {
-    const dashboardMap: Partial<Record<UserRole, string>> = {
-        admin: '/admin/dashboard',
-        super_hr: '/super_hr/dashboard',
-        hr_manager: '/hr/dashboard',
-        recruiter: '/recruiter/dashboard',
-        manager: '/manager/dashboard',
-        team_lead: '/team-lead/dashboard',
-        intern: '/intern/dashboard',
-    };
-    return dashboardMap[role] || '/employee/dashboard';
-}
 
 export async function login(formData: any) {
   const cookieStore = cookies();
   const supabase = createClient(cookieStore);
 
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const { error } = await supabase.auth.signInWithPassword({
       email: formData.email,
       password: formData.password,
   });
 
-  if (error || !data.user) {
+  if (error) {
     console.error('Supabase auth error:', error);
-    return { error: `Authentication Error: ${error?.message || 'Invalid credentials'}` };
+    return { error: `Authentication Error: ${error.message}` };
   }
   
-  // After successful sign-in, get the user's profile to determine their role
-  const userProfile = await getUser(cookieStore);
-
-  if (!userProfile) {
-    // This case might happen if the public.users profile is not yet created.
-    // In this case, we can sign them out and ask to try again.
-    await supabase.auth.signOut();
-    return { error: 'Could not retrieve user profile. Please try again.' };
-  }
-
-  // Redirect to the appropriate dashboard based on role.
-  const homePath = getHomePathForRole(userProfile.role);
-  redirect(homePath);
+  redirect('/');
 }
 
 export async function loginWithGoogle() {

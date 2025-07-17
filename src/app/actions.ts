@@ -378,6 +378,7 @@ export async function addApplicantNote(formData: FormData) {
   }
 
   revalidatePath(`/hr/applicants/${applicant_id}`);
+  revalidatePath(`/applicants/${applicant_id}`);
 }
 
 
@@ -428,6 +429,7 @@ export async function generateAiMatchScore(applicantId: string) {
     }
     
     revalidatePath(`/hr/applicants/${applicantId}`);
+    revalidatePath(`/applicants/${applicantId}`);
 }
 
 
@@ -694,4 +696,38 @@ export async function addTicketComment(ticketId: string, comment: string) {
 
 
     revalidatePath('/helpdesk');
+}
+
+export async function completeProfile(formData: FormData) {
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  const password = formData.get('password') as string;
+  const phone = formData.get('phone') as string;
+
+  if (password) {
+    const { error: passwordError } = await supabase.auth.updateUser({ password });
+    if (passwordError) {
+      throw new Error(`Password update failed: ${passwordError.message}`);
+    }
+  }
+
+  const { error: profileError } = await supabase
+    .from('users')
+    .update({ phone: phone, profile_setup_complete: true })
+    .eq('id', user.id);
+
+  if (profileError) {
+    throw new Error(`Profile update failed: ${profileError.message}`);
+  }
+  
+  await supabase.auth.refreshSession();
+
+  revalidatePath('/', 'layout');
+  redirect('/');
 }

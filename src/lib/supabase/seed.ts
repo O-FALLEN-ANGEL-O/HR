@@ -1,12 +1,11 @@
 
 'use server';
 import { config } from 'dotenv';
-// Load environment variables from .env file, not just .env.local
-config({ path: '.env' });
+config({ path: '.env.local' });
 
 import { createClient } from '@supabase/supabase-js';
 import { faker } from '@faker-js/faker';
-import type { UserProfile, ApplicantStage } from '../types';
+import type { UserProfile, ApplicantStage, UserRole } from '../types';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -17,107 +16,80 @@ if (!supabaseUrl || !supabaseServiceRoleKey) {
 
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-// Function to create a user, both in auth and in the public table
-async function createAndSeedUser(userData: Partial<UserProfile>): Promise<UserProfile | null> {
-    const email = userData.email!;
-    const password = 'password123';
-    
-    // Step 1: Check if the user exists in auth and create if not.
-    let { data: { users: existingAuthUsers }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ email });
-    let authUser = existingAuthUsers && existingAuthUsers.length > 0 ? existingAuthUsers[0] : null;
 
-    if (listError && listError.message.includes('not a function')) {
-        // Fallback for older library versions or issues
-        const { data: { user: foundUser } } = await supabaseAdmin.auth.admin.createUser({ email: `search-${Date.now()}@test.com`, password: 'password' }); // temporary user
-        if (foundUser) await supabaseAdmin.auth.admin.deleteUser(foundUser.id);
-    }
-    
+const CORE_USERS_DATA = [
+    { email: 'john.admin@company.com', fullName: 'John Admin', role: 'admin', department: 'Executive' },
+    { email: 'olivia.superhr@company.com', fullName: 'Olivia SuperHR', role: 'super_hr', department: 'HR' },
+    { email: 'sarah.hr@company.com', fullName: 'Sarah HR', role: 'hr_manager', department: 'HR' },
+    { email: 'mike.recruiter@company.com', fullName: 'Mike Recruiter', role: 'recruiter', department: 'HR' },
+    { email: 'emily.manager@company.com', fullName: 'Emily Manager', role: 'manager', department: 'Engineering' },
+    { email: 'david.teamlead@company.com', fullName: 'David TeamLead', role: 'team_lead', department: 'Engineering' },
+    { email: 'lisa.employee@company.com', fullName: 'Lisa Employee', role: 'employee', department: 'Engineering' },
+    { email: 'tom.intern@company.com', fullName: 'Tom Intern', role: 'intern', department: 'Engineering' },
+    { email: 'rachel.finance@company.com', fullName: 'Rachel Finance', role: 'finance', department: 'Finance' },
+    { email: 'james.it@company.com', fullName: 'James IT', role: 'it_admin', department: 'IT' },
+    { email: 'alex.support@company.com', fullName: 'Alex Support', role: 'support', department: 'IT' },
+    { email: 'noah.interviewer@company.com', fullName: 'Noah Interviewer', role: 'interviewer', department: 'Engineering' },
+    { email: 'emma.auditor@company.com', fullName: 'Emma Auditor', role: 'auditor', department: 'Finance' },
+];
 
-    if (!authUser) {
-      const { data, error: creationError } = await supabaseAdmin.auth.admin.createUser({
+async function createAndSeedUser({ email, fullName, role, department }: typeof CORE_USERS_DATA[0]): Promise<UserProfile | null> {
+    // 1. Create the user in Supabase Auth
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email,
-        password,
+        password: 'password123', // Set a default password
         email_confirm: true,
         user_metadata: {
-            full_name: userData.full_name || faker.person.fullName(),
-            avatar_url: userData.avatar_url || faker.image.avatar(),
+            full_name: fullName,
+            role: role,
+            department: department,
+            avatar_url: faker.image.avatar(),
         },
-      });
+    });
 
-      if (creationError) {
-        if (creationError.message.includes('already been registered')) {
-             const { data: { users: existing }, error: fetchError } = await supabaseAdmin.auth.admin.listUsers({ email });
-             if (fetchError || !existing || existing.length === 0) {
-                 console.error(`🔴 Auth user exists but could not be fetched for ${email}: ${fetchError?.message}`);
-                 return null;
-             }
-             authUser = existing[0];
+    if (authError) {
+        if (authError.message.includes('already been registered')) {
+            console.warn(`🟡 User ${email} already exists in auth. Skipping creation.`);
         } else {
-            console.error(`🔴 Error creating auth user ${email}:`, creationError.message);
+            console.error(`🔴 Error creating auth user ${email}: ${authError.message}`);
             return null;
         }
-      } else {
-        authUser = data.user;
-      }
     }
+    
+    // Now get the user ID, either from the newly created user or by fetching the existing one
+    const { data: { user } } = await supabaseAdmin.auth.admin.getUserByEmail(email);
 
-    if (!authUser) {
-        console.error(`🔴 Auth user for ${email} could not be found or created.`);
+    if (!user) {
+        console.error(`🔴 Could not find user ${email} in auth after creation/check.`);
         return null;
     }
-    
-    // Step 2: Check if the user profile exists in public.users and create if not.
-    let { data: publicProfile, error: profileSelectError } = await supabaseAdmin
+
+    // 2. Upsert the public user profile. This will create it if it doesn't exist, or update it if it does.
+    // This is safer than just inserting.
+    const { data: profileData, error: profileError } = await supabaseAdmin
         .from('users')
-        .select('*')
-        .eq('id', authUser.id)
+        .upsert({
+            id: user.id,
+            full_name: fullName,
+            email: email,
+            role: role,
+            department: department,
+            avatar_url: user.user_metadata.avatar_url,
+            profile_setup_complete: true,
+        })
+        .select()
         .single();
     
-    if (!publicProfile) {
-        const { data: newProfile, error: profileInsertError } = await supabaseAdmin
-            .from('users')
-            .insert({
-                id: authUser.id,
-                full_name: authUser.user_metadata.full_name,
-                email,
-                avatar_url: authUser.user_metadata.avatar_url,
-                department: userData.department || faker.commerce.department(),
-                role: userData.role || 'employee',
-                phone: faker.phone.number(),
-                profile_setup_complete: true,
-            })
-            .select()
-            .single();
-
-        if (profileInsertError) {
-            console.error(`🔴 Error creating public profile for ${email}:`, profileInsertError.message);
-            return null;
-        }
-        publicProfile = newProfile;
+    if (profileError) {
+        console.error(`🔴 Error creating profile for ${email}: ${profileError.message}`);
+        return null;
     }
 
-    return publicProfile;
+    return profileData as UserProfile;
 }
-
-const seedUsersConfig = [
-    { role: 'admin', email: 'john.admin@company.com', full_name: 'John Admin' },
-    { role: 'super_hr', email: 'olivia.superhr@company.com', full_name: 'Olivia SuperHR' },
-    { role: 'hr_manager', email: 'sarah.hr@company.com', full_name: 'Sarah HR' },
-    { role: 'recruiter', email: 'mike.recruiter@company.com', full_name: 'Mike Recruiter' },
-    { role: 'manager', email: 'emily.manager@company.com', full_name: 'Emily Manager', department: 'Engineering' },
-    { role: 'team_lead', email: 'david.teamlead@company.com', full_name: 'David TeamLead', department: 'Engineering' },
-    { role: 'employee', email: 'lisa.employee@company.com', full_name: 'Lisa Employee', department: 'Engineering' },
-    { role: 'intern', email: 'tom.intern@company.com', full_name: 'Tom Intern', department: 'Engineering' },
-    { role: 'finance', email: 'rachel.finance@company.com', full_name: 'Rachel Finance' },
-    { role: 'it_admin', email: 'james.it@company.com', full_name: 'James IT' },
-    { role: 'support', email: 'alex.support@company.com', full_name: 'Alex Support' },
-    { role: 'interviewer', email: 'noah.interviewer@company.com', full_name: 'Noah Interviewer' },
-    { role: 'auditor', email: 'emma.auditor@company.com', full_name: 'Emma Auditor' },
-];
 
 
 // Tables to clean, in order of dependency (dependents first).
-// USERS TABLE IS EXCLUDED FROM AUTOMATIC CLEANING.
 const tablesToClean = [
     'ticket_comments', 'helpdesk_tickets', 'expense_items', 'expense_reports',
     'company_documents', 'payslips', 'weekly_awards', 'kudos', 'post_comments',
@@ -134,43 +106,43 @@ async function seed() {
   }
   console.log('✅ Supabase admin client initialized.');
 
-  // 1. Clean up existing data from all other tables if FORCE_DB_SEED is set
+  // Check for the FORCE_DB_SEED environment variable
   if (process.env.FORCE_DB_SEED === 'true') {
-    console.log('🧹 FORCE_DB_SEED is true. Cleaning up old data from application tables...');
-    for (const table of tablesToClean) {
-        const { error: deleteError } = await supabaseAdmin.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        if (deleteError && !deleteError.message.includes('does not exist')) {
-            console.warn(`🟡 Could not clean table ${table}: ${deleteError.message}`);
+      console.log('🧹 FORCE_DB_SEED is true. Cleaning up old data from application tables...');
+      for (const table of tablesToClean) {
+        const { error: deleteError } = await supabaseAdmin.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Dummy condition to delete all
+        if (deleteError) {
+            if (!deleteError.message.includes('does not exist')) {
+                console.warn(`🟡 Could not clean table ${table}: ${deleteError.message}`);
+            }
         }
-    }
-    console.log('✅ Finished cleaning tables.');
+      }
+      console.log('✅ Finished cleaning tables.');
   } else {
-    console.log('ℹ️ FORCE_DB_SEED not set. Skipping table cleanup.');
+      console.log('ℹ️ FORCE_DB_SEED not set. Skipping table cleanup.');
   }
-
-  // 2. Ensure core users exist
+  
+  // 1. Seed or verify all core users
   console.log('👤 Ensuring core users exist...');
-  const seededUsers: UserProfile[] = [];
-  for (const userConfig of seedUsersConfig) {
-      const user = await createAndSeedUser(userConfig);
+  const users: UserProfile[] = [];
+  for (const userData of CORE_USERS_DATA) {
+      const user = await createAndSeedUser(userData);
       if (user) {
-          seededUsers.push(user);
+          users.push(user);
       }
   }
-  console.log(`✅ Finished seeding/verifying ${seededUsers.length} core users.`);
-  
-  // 3. Fetch all users to work with (including any that already existed)
-  const { data: allUsers, error: usersError } = await supabaseAdmin.from('users').select('*');
-  if (usersError || !allUsers || allUsers.length === 0) {
-    console.error('🔴 Could not fetch users after seeding, or no users found. Aborting rest of seed.', usersError?.message);
-    return;
+  console.log(`✅ Finished seeding/verifying ${users.length} core users.`);
+
+  if (users.length === 0) {
+      console.error('🔴 Could not fetch users after seeding, or no users found. Aborting rest of seed.', usersError?.message);
+      return;
   }
-  
-  // 4. Seed all other tables
+
+  // 2. Seed all other tables
   console.log('🚀 Starting data generation...');
   try {
-    const managers = allUsers.filter(u => ['manager', 'team_lead', 'super_hr'].includes(u.role));
-    const employees = allUsers.filter(u => ['employee', 'intern'].includes(u.role));
+    const managers = users.filter(u => u.role === 'manager' || u.role === 'team_lead' || u.role === 'super_hr');
+    const employees = users.filter(u => u.role === 'employee' || u.role === 'intern');
     
     await seedJobs();
     const { data: jobs } = await supabaseAdmin.from('jobs').select('id');
@@ -178,29 +150,26 @@ async function seed() {
     await seedColleges();
     const { data: colleges } = await supabaseAdmin.from('colleges').select('id');
 
-    if (jobs && jobs.length > 0 && colleges && colleges.length > 0) {
+    if (jobs && colleges) {
       await seedApplicants(jobs, colleges);
       const { data: applicants } = await supabaseAdmin.from('applicants').select('id, name, email');
-      if (applicants && applicants.length > 0) {
-         await seedApplicantNotes(applicants, allUsers);
-         const interviewers = allUsers.filter(u => ['interviewer', 'manager', 'hr_manager', 'recruiter'].includes(u.role));
-         if (interviewers.length > 0) {
-            await seedInterviews(applicants, interviewers);
-         }
+      if (applicants) {
+         await seedApplicantNotes(applicants, users);
+         await seedInterviews(applicants, users.filter(u => u.role === 'interviewer' || u.role === 'manager'));
       }
     }
     
-    await seedLeaveBalancesAndLeave(allUsers, managers);
+    await seedLeaveBalancesAndLeave(users, managers);
     await seedOnboarding(employees, managers);
     await seedPerformanceReviews(employees);
-    await seedOkrs(allUsers);
-    await seedCompanyFeed(allUsers);
-    await seedKudos(allUsers);
+    await seedOkrs(users);
+    await seedCompanyFeed(users);
+    await seedKudos(users);
     await seedWeeklyAward(managers, employees);
     await seedPayslips(employees);
     await seedCompanyDocs();
-    await seedExpenses(allUsers);
-    await seedHelpdesk(allUsers);
+    await seedExpenses(users);
+    await seedHelpdesk(users);
 
     console.log('\n🎉 Full database seed process complete!');
   } catch (e: any) {
@@ -313,7 +282,7 @@ async function seedLeaveBalancesAndLeave(users: UserProfile[], managers: UserPro
         earned_leave: 10,
         unpaid_leave: faker.number.int({ min: 0, max: 5 }),
     }));
-    await supabaseAdmin.from('leave_balances').upsert(balances, { onConflict: 'user_id' });
+    await supabaseAdmin.from('leave_balances').insert(balances);
     console.log(`✅ Seeded ${balances.length} leave balances.`);
     
     if (managers.length === 0) {
@@ -494,7 +463,7 @@ async function seedExpenses(users: UserProfile[]) {
         const items = insertedReports.map(report => ({
             expense_report_id: report.id,
             date: faker.date.recent({ days: 5 }),
-            category: 'General',
+            category: faker.helpers.arrayElement(['Travel', 'Meals', 'Software']),
             amount: report.total_amount,
             description: faker.lorem.sentence(),
         }));
@@ -505,7 +474,7 @@ async function seedExpenses(users: UserProfile[]) {
 
 async function seedHelpdesk(users: UserProfile[]) {
     if (users.length === 0) return;
-    const supportStaff = users.filter(u => ['it_admin', 'support'].includes(u.role));
+    const supportStaff = users.filter(u => u.role === 'it_admin' || u.role === 'support');
     const tickets = Array.from({ length: 15 }, () => ({
         user_id: faker.helpers.arrayElement(users).id,
         subject: faker.hacker.phrase(),
