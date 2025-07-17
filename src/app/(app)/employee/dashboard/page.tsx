@@ -32,7 +32,7 @@ async function getDashboardData(user: UserProfile | null) {
     
     const postsQuery = supabase
         .from('company_posts')
-        .select('*, users (full_name, avatar_url), post_comments(*, users(full_name, avatar_url))')
+        .select('*, users (full_name, avatar_url, role, department), post_comments(*, users(full_name, avatar_url))')
         .order('created_at', { ascending: false })
         .limit(5);
 
