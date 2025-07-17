@@ -113,7 +113,7 @@ export default async function EmployeeDashboardPage() {
                     </CardHeader>
                     <CardContent className="space-y-2">
                         {teamMembers.length > 0 ? teamMembers.map(member => (
-                            <div key={member.full_name} className="flex items-center gap-2">
+                            <div key={member.email} className="flex items-center gap-2">
                                 <img src={member.avatar_url || `https://i.pravatar.cc/150?u=${member.email}`} alt={member.full_name || ''} className="h-8 w-8 rounded-full" />
                                 <span className="text-sm font-medium">{member.full_name}</span>
                             </div>

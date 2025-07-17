@@ -120,10 +120,11 @@ export default function AppShell({
   const pathname = usePathname();
 
   const isActive = (path: string) => {
-    if (path === '/performance' && pathname.startsWith('/performance')) return true;
-    if (path === '/performance/okrs' && pathname.startsWith('/performance/okrs')) return true;
-    if (path === '/performance' && pathname.startsWith('/performance/okrs')) return false;
-    return pathname === path;
+    // Exact match for the path
+    if (path === pathname) return true;
+    // Handle nested routes: if the path is a parent of the current pathname
+    if (path !== '/' && pathname.startsWith(path + '/')) return true;
+    return false;
   }
   
   const role = user?.role || 'guest';

@@ -23,12 +23,15 @@ export default async function EmployeeDirectoryPage() {
     email: u.email,
     department: u.department,
     avatar_url: u.avatar_url,
+    profile_setup_complete: u.profile_setup_complete,
   }));
   
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+    <div className="flex flex-1 flex-col">
       <Header title="Employee Directory" />
-      <EmployeeDirectoryClient users={users} />
+      <main className="flex-1 p-4 md:p-6">
+        <EmployeeDirectoryClient users={users} />
+      </main>
     </div>
   );
 }

@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -24,7 +23,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { login, loginWithGoogle } from '@/app/auth/actions';
-import { Loader2, LogIn, Building2, User, KeyRound } from 'lucide-react';
+import { Loader2, LogIn, Building2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const GoogleIcon = () => (

@@ -49,47 +49,49 @@ export default async function PayslipsPage() {
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+    <div className="flex flex-1 flex-col">
       <Header title="My Payslips" />
-      <Card>
-        <CardHeader>
-          <CardTitle>Payslip History</CardTitle>
-          <CardDescription>
-            Here is a list of your recent payslips for {user?.full_name || '...loading'}.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Pay Period</TableHead>
-                <TableHead>Gross Salary</TableHead>
-                <TableHead>Net Salary</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {payslips.map((payslip) => (
-                <TableRow key={payslip.id}>
-                  <TableCell className="font-medium">
-                    {payslip.month} {payslip.year}
-                  </TableCell>
-                  <TableCell>{formatCurrency(payslip.gross_salary)}</TableCell>
-                  <TableCell>{formatCurrency(payslip.net_salary)}</TableCell>
-                  <TableCell className="text-right">
-                    <Button asChild variant="outline" size="sm">
-                      <a href={payslip.download_url}>
-                        <Download className="mr-2" />
-                        Download
-                      </a>
-                    </Button>
-                  </TableCell>
+      <main className="flex-1 p-4 md:p-6">
+        <Card>
+            <CardHeader>
+            <CardTitle>Payslip History</CardTitle>
+            <CardDescription>
+                Here is a list of your recent payslips for {user?.full_name || '...loading'}.
+            </CardDescription>
+            </CardHeader>
+            <CardContent>
+            <Table>
+                <TableHeader>
+                <TableRow>
+                    <TableHead>Pay Period</TableHead>
+                    <TableHead>Gross Salary</TableHead>
+                    <TableHead>Net Salary</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                </TableHeader>
+                <TableBody>
+                {payslips.map((payslip) => (
+                    <TableRow key={payslip.id}>
+                    <TableCell className="font-medium">
+                        {payslip.month} {payslip.year}
+                    </TableCell>
+                    <TableCell>{formatCurrency(payslip.gross_salary)}</TableCell>
+                    <TableCell>{formatCurrency(payslip.net_salary)}</TableCell>
+                    <TableCell className="text-right">
+                        <Button asChild variant="outline" size="sm">
+                        <a href={payslip.download_url}>
+                            <Download className="mr-2 h-4 w-4" />
+                            Download
+                        </a>
+                        </Button>
+                    </TableCell>
+                    </TableRow>
+                ))}
+                </TableBody>
+            </Table>
+            </CardContent>
+        </Card>
+      </main>
     </div>
   );
 }

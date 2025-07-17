@@ -27,9 +27,11 @@ export default async function OkrPage() {
   const objectives: Objective[] = data || [];
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+    <div className="flex flex-1 flex-col">
       <Header title="Objectives & Key Results" />
-      <OkrClient initialObjectives={objectives} />
+       <main className="flex-1 p-4 md:p-6">
+        <OkrClient initialObjectives={objectives} />
+      </main>
     </div>
   );
 }

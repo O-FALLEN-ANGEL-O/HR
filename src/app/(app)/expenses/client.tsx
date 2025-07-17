@@ -79,7 +79,7 @@ export default function ExpensesClient({ initialReports }: { initialReports: Exp
                 <CardDescription>Submit and track your expense reports.</CardDescription>
             </div>
             <NewExpenseDialog onReportAdded={() => window.location.reload()}>
-              <Button><PlusCircle className="mr-2"/> New Report</Button>
+              <Button><PlusCircle className="mr-2 h-4 w-4"/> New Report</Button>
             </NewExpenseDialog>
         </CardHeader>
         <CardContent>
@@ -110,10 +110,10 @@ export default function ExpensesClient({ initialReports }: { initialReports: Exp
                                         <Button variant="ghost" size="icon"><MoreHorizontal /></Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent>
-                                        <DropdownMenuItem><FileText className="mr-2"/> View Details</DropdownMenuItem>
-                                        <DropdownMenuItem><Check className="mr-2"/> Approve</DropdownMenuItem>
-                                        <DropdownMenuItem className="text-red-500"><X className="mr-2"/> Reject</DropdownMenuItem>
-                                        <DropdownMenuItem><CircleDollarSign className="mr-2"/> Mark as Reimbursed</DropdownMenuItem>
+                                        <DropdownMenuItem><FileText className="mr-2 h-4 w-4"/> View Details</DropdownMenuItem>
+                                        <DropdownMenuItem><Check className="mr-2 h-4 w-4"/> Approve</DropdownMenuItem>
+                                        <DropdownMenuItem className="text-red-500"><X className="mr-2 h-4 w-4"/> Reject</DropdownMenuItem>
+                                        <DropdownMenuItem><CircleDollarSign className="mr-2 h-4 w-4"/> Mark as Reimbursed</DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </TableCell>

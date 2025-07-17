@@ -27,9 +27,11 @@ export default async function ExpensesPage() {
   const reports: ExpenseReport[] = data || [];
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+    <div className="flex flex-1 flex-col">
       <Header title="Expense Management" />
-      <ExpensesClient initialReports={reports} />
+      <main className="flex-1 p-4 md:p-6">
+        <ExpensesClient initialReports={reports} />
+      </main>
     </div>
   );
 }

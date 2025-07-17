@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import PerformanceClient from './client';
 import type { PerformanceReview } from '@/lib/types';
+import { Header } from '@/components/header';
 
 
 export default async function PerformancePage() {
@@ -20,6 +21,11 @@ export default async function PerformancePage() {
   const reviews: PerformanceReview[] = data || [];
 
   return (
-      <PerformanceClient initialReviews={reviews} />
+     <div className="flex flex-1 flex-col">
+      <Header title="Performance Management" />
+      <main className="flex-1 p-4 md:p-6">
+        <PerformanceClient initialReviews={reviews} />
+      </main>
+    </div>
   );
 }

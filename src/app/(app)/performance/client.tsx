@@ -26,7 +26,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { PerformanceReview } from '@/lib/types';
-import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -88,20 +87,18 @@ export default function PerformanceClient({ initialReviews }: PerformanceClientP
   }, [toast]);
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-      <Header title="Performance Management">
-        <Button size="sm">
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Start Review Cycle
-        </Button>
-      </Header>
-
       <Card>
-        <CardHeader>
-          <CardTitle>Performance Reviews</CardTitle>
-          <CardDescription>
-            Manage and track employee performance reviews.
-          </CardDescription>
+        <CardHeader className="flex flex-row justify-between items-center">
+          <div>
+            <CardTitle>Performance Reviews</CardTitle>
+            <CardDescription>
+              Manage and track employee performance reviews.
+            </CardDescription>
+          </div>
+           <Button size="sm">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Start Review Cycle
+          </Button>
         </CardHeader>
         <CardContent>
           <Table>
@@ -160,6 +157,5 @@ export default function PerformanceClient({ initialReviews }: PerformanceClientP
           </Table>
         </CardContent>
       </Card>
-    </div>
   );
 }

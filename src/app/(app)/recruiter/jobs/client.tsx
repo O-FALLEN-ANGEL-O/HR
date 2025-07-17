@@ -142,96 +142,98 @@ export default function JobsClient({ initialJobs }: JobsClientProps) {
           </Button>
         </JobDialog>
       </Header>
-      <div className="mb-4 flex flex-col sm:flex-row items-center gap-2">
-        <Input
-          placeholder="Search by title or department..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full sm:w-auto sm:max-w-xs"
-        />
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-[180px]">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="Open">Open</SelectItem>
-            <SelectItem value="Closed">Closed</SelectItem>
-            <SelectItem value="On hold">On hold</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <main className="flex-1 p-4 md:p-6">
+        <div className="mb-4 flex flex-col sm:flex-row items-center gap-2">
+            <Input
+            placeholder="Search by title or department..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full sm:w-auto sm:max-w-xs"
+            />
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="Open">Open</SelectItem>
+                <SelectItem value="Closed">Closed</SelectItem>
+                <SelectItem value="On hold">On hold</SelectItem>
+            </SelectContent>
+            </Select>
+        </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {filteredJobs.map((job) => (
-          <Card key={job.id}>
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle>{job.title}</CardTitle>
-                  <CardDescription>{job.department}</CardDescription>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <JobDialog job={job} onJobAddedOrUpdated={() => {}}>
-                       <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                        <Edit className="mr-2 h-4 w-4" /> Edit Job
-                       </DropdownMenuItem>
-                    </JobDialog>
-                    <DropdownMenuItem onClick={() => handleJobAction(job.id, 'On hold')}>
-                      <MoreVertical className="mr-2 h-4 w-4" /> Put on hold
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <DropdownMenuItem className="text-red-500" onSelect={(e) => e.preventDefault()}>
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Close Job
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {filteredJobs.map((job) => (
+            <Card key={job.id}>
+                <CardHeader>
+                <div className="flex items-start justify-between">
+                    <div>
+                    <CardTitle>{job.title}</CardTitle>
+                    <CardDescription>{job.department}</CardDescription>
+                    </div>
+                    <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <JobDialog job={job} onJobAddedOrUpdated={() => {}}>
+                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                            <Edit className="mr-2 h-4 w-4" /> Edit Job
                         </DropdownMenuItem>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will mark the job as 'Closed'. This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleJobAction(job.id, 'Closed')}>
-                            Confirm
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-between text-sm text-muted-foreground">
-                <div className="flex items-center">
-                  <Users className="mr-1 h-4 w-4" />
-                  <span>{job.applicants} Applicants</span>
+                        </JobDialog>
+                        <DropdownMenuItem onClick={() => handleJobAction(job.id, 'On hold')}>
+                        <MoreVertical className="mr-2 h-4 w-4" /> Put on hold
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <DropdownMenuItem className="text-red-500" onSelect={(e) => e.preventDefault()}>
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Close Job
+                            </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This will mark the job as 'Closed'. This action cannot be undone.
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleJobAction(job.id, 'Closed')}>
+                                Confirm
+                            </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                        </AlertDialog>
+                    </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
-                <span>
-                  Posted {isClient ? format(new Date(job.posted_date), 'PPP') : null}
-                </span>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Badge variant="secondary" className={statusColors[job.status]}>
-                {job.status}
-              </Badge>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
+                </CardHeader>
+                <CardContent>
+                <div className="flex justify-between text-sm text-muted-foreground">
+                    <div className="flex items-center">
+                    <Users className="mr-1 h-4 w-4" />
+                    <span>{job.applicants} Applicants</span>
+                    </div>
+                    <span>
+                    Posted {isClient ? format(new Date(job.posted_date), 'PPP') : null}
+                    </span>
+                </div>
+                </CardContent>
+                <CardFooter>
+                <Badge variant="secondary" className={statusColors[job.status]}>
+                    {job.status}
+                </Badge>
+                </CardFooter>
+            </Card>
+            ))}
+        </div>
+      </main>
     </>
   );
 }

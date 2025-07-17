@@ -55,14 +55,16 @@ export default async function KudosPage() {
   const { kudos, users, weeklyAward } = await getData(user);
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+    <div className="flex flex-1 flex-col">
       <Header title="Kudos & Recognition" />
-      <KudosClient
-        currentUser={user}
-        initialKudos={kudos}
-        initialUsers={users}
-        initialWeeklyAward={weeklyAward}
-      />
+      <main className="flex-1 p-4 md:p-6">
+        <KudosClient
+            currentUser={user}
+            initialKudos={kudos}
+            initialUsers={users}
+            initialWeeklyAward={weeklyAward}
+        />
+      </main>
     </div>
   );
 }
