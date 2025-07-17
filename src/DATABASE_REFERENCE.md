@@ -109,6 +109,7 @@ Stores information about job applicants.
 | Column                   | Type                 | Description                                       |
 | ------------------------ | -------------------- | ------------------------------------------------- |
 | `id`                     | `uuid` (Primary Key) | Unique identifier for the applicant.              |
+| `application_id`         | `serial` (Unique)    | A simple, user-facing sequential ID.              |
 | `name`                   | `text`               | Applicant's full name.                            |
 | `email`                  | `text`               | Applicant's email.                                |
 | `phone`                  | `text`               | Applicant's phone number.                         |

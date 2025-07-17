@@ -1,8 +1,9 @@
+
 'use client';
 
 import * as React from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import {
     Card,
     CardContent,
@@ -13,7 +14,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, CheckCircle, BrainCircuit, Keyboard, FileText, ArrowRight, Library, SpellCheck, HeartHandshake, UploadCloud, Calendar } from 'lucide-react';
+import { Loader2, CheckCircle, BrainCircuit, Keyboard, FileText, ArrowRight, Library, SpellCheck, HeartHandshake, UploadCloud, Calendar, Info } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { Applicant } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
@@ -22,7 +23,9 @@ import { Input } from '@/components/ui/input';
 
 export default function ApplicantPortalPage() {
     const params = useParams();
+    const searchParams = useSearchParams();
     const id = params.id as string;
+    const testCompleted = searchParams.get('test_completed');
 
     const [applicant, setApplicant] = React.useState<Applicant | null>(null);
     const [loading, setLoading] = React.useState(true);
@@ -129,14 +132,24 @@ export default function ApplicantPortalPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                    {testCompleted && (
+                        <Alert variant="default" className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700">
+                            <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                            <AlertTitle className="text-green-800 dark:text-green-300">Assessment Complete!</AlertTitle>
+                            <AlertDescription className="text-green-700 dark:text-green-400">
+                                Thank you. We have received your results and will be in touch soon regarding the next steps.
+                            </AlertDescription>
+                        </Alert>
+                    )}
+
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-lg">Application Status</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-2 text-sm">
                              <div className="flex items-center justify-between">
-                                <span className="text-muted-foreground">Applicant ID:</span>
-                                <span className="font-mono">{id}</span>
+                                <span className="text-muted-foreground">Application ID:</span>
+                                <span className="font-mono text-base font-bold text-primary">#{applicant.application_id}</span>
                             </div>
                             <div className="flex items-center justify-between">
                                 <span className="text-muted-foreground">Applying for:</span>
@@ -173,7 +186,7 @@ export default function ApplicantPortalPage() {
                         </Card>
                     )}
 
-                    {allTestsCompleted ? (
+                    {allTestsCompleted && !testCompleted ? (
                          <Card>
                             <CardHeader>
                                 <CardTitle className="text-lg flex items-center gap-2"><CheckCircle className="text-green-500" /> Assessments Complete</CardTitle>
@@ -203,7 +216,9 @@ export default function ApplicantPortalPage() {
                                 </div>
                             </CardContent>
                         </Card>
-                    ) : (
+                    ) : null}
+
+                    {pendingTests.length > 0 && (
                         <Card>
                             <CardHeader>
                                 <CardTitle className="text-lg">Pending Assessments</CardTitle>

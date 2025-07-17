@@ -83,8 +83,7 @@ export default function TypingTestPage() {
 
         if (error) throw error;
         
-        toast({ title: 'Success', description: 'Your typing test results have been saved.'});
-        router.push(`/portal/${applicantId}`);
+        router.push(`/portal/${applicantId}?test_completed=true`);
 
     } catch (error) {
         console.error("Error saving results:", error);

@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -86,6 +87,12 @@ export default function ApplicantList({
     setIsClient(true);
   }, []);
 
+  const fetchApplicants = React.useCallback(async () => {
+    const supabase = createClient();
+    const { data } = await supabase.from('applicants').select('*, jobs(title)').order('applied_date', { ascending: false });
+    setApplicants(data || []);
+  }, []);
+
   React.useEffect(() => {
     setApplicants(initialApplicants);
   }, [initialApplicants]);
@@ -97,14 +104,12 @@ export default function ApplicantList({
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'applicants' },
-        async (payload) => {
+        (payload) => {
           toast({
             title: 'Applicant Data Updated',
             description: 'The list of applicants has been refreshed.',
           });
-          
-          const { data } = await supabase.from('applicants').select('*, jobs(title)').order('applied_date', { ascending: false });
-          setApplicants(data || []);
+          fetchApplicants();
         }
       )
       .subscribe();
@@ -112,7 +117,7 @@ export default function ApplicantList({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [toast]);
+  }, [toast, fetchApplicants]);
 
   const filteredApplicants = React.useMemo(() => {
     return applicants
@@ -171,7 +176,7 @@ export default function ApplicantList({
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+    <>
       <Header title="Applicants">
         <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={handleCopyLink}>
@@ -182,7 +187,7 @@ export default function ApplicantList({
             <Upload className="mr-2 h-4 w-4" />
             Export
             </Button>
-            <AddApplicantDialog onApplicantAdded={() => {}}>
+            <AddApplicantDialog onApplicantAdded={fetchApplicants}>
             <Button size="sm">
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Add Applicant
@@ -190,7 +195,7 @@ export default function ApplicantList({
             </AddApplicantDialog>
         </div>
       </Header>
-
+      <main className="flex-1 p-4 md:p-6">
       <Card>
         <CardHeader>
           <CardTitle>Applicant Management</CardTitle>
@@ -244,7 +249,7 @@ export default function ApplicantList({
           </div>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="w-full">
+          <ScrollArea className="w-full h-[60vh]">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -343,6 +348,7 @@ export default function ApplicantList({
           </ScrollArea>
         </CardContent>
       </Card>
-    </div>
+      </main>
+    </>
   );
 }

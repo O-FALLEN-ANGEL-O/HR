@@ -53,6 +53,7 @@ export type Job = {
 
 export type Applicant = {
   id: string;
+  application_id: number;
   name: string;
   email: string;
   phone: string;
