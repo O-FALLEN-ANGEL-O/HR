@@ -25,43 +25,44 @@ export default function CompanyFeedClient({ user, initialPosts }: CompanyFeedCli
 
   React.useEffect(() => {
     const supabase = createClient();
-    const channel = supabase
+    const fetchPosts = async () => {
+      const { data } = await supabase
+        .from('company_posts')
+        .select('*, users (full_name, avatar_url, role, department), post_comments(*, users(full_name, avatar_url))')
+        .order('created_at', { ascending: false });
+      setPosts(data || []);
+    };
+    
+    const postsChannel = supabase
       .channel('realtime-company-posts')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'company_posts' },
-        async () => {
+        () => {
           toast({ title: 'New post!', description: 'The feed has been updated.' });
-          const { data } = await supabase
-            .from('company_posts')
-            .select('*, users (full_name, avatar_url, role, department), post_comments(*, users(full_name, avatar_url))')
-            .order('created_at', { ascending: false });
-          setPosts(data || []);
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'post_comments' },
-        async (payload) => {
-           const { data } = await supabase
-            .from('company_posts')
-            .select('*, users (full_name, avatar_url, role, department), post_comments(*, users(full_name, avatar_url))')
-            .order('created_at', { ascending: false });
-           
-           if(data) {
-             const commentedPostId = (payload.new as any)?.post_id;
-             if(commentedPostId) {
-                toast({ title: 'New comment added.' });
-             }
-             setPosts(data);
-           }
+          fetchPosts();
         }
       )
       .subscribe();
+      
+    const commentsChannel = supabase
+       .channel('realtime-post-comments')
+       .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'post_comments' },
+        (payload) => {
+           if((payload.new as any)?.post_id) {
+             toast({ title: 'New comment added.' });
+           }
+           fetchPosts();
+        }
+       ).subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(postsChannel);
+      supabase.removeChannel(commentsChannel);
     };
-  }, [toast]);
+  }, [toast, supabase]);
 
   return (
     <div className="space-y-6">
@@ -73,7 +74,7 @@ export default function CompanyFeedClient({ user, initialPosts }: CompanyFeedCli
                             <AvatarImage src={user?.avatar_url || undefined} />
                             <AvatarFallback>{user?.full_name?.charAt(0)}</AvatarFallback>
                         </Avatar>
-                        <NewPostDialog>
+                        <NewPostDialog onPostAdded={fetchPosts}>
                             <div className="flex-1 text-left text-sm text-muted-foreground p-2 rounded-lg border cursor-pointer hover:bg-muted/50">
                                 What's happening in the company?
                             </div>

@@ -25,7 +25,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Send, UploadCloud } from 'lucide-react';
+import { Loader2, Send } from 'lucide-react';
 import { addCompanyPost } from '@/app/actions';
 
 const FormSchema = z.object({
@@ -35,12 +35,12 @@ const FormSchema = z.object({
 
 type NewPostDialogProps = {
   children: React.ReactNode;
+  onPostAdded: () => void;
 };
 
-export function NewPostDialog({ children }: NewPostDialogProps) {
+export function NewPostDialog({ children, onPostAdded }: NewPostDialogProps) {
   const [open, setOpen] = React.useState(false);
   const { toast } = useToast();
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -57,6 +57,7 @@ export function NewPostDialog({ children }: NewPostDialogProps) {
     try {
       await addCompanyPost(formData);
       toast({ title: 'Post Published!', description: 'Your update is now live on the feed.' });
+      onPostAdded();
       form.reset();
       setOpen(false);
     } catch (error: any) {
@@ -94,7 +95,7 @@ export function NewPostDialog({ children }: NewPostDialogProps) {
             <FormField
               control={form.control}
               name="image"
-              render={({ field }) => (
+              render={() => (
                 <FormItem>
                   <FormLabel>Attach Image (Optional)</FormLabel>
                    <FormControl>

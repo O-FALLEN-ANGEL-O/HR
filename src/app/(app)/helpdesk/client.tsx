@@ -22,7 +22,7 @@ import { MoreHorizontal, PlusCircle, Send } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
-import type { HelpdeskTicket, TicketComment, UserProfile } from '@/lib/types';
+import type { HelpdeskTicket, UserProfile } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -63,6 +63,25 @@ export default function HelpdeskClient({ initialTickets, currentUser }: { initia
   const [tickets, setTickets] = React.useState(initialTickets);
   const [selectedTicket, setSelectedTicket] = React.useState<HelpdeskTicket | null>(null);
   const [isClient, setIsClient] = React.useState(false);
+  const { toast } = useToast();
+
+  const refetchTickets = React.useCallback(async () => {
+    const supabase = createClient();
+    let query = supabase.from('helpdesk_tickets').select('*, users(full_name, avatar_url), ticket_comments(*, users(full_name, avatar_url))');
+    if (currentUser && !['admin', 'super_hr', 'hr_manager', 'it_admin', 'support'].includes(currentUser.role)) {
+        query = query.eq('user_id', currentUser.id);
+    }
+    const { data, error } = await query.order('created_at', { ascending: false });
+
+    if (error) {
+        toast({ title: 'Error', description: 'Could not refetch tickets.'});
+    } else {
+        setTickets(data || []);
+        if (selectedTicket) {
+            setSelectedTicket(data.find(t => t.id === selectedTicket.id) || null);
+        }
+    }
+  }, [currentUser, selectedTicket, toast]);
 
   React.useEffect(() => {
     setIsClient(true);
@@ -72,11 +91,17 @@ export default function HelpdeskClient({ initialTickets, currentUser }: { initia
     const supabase = createClient();
     const channel = supabase
       .channel('realtime-helpdesk')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'helpdesk_tickets' }, () => window.location.reload())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ticket_comments' }, () => window.location.reload())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'helpdesk_tickets' }, () => {
+          toast({ title: "Tickets updated", description: "The list of tickets has been refreshed." });
+          refetchTickets()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ticket_comments' }, () => {
+          toast({ title: "New comment added", description: "A ticket has been updated with a new comment."});
+          refetchTickets()
+      })
       .subscribe();
     return () => { supabase.removeChannel(channel) };
-  }, []);
+  }, [refetchTickets, toast]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -87,10 +112,10 @@ export default function HelpdeskClient({ initialTickets, currentUser }: { initia
               <CardTitle>My Tickets</CardTitle>
               <CardDescription>Track the status of your support tickets.</CardDescription>
             </div>
-            <NewTicketDialog onTicketCreated={() => {}} />
+            <NewTicketDialog onTicketCreated={refetchTickets} />
           </CardHeader>
           <CardContent>
-            <ScrollArea className="w-full">
+            <ScrollArea className="w-full h-[60vh]">
                 <Table>
                 <TableHeader>
                     <TableRow>
@@ -102,7 +127,7 @@ export default function HelpdeskClient({ initialTickets, currentUser }: { initia
                 </TableHeader>
                 <TableBody>
                     {tickets.map((ticket) => (
-                    <TableRow key={ticket.id} onClick={() => setSelectedTicket(ticket)} className="cursor-pointer">
+                    <TableRow key={ticket.id} onClick={() => setSelectedTicket(ticket)} className="cursor-pointer hover:bg-muted/50">
                         <TableCell className="font-medium">{ticket.subject}</TableCell>
                         <TableCell><Badge variant="outline">{ticket.category}</Badge></TableCell>
                         <TableCell><Badge variant="secondary" className={`capitalize ${statusColors[ticket.status]}`}>{ticket.status}</Badge></TableCell>
@@ -183,8 +208,8 @@ function TicketDetails({ ticket, currentUser }: { ticket: HelpdeskTicket, curren
                             </div>
                             {c.user_id === currentUser?.id && (
                                 <Avatar className="h-8 w-8">
-                                    <AvatarImage src={c.users?.avatar_url || undefined} />
-                                    <AvatarFallback>{c.users?.full_name?.charAt(0)}</AvatarFallback>
+                                    <AvatarImage src={currentUser?.avatar_url || undefined} />
+                                    <AvatarFallback>{currentUser?.full_name?.charAt(0)}</AvatarFallback>
                                 </Avatar>
                             )}
                         </div>

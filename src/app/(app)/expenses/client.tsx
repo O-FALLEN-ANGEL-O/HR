@@ -52,6 +52,19 @@ export default function ExpensesClient({ initialReports }: { initialReports: Exp
     setIsClient(true);
   }, []);
 
+  const refetchReports = React.useCallback(async () => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+        .from('expense_reports')
+        .select('*, users(full_name, avatar_url), expense_items(*)')
+        .order('submitted_at', { ascending: false });
+    if (error) {
+        toast({ title: "Error", description: "Could not refetch expense reports." });
+    } else {
+        setReports(data as ExpenseReport[]);
+    }
+  }, [toast]);
+
   React.useEffect(() => {
     const supabase = createClient();
     const channel = supabase
@@ -60,7 +73,8 @@ export default function ExpensesClient({ initialReports }: { initialReports: Exp
         'postgres_changes',
         { event: '*', schema: 'public', table: 'expense_reports' },
         () => {
-            window.location.reload();
+            toast({ title: 'Expenses Updated', description: 'The list of expense reports has been refreshed.' });
+            refetchReports();
         }
       )
       .subscribe();
@@ -68,7 +82,7 @@ export default function ExpensesClient({ initialReports }: { initialReports: Exp
       return () => {
           supabase.removeChannel(channel);
       }
-  }, []);
+  }, [refetchReports, toast]);
 
 
   return (
@@ -78,7 +92,7 @@ export default function ExpensesClient({ initialReports }: { initialReports: Exp
                 <CardTitle>My Expense Reports</CardTitle>
                 <CardDescription>Submit and track your expense reports.</CardDescription>
             </div>
-            <NewExpenseDialog onReportAdded={() => window.location.reload()}>
+            <NewExpenseDialog onReportAdded={refetchReports}>
               <Button><PlusCircle className="mr-2 h-4 w-4"/> New Report</Button>
             </NewExpenseDialog>
         </CardHeader>

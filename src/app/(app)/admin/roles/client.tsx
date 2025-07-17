@@ -37,6 +37,10 @@ const roleOptions: UserRole[] = [
   'employee',
   'intern',
   'guest',
+  'finance',
+  'it_admin',
+  'support',
+  'auditor'
 ];
 
 export default function RoleManagerClient({ users: initialUsers }: { users: UserProfile[] }) {
@@ -110,7 +114,7 @@ export default function RoleManagerClient({ users: initialUsers }: { users: User
           <CardDescription>View and manage user roles across the application.</CardDescription>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="w-full">
+          <ScrollArea className="h-[65vh]">
             <Table>
               <TableHeader>
                 <TableRow>
