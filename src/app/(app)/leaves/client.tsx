@@ -442,6 +442,3 @@ function LeaveTable({ leaves, isEmployeeView = false }: { leaves: Leave[], isEmp
     </Table>
   );
 }
-    
-
-    
