@@ -1,3 +1,4 @@
+
 import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import type { Metric, Job } from '@/lib/types';
@@ -54,3 +55,5 @@ export default async function HRDashboardPage() {
     />
   );
 }
+
+    
