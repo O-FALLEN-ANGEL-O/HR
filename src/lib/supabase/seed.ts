@@ -25,7 +25,7 @@ async function createAndSeedUser(userData: Partial<UserProfile>): Promise<UserPr
     const role = userData.role || 'employee';
 
     // 1. Check if user already exists in public.users table
-    const { data: existingProfile, error: existingProfileError } = await supabaseAdmin
+    let { data: existingProfile, error: existingProfileError } = await supabaseAdmin
       .from('users')
       .select('*')
       .eq('email', email)
@@ -534,5 +534,3 @@ seed().catch(e => {
   console.error("🔴 Script failed with an unhandled error:", e);
   process.exit(1);
 });
-
-    
