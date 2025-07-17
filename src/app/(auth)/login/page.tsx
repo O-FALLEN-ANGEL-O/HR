@@ -115,7 +115,7 @@ export default function LoginPage() {
                     <CardHeader>
                         <CardTitle className="text-xl text-primary-foreground">Demo Accounts</CardTitle>
                         <CardDescription className="text-primary-foreground/80">
-                            Use these credentials to explore different roles. The password for all accounts is: <span className="font-bold">password123</span>
+                            Use these credentials to explore different roles. The password for all accounts is: <span className="font-bold text-white">password123</span>
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -123,7 +123,7 @@ export default function LoginPage() {
                             <div className="space-y-2 text-sm pr-4">
                                 {demoUsers.map(user => (
                                     <div key={user.role} className="flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-md border border-primary-foreground/20 p-2">
-                                        <p className="font-medium text-primary-foreground">{user.role}</p>
+                                        <p className="font-semibold text-white">{user.role}</p>
                                         <p className="text-primary-foreground/80">{user.email}</p>
                                     </div>
                                 ))}
