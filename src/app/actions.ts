@@ -378,7 +378,6 @@ export async function addApplicantNote(formData: FormData) {
   }
 
   revalidatePath(`/hr/applicants/${applicant_id}`);
-  revalidatePath(`/applicants/${applicant_id}`);
 }
 
 
@@ -429,7 +428,6 @@ export async function generateAiMatchScore(applicantId: string) {
     }
     
     revalidatePath(`/hr/applicants/${applicantId}`);
-    revalidatePath(`/applicants/${applicantId}`);
 }
 
 

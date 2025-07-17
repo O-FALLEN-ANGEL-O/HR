@@ -66,6 +66,7 @@ export default function ExpensesClient({ initialReports }: { initialReports: Exp
   }, [toast]);
 
   React.useEffect(() => {
+    setReports(initialReports);
     const supabase = createClient();
     const channel = supabase
       .channel('realtime-expenses')
@@ -82,7 +83,7 @@ export default function ExpensesClient({ initialReports }: { initialReports: Exp
       return () => {
           supabase.removeChannel(channel);
       }
-  }, [refetchReports, toast]);
+  }, [initialReports, refetchReports, toast]);
 
 
   return (
