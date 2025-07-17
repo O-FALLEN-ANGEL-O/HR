@@ -695,5 +695,3 @@ export async function addTicketComment(ticketId: string, comment: string) {
 
     revalidatePath('/helpdesk');
 }
-
-    
