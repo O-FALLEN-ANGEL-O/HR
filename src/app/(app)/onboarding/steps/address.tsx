@@ -6,6 +6,7 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/comp
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import * as React from 'react';
 
 export const addressSchema = z.object({
   permanentAddress: z.string().min(10, 'Permanent address is required'),

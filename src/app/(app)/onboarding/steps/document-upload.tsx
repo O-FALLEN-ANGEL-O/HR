@@ -4,7 +4,7 @@ import { useFormContext } from 'react-hook-form';
 import { z } from 'zod';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, CheckCircle, AlertCircle } from 'lucide-react';
+import { UploadCloud, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import * as React from 'react';

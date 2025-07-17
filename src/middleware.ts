@@ -15,7 +15,6 @@ const publicRoutes = [
   '/comprehensive-test',
   '/english-grammar-test',
   '/customer-service-test',
-  '/auth/update-password',
 ];
 
 function getHomePathForRole(role: UserRole): string {
@@ -32,7 +31,11 @@ export async function middleware(request: NextRequest) {
 
   // If no user is logged in
   if (!user) {
-    // Allow access to public routes, otherwise redirect to login
+    // If user tries to access /auth/update-password without a session, send to login
+    if (pathname === '/auth/update-password') {
+        return NextResponse.redirect(new URL('/login', request.url));
+    }
+    // Allow access to other public routes, otherwise redirect to login
     if (isPublic) {
       return response;
     }
@@ -41,23 +44,23 @@ export async function middleware(request: NextRequest) {
   
   // If user is logged in
   if (user) {
-    // Check if user has set a password. The sign_in_count is 1 for the first magic link login.
+    // Handle first-time login via magic link to force password update
     const { data: { session } } = await supabase.auth.getSession();
-    const isFirstLogin = session?.user?.sign_in_count === 1 && session.user.app_metadata.provider === 'email';
+    const isFirstMagicLinkLogin = session?.user?.sign_in_count === 1 && session.user.app_metadata.provider === 'email';
     
-    if (isFirstLogin && pathname !== '/auth/update-password') {
+    if (isFirstMagicLinkLogin && pathname !== '/auth/update-password') {
       return NextResponse.redirect(new URL('/auth/update-password', request.url));
     }
     
-    // Check if profile setup is complete
-    if (!user.profile_setup_complete && !isFirstLogin) {
+    // If not first login, but profile is not complete, redirect to onboarding
+    if (!user.profile_setup_complete && !isFirstMagicLinkLogin) {
       if (pathname !== '/onboarding') {
         return NextResponse.redirect(new URL('/onboarding', request.url));
       }
     }
 
-    // If onboarding is complete, prevent access to onboarding page
-    if (user.profile_setup_complete && pathname === '/onboarding') {
+    // If onboarding is complete, prevent access to onboarding and update password pages
+    if (user.profile_setup_complete && (pathname === '/onboarding' || pathname === '/auth/update-password')) {
       return NextResponse.redirect(new URL(getHomePathForRole(user.role), request.url));
     }
 
