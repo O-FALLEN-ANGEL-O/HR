@@ -102,6 +102,15 @@ export default function LoginPage() {
     <div className="w-full min-h-screen grid grid-cols-1 lg:grid-cols-2">
       <div className="hidden lg:flex flex-col items-center justify-center bg-gradient-to-br from-teal-700 to-teal-900 p-4 sm:p-8 relative">
         <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="flex flex-col items-center justify-center absolute top-16"
+        >
+          <Building2 className="h-16 w-16 text-white" />
+          <h1 className="text-3xl font-bold text-white mt-2">HR+</h1>
+        </motion.div>
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
