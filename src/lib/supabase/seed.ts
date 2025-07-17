@@ -24,53 +24,61 @@ async function createAndSeedUser(userData: Partial<UserProfile>): Promise<UserPr
     const department = userData.department || faker.commerce.department();
     const role = userData.role || 'employee';
 
-    // 1. Create user in auth.users
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-        user_metadata: {
-            full_name: fullName,
-            avatar_url: faker.image.avatar(),
-        },
-    });
+    // 1. Check if user already exists in public.users table
+    const { data: existingProfile, error: existingProfileError } = await supabaseAdmin
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .maybeSingle();
 
-    if (authError) {
-        // If user already exists, fetch their profile from public.users table.
-        if (authError.message.includes('already been registered')) {
-            const { data: existingUser, error: fetchError } = await supabaseAdmin
-                .from('users')
-                .select('*')
-                .eq('email', email)
-                .single();
-            
-            if (fetchError) {
-                 console.error(`🔴 User auth exists but failed to fetch profile for ${email}:`, fetchError.message);
-                 return null;
-            }
-            if (existingUser) {
-                // console.log(`🟡 User ${email} already exists. Fetching profile.`);
-                return existingUser;
-            }
-        }
-        // For any other auth error, log it and fail.
-        console.error(`🔴 Error creating auth user ${email}:`, authError.message);
+    if (existingProfileError && existingProfileError.code !== 'PGRST116') { // Ignore 'No rows found' error
+        console.error(`🔴 Error checking for existing profile ${email}:`, existingProfileError.message);
+        return null;
+    }
+
+    if (existingProfile) {
+        // console.log(`🟡 Profile for ${email} already exists. Skipping creation.`);
+        return existingProfile;
+    }
+
+    // 2. Check if user exists in auth.users, and create if not
+    let { data: { user: authUser }, error: getAuthUserError } = await supabaseAdmin.auth.admin.getUserByEmail(email);
+    
+    if (getAuthUserError && getAuthUserError.message.includes('User not found')) {
+      // User does not exist in auth, so create them.
+      const { data: newAuthData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: true,
+          user_metadata: {
+              full_name: fullName,
+              avatar_url: faker.image.avatar(),
+          },
+      });
+
+      if (authError) {
+          console.error(`🔴 Error creating auth user ${email}:`, authError.message);
+          return null;
+      }
+      authUser = newAuthData.user;
+    } else if (getAuthUserError) {
+        console.error(`🔴 Error fetching auth user ${email}:`, getAuthUserError.message);
         return null;
     }
     
-    if (!authData.user) {
-        console.error(`🔴 User was not created for ${email} and no error was thrown.`);
+    if (!authUser) {
+        console.error(`🔴 Auth user for ${email} could not be found or created.`);
         return null;
     }
-
-    // 2. Insert into public.users
+    
+    // 3. Insert into public.users table using the (potentially pre-existing) auth user's ID
     const { data: profileData, error: profileError } = await supabaseAdmin
         .from('users')
         .insert({
-            id: authData.user.id,
+            id: authUser.id,
             full_name: fullName,
             email,
-            avatar_url: authData.user.user_metadata.avatar_url,
+            avatar_url: authUser.user_metadata.avatar_url || faker.image.avatar(),
             department,
             role,
             phone: faker.phone.number(),
@@ -81,9 +89,6 @@ async function createAndSeedUser(userData: Partial<UserProfile>): Promise<UserPr
     
     if (profileError) {
         console.error(`🔴 Error creating profile for ${email}:`, profileError.message);
-        // Attempt to clean up the orphaned auth user
-        await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-        console.error(`🧹 Cleaned up orphaned auth user for ${email}.`);
         return null;
     }
     
@@ -485,7 +490,7 @@ async function seedExpenses(users: UserProfile[]) {
         const items = insertedReports.map(report => ({
             expense_report_id: report.id,
             date: faker.date.recent({ days: 5 }),
-            category: faker.helpers.arrayElement(['Travel', 'Meals', 'Software']),
+            category: 'General',
             amount: report.total_amount,
             description: faker.lorem.sentence(),
         }));
@@ -529,3 +534,5 @@ seed().catch(e => {
   console.error("🔴 Script failed with an unhandled error:", e);
   process.exit(1);
 });
+
+    
