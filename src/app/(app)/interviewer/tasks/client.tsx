@@ -72,7 +72,14 @@ export default function InterviewList({ initialInterviews }: InterviewListProps)
     setIsClient(true);
   }, []);
 
-  React.useEffect(() => {
+  const fetchInterviews = React.useCallback(async () => {
+    const supabase = createClient();
+    // This logic should be adapted based on the user's role if this component were to be reused.
+    const { data } = await supabase.from('interviews').select('*').order('date', { ascending: false });
+    setInterviews((data as Interview[]) || []);
+  }, []);
+
+   React.useEffect(() => {
     setInterviews(initialInterviews);
   }, [initialInterviews]);
 
@@ -83,13 +90,12 @@ export default function InterviewList({ initialInterviews }: InterviewListProps)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'interviews' },
-        async (payload) => {
+        (payload) => {
           toast({
             title: 'Interview Data Updated',
             description: 'The list of interviews has been updated.',
           });
-          const { data } = await supabase.from('interviews').select('*').order('date', { ascending: false });
-          setInterviews((data as Interview[]) || []);
+          fetchInterviews();
         }
       )
       .subscribe();
@@ -97,7 +103,7 @@ export default function InterviewList({ initialInterviews }: InterviewListProps)
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [toast]);
+  }, [toast, fetchInterviews]);
 
 
   return (

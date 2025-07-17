@@ -6,11 +6,15 @@ import {
   BookText,
   BrainCircuit,
   FileText,
+  HeartHandshake,
+  Keyboard,
+  Library,
   Lightbulb,
   Link as LinkIcon,
   Loader2,
   MessageSquare,
   Sparkles,
+  SpellCheck,
   User,
   Workflow,
 } from 'lucide-react';
@@ -176,12 +180,35 @@ export default function ApplicantProfileClient({
             </Card>
 
             <Card>
-                <CardHeader>
+              <CardHeader>
                 <CardTitle className="text-lg">Assessments</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p>Coming Soon</p>
-                </CardContent>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2 text-muted-foreground"><Keyboard className="h-4 w-4" /> Typing (WPM)</div>
+                      <p className="font-bold">{applicant.wpm || 'N/A'}</p>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2 text-muted-foreground"><HeartHandshake className="h-4 w-4" /> Typing (Accuracy)</div>
+                      <p className="font-bold">{applicant.accuracy ? `${applicant.accuracy}%` : 'N/A'}</p>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2 text-muted-foreground"><BrainCircuit className="h-4 w-4" /> Aptitude</div>
+                      <p className="font-bold">{applicant.aptitude_score ? `${applicant.aptitude_score}%` : 'N/A'}</p>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2 text-muted-foreground"><Library className="h-4 w-4" /> Comprehensive</div>
+                      <p className="font-bold">{applicant.comprehensive_score ? `${applicant.comprehensive_score}%` : 'N/A'}</p>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2 text-muted-foreground"><SpellCheck className="h-4 w-4" /> English Grammar</div>
+                      <p className="font-bold">{applicant.english_grammar_score ? `${applicant.english_grammar_score}%` : 'N/A'}</p>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2 text-muted-foreground"><HeartHandshake className="h-4 w-4" /> Customer Service</div>
+                      <p className="font-bold">{applicant.customer_service_score ? `${applicant.customer_service_score}%` : 'N/A'}</p>
+                  </div>
+              </CardContent>
             </Card>
             
             <Card>
