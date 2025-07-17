@@ -33,18 +33,9 @@ export async function login(formData: any) {
     return { error: `Authentication Error: ${error.message}` };
   }
   
-  if (data.user) {
-    const { data: profile } = await supabase.from('users').select('role, profile_setup_complete').eq('id', data.user.id).single();
-    if (profile) {
-        if (!profile.profile_setup_complete) {
-            redirect('/onboarding');
-        }
-        const homePath = getHomePathForRole(profile.role as UserRole);
-        redirect(homePath);
-    }
-  }
-  
-  // Fallback redirect
+  // The middleware will now handle the redirect after the session is set.
+  // We just need to revalidate the path to trigger the middleware.
+  revalidatePath('/', 'layout');
   redirect('/');
 }
 
