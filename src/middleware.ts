@@ -14,6 +14,7 @@ const publicRoutes = [
   '/comprehensive-test',
   '/english-grammar-test',
   '/customer-service-test',
+  '/start-test',
 ];
 
 function getHomePathForRole(role: UserRole): string {

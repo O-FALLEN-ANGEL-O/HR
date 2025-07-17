@@ -70,8 +70,10 @@ const getNavLinks = (role: UserRole) => {
     { href: '/super_hr/dashboard', label: 'Dashboard', icon: UserCog, roles: ['super_hr'] },
     { href: '/hr/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['hr_manager'] },
     { href: '/recruiter/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['recruiter'] },
-    { href: '/manager/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['manager', 'team_lead'] },
-    { href: '/employee/dashboard', label: 'Home', icon: LayoutDashboard, roles: ['employee', 'intern', 'finance', 'it_admin', 'support', 'auditor', 'interviewer'] },
+    { href: '/manager/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['manager'] },
+    { href: '/team-lead/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['team_lead'] },
+    { href: '/intern/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['intern'] },
+    { href: '/employee/dashboard', label: 'Home', icon: LayoutDashboard, roles: ['employee', 'finance', 'it_admin', 'support', 'auditor', 'interviewer'] },
     
     // Admin
     { href: '/admin/roles', label: 'Users & Roles', icon: Users, roles: ['admin', 'super_hr'] },
@@ -94,8 +96,8 @@ const getNavLinks = (role: UserRole) => {
     { href: '/performance', label: 'Performance', icon: BarChart3, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'employee'] },
     { href: '/performance/okrs', label: 'OKRs', icon: Target, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'employee'] },
     { href: '/employee/directory', label: 'Directory', icon: Users, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern', 'finance', 'it_admin', 'support', 'auditor', 'interviewer'] },
-    { href: '/employee/documents', label: 'Documents', icon: FileText, roles: ['admin', 'super_hr', 'hr_manager', 'employee', 'intern'] },
-    { href: '/employee/payslips', label: 'Payslips', icon: WalletCards, roles: ['hr_manager', 'super_hr', 'employee'] },
+    { href: '/employee/documents', label: 'Documents', icon: FileText, roles: ['admin', 'super_hr', 'hr_manager', 'employee', 'intern', 'finance', 'it_admin', 'support'] },
+    { href: '/employee/payslips', label: 'Payslips', icon: WalletCards, roles: ['hr_manager', 'super_hr', 'employee', 'finance'] },
     { href: '/employee/kudos', label: 'Kudos', icon: Award, roles: ['super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern'] },
     { href: '/helpdesk', label: 'Helpdesk', icon: LifeBuoy, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern', 'support', 'it_admin', 'finance'] },
 
