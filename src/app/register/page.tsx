@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -226,6 +227,8 @@ export default function RegisterPage() {
         }
       }
       
+      const collegeId = data.college_id === '_none_' ? null : data.college_id;
+      
       const { data: newApplicant, error: insertError } = await supabase
         .from('applicants')
         .insert([{
@@ -233,7 +236,7 @@ export default function RegisterPage() {
           email: data.email,
           phone: data.phone,
           job_id: data.job_id || null,
-          college_id: data.college_id || null,
+          college_id: collegeId,
           stage: 'Applied',
           source: data.college_id ? 'college' : 'walk-in',
           applied_date: new Date().toISOString(),
@@ -425,7 +428,6 @@ export default function RegisterPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="" disabled>Select a position</SelectItem>
                           {openJobs.map(job => (
                              <SelectItem key={job.id} value={job.id}>{job.title}</SelectItem>
                           ))}
@@ -448,7 +450,7 @@ export default function RegisterPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">None</SelectItem>
+                          <SelectItem value="_none_">None</SelectItem>
                           {colleges.map(college => (
                              <SelectItem key={college.id} value={college.id}>{college.name}</SelectItem>
                           ))}
