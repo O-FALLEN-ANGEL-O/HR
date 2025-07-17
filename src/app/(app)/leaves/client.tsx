@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -25,23 +26,11 @@ import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
 import type { Leave, LeaveBalance, UserProfile } from '@/lib/types';
 import { format } from 'date-fns';
-import { Calendar, Check, Briefcase, User, UserCheck, Users, X, Sun, Umbrella, Loader2, Download, AlertCircle, TrendingUp, BarChart } from 'lucide-react';
+import { Calendar, Check, Briefcase, User, UserCheck, Users, X, Sun, Umbrella, Loader2, Download, AlertCircle, TrendingUp, BarChart, Clock } from 'lucide-react';
 import { updateLeaveStatus } from '@/app/actions';
 import { predictLeaveSpikes } from '@/ai/flows/predict-leave-spikes';
 import type { PredictLeaveSpikesOutput } from '@/ai/flows/predict-leave-spikes';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Skeleton } from '@/components/ui/skeleton';
 
 const LeaveDialog = dynamic(() => import('@/components/leave-dialog').then(mod => mod.LeaveDialog), {
     loading: () => <Button disabled><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Apply for Leave</Button>
