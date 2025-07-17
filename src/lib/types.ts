@@ -27,6 +27,10 @@ export type UserProfile = {
   phone?: string | null;
   profile_setup_complete?: boolean;
   job_title?: string;
+  dob?: string;
+  gender?: string;
+  blood_group?: string;
+  manager_id?: string;
 }
 
 export type Metric = {

@@ -34,6 +34,7 @@ import {
   MessageSquare,
   LifeBuoy,
   Target,
+  User as UserIcon,
 } from 'lucide-react';
 
 import {
@@ -70,8 +71,7 @@ const getNavLinks = (role: UserRole) => {
     { href: '/hr/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['hr_manager'] },
     { href: '/recruiter/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['recruiter'] },
     { href: '/manager/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['manager', 'team_lead'] },
-    { href: '/employee/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['employee'] },
-    { href: '/intern/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['intern'] },
+    { href: '/employee/dashboard', label: 'Home', icon: LayoutDashboard, roles: ['employee', 'intern', 'finance', 'it_admin', 'support', 'auditor', 'interviewer'] },
     
     // Admin
     { href: '/admin/roles', label: 'Users & Roles', icon: Users, roles: ['admin', 'super_hr'] },
@@ -93,7 +93,7 @@ const getNavLinks = (role: UserRole) => {
     { href: '/company-feed', label: 'Company Feed', icon: Newspaper, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern'] },
     { href: '/performance', label: 'Performance', icon: BarChart3, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'employee'] },
     { href: '/performance/okrs', label: 'OKRs', icon: Target, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'employee'] },
-    { href: '/employee/directory', label: 'Directory', icon: Users, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern'] },
+    { href: '/employee/directory', label: 'Directory', icon: Users, roles: ['admin', 'super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern', 'finance', 'it_admin', 'support', 'auditor', 'interviewer'] },
     { href: '/employee/documents', label: 'Documents', icon: FileText, roles: ['admin', 'super_hr', 'hr_manager', 'employee', 'intern'] },
     { href: '/employee/payslips', label: 'Payslips', icon: WalletCards, roles: ['hr_manager', 'super_hr', 'employee'] },
     { href: '/employee/kudos', label: 'Kudos', icon: Award, roles: ['super_hr', 'hr_manager', 'manager', 'team_lead', 'employee', 'intern'] },
@@ -115,7 +115,7 @@ export default function AppShell({
   user,
 }: {
   children: React.ReactNode;
-  user: UserProfile | null;
+  user: UserProfile;
 }) {
   const pathname = usePathname();
 
@@ -169,11 +169,15 @@ export default function AppShell({
               <DropdownMenuContent side="top" align="start" className="w-56">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                    <Link href="/profile"><UserIcon className="mr-2"/>My Profile</Link>
+                </DropdownMenuItem>
                 {(role === 'admin' || role === 'super_hr') && (
                     <DropdownMenuItem asChild>
                         <Link href="/admin/roles"><Settings className="mr-2"/>Manage Roles</Link>
                     </DropdownMenuItem>
                 )}
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => logout()}>
                   <LogOut className="mr-2" />
                   Log out

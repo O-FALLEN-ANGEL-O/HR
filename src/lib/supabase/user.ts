@@ -1,4 +1,3 @@
-
 import { createClient } from './server';
 import { type ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension/adapters/request-cookies';
 import type { UserProfile } from '../types';
@@ -44,6 +43,11 @@ export async function getUser(cookieStore: ReadonlyRequestCookies): Promise<User
     department: profile.department,
     phone: profile.phone,
     profile_setup_complete: profile.profile_setup_complete,
+    job_title: profile.job_title,
+    dob: profile.dob,
+    gender: profile.gender,
+    blood_group: profile.blood_group,
+    manager_id: profile.manager_id,
   };
 
   return userProfile;

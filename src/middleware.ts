@@ -1,4 +1,3 @@
-
 import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 import type { UserRole } from './lib/types';
@@ -18,8 +17,17 @@ const publicRoutes = [
 ];
 
 function getHomePathForRole(role: UserRole): string {
-  // Redirect all roles to the unified employee dashboard
-  return '/employee/dashboard';
+    const dashboardMap: Partial<Record<UserRole, string>> = {
+        admin: '/admin/dashboard',
+        super_hr: '/super_hr/dashboard',
+        hr_manager: '/hr/dashboard',
+        recruiter: '/recruiter/dashboard',
+        manager: '/manager/dashboard',
+        team_lead: '/team-lead/dashboard',
+        intern: '/intern/dashboard',
+    };
+    // Default to employee dashboard for all other roles
+    return dashboardMap[role] || '/employee/dashboard';
 }
 
 export async function middleware(request: NextRequest) {
