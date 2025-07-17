@@ -24,61 +24,56 @@ async function createAndSeedUser(userData: Partial<UserProfile>): Promise<UserPr
     const department = userData.department || faker.commerce.department();
     const role = userData.role || 'employee';
 
-    // 1. Check if user already exists in public.users table
-    let { data: existingProfile, error: existingProfileError } = await supabaseAdmin
+    // 1. Check if user profile already exists in public.users table
+    let { data: existingProfile } = await supabaseAdmin
       .from('users')
       .select('*')
       .eq('email', email)
       .maybeSingle();
 
-    if (existingProfileError && existingProfileError.code !== 'PGRST116') { // Ignore 'No rows found' error
-        console.error(`🔴 Error checking for existing profile ${email}:`, existingProfileError.message);
-        return null;
-    }
-
     if (existingProfile) {
         // console.log(`🟡 Profile for ${email} already exists. Skipping creation.`);
         return existingProfile;
     }
-
-    // 2. Check if user exists in auth.users, and create if not
-    let { data: { user: authUser }, error: getAuthUserError } = await supabaseAdmin.auth.admin.getUserByEmail(email);
     
-    if (getAuthUserError && getAuthUserError.message.includes('User not found')) {
-      // User does not exist in auth, so create them.
-      const { data: newAuthData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-          email,
-          password,
-          email_confirm: true,
-          user_metadata: {
-              full_name: fullName,
-              avatar_url: faker.image.avatar(),
-          },
-      });
+    // 2. Create the user in Supabase Auth
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+            full_name: fullName,
+            avatar_url: faker.image.avatar(),
+        },
+    });
 
-      if (authError) {
-          console.error(`🔴 Error creating auth user ${email}:`, authError.message);
-          return null;
-      }
-      authUser = newAuthData.user;
-    } else if (getAuthUserError) {
-        console.error(`🔴 Error fetching auth user ${email}:`, getAuthUserError.message);
+    // Handle case where user already exists in auth
+    if (authError && authError.message.includes('already been registered')) {
+        // console.log(`🟡 Auth user for ${email} already exists. Fetching...`);
+        const { data: { users: existingUsers }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ email });
+        if (listError || !existingUsers || existingUsers.length === 0) {
+            console.error(`🔴 Auth user exists but failed to fetch for ${email}:`, listError?.message);
+            return null;
+        }
+        authData.user = existingUsers[0];
+    } else if (authError) {
+        console.error(`🔴 Error creating auth user ${email}:`, authError.message);
         return null;
     }
     
-    if (!authUser) {
+    if (!authData.user) {
         console.error(`🔴 Auth user for ${email} could not be found or created.`);
         return null;
     }
     
-    // 3. Insert into public.users table using the (potentially pre-existing) auth user's ID
+    // 3. Insert into public.users table using the auth user's ID
     const { data: profileData, error: profileError } = await supabaseAdmin
         .from('users')
         .insert({
-            id: authUser.id,
+            id: authData.user.id,
             full_name: fullName,
             email,
-            avatar_url: authUser.user_metadata.avatar_url || faker.image.avatar(),
+            avatar_url: authData.user.user_metadata.avatar_url || faker.image.avatar(),
             department,
             role,
             phone: faker.phone.number(),
@@ -88,6 +83,12 @@ async function createAndSeedUser(userData: Partial<UserProfile>): Promise<UserPr
         .single();
     
     if (profileError) {
+        // This might happen if the profile was created in a race condition.
+        // Let's try to fetch it again.
+        if (profileError.code === '23505') { // unique_violation
+            const { data: finalProfile } = await supabaseAdmin.from('users').select('*').eq('email', email).single();
+            if (finalProfile) return finalProfile;
+        }
         console.error(`🔴 Error creating profile for ${email}:`, profileError.message);
         return null;
     }
