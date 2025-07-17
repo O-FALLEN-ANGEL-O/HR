@@ -1,3 +1,4 @@
+
 import Loading from './loading';
 
 // This page is now a simple loading component.

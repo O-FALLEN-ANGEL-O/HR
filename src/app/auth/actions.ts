@@ -4,7 +4,9 @@
 import { createClient } from '@/lib/supabase/server';
 import { headers, cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import type { UserRole } from '@/lib/types';
+import type { UserProfile, UserRole } from '@/lib/types';
+import { getUser } from '@/lib/supabase/user';
+import { revalidatePath } from 'next/cache';
 
 function getHomePathForRole(role: UserRole): string {
     const dashboardMap: Partial<Record<UserRole, string>> = {
@@ -28,15 +30,24 @@ export async function login(formData: any) {
       password: formData.password,
   });
 
-  if (error) {
+  if (error || !data.user) {
     console.error('Supabase auth error:', error);
-    return { error: `Authentication Error: ${error.message}` };
+    return { error: `Authentication Error: ${error?.message || 'Invalid credentials'}` };
   }
   
-  // The middleware will now handle the redirect after the session is set.
-  // We just need to revalidate the path to trigger the middleware.
-  revalidatePath('/', 'layout');
-  redirect('/');
+  // After successful sign-in, get the user's profile to determine their role
+  const userProfile = await getUser(cookieStore);
+
+  if (!userProfile) {
+    // This case might happen if the public.users profile is not yet created.
+    // In this case, we can sign them out and ask to try again.
+    await supabase.auth.signOut();
+    return { error: 'Could not retrieve user profile. Please try again.' };
+  }
+
+  // Redirect to the appropriate dashboard based on role.
+  const homePath = getHomePathForRole(userProfile.role);
+  redirect(homePath);
 }
 
 export async function loginWithGoogle() {

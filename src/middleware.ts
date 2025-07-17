@@ -61,9 +61,9 @@ export async function middleware(request: NextRequest) {
     return response;
   }
   
-  // If user is fully onboarded
+  // If user is fully onboarded and tries to access a public route or the root
   if (pathname === '/' || isPublicRoute) {
-    // If they land on the root or a public page, send them to their dashboard
+    // send them to their dashboard
     return NextResponse.redirect(new URL(homePath, request.url));
   }
 
