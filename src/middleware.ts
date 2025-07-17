@@ -16,6 +16,7 @@ const publicRoutes = [
   '/english-grammar-test',
   '/customer-service-test',
   '/auth/update-password',
+  '/start-test'
 ];
 
 const roleHomePaths: Record<UserRole, string> = {
@@ -24,7 +25,7 @@ const roleHomePaths: Record<UserRole, string> = {
   hr_manager: '/hr/dashboard',
   recruiter: '/recruiter/dashboard',
   manager: '/manager/dashboard',
-  team_lead: '/team-lead/dashboard',
+  team_lead: '/team_lead/dashboard',
   employee: '/employee/dashboard',
   intern: '/intern/dashboard',
   interviewer: '/interviewer/tasks',
@@ -78,9 +79,9 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL(getHomePathForRole(user.role), request.url));
     }
 
-    // Redirect from root or login to the correct dashboard if profile is complete
-    if ((pathname === '/' || pathname === '/login') && user.profile_setup_complete) {
-       return NextResponse.redirect(new URL(getHomePathForRole(user.role), request.url));
+    // If user is logged in, prevent access to login page
+    if (pathname === '/login') {
+      return NextResponse.redirect(new URL(getHomePathForRole(user.role), request.url));
     }
   }
 

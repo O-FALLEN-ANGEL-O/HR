@@ -1,7 +1,26 @@
 
+
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import type { UserRole } from './lib/types';
+
+const roleHomePaths: Record<UserRole, string> = {
+  admin: '/admin/dashboard',
+  super_hr: '/super_hr/dashboard',
+  hr_manager: '/hr/dashboard',
+  recruiter: '/recruiter/dashboard',
+  manager: '/manager/dashboard',
+  team_lead: '/team_lead/dashboard',
+  employee: '/employee/dashboard',
+  intern: '/intern/dashboard',
+  interviewer: '/interviewer/tasks',
+  guest: '/login',
+  finance: '/employee/dashboard',
+  it_admin: '/employee/dashboard',
+  support: '/helpdesk',
+  auditor: '/employee/dashboard',
+};
 
 // This page exists to catch the root URL and redirect.
 // The primary redirect logic is now in the middleware.
@@ -19,9 +38,14 @@ export default async function Home() {
   if (!session) {
     redirect('/login');
   } else {
-    // This part should theoretically not be reached if the middleware is working correctly,
-    // but it serves as a reliable fallback. The middleware will catch this redirect
-    // and send the user to their correct dashboard.
-    redirect('/');
+    // If a session exists, find the user's role and redirect to their dashboard
+    const { data: profile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', session.user.id)
+      .single();
+      
+    const role = profile?.role || 'employee';
+    redirect(roleHomePaths[role] || '/employee/dashboard');
   }
 }
