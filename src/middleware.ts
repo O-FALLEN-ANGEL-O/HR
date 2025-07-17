@@ -29,7 +29,6 @@ const roleHomePaths: Record<UserRole, string> = {
   employee: '/employee/dashboard',
   intern: '/intern/dashboard',
   interviewer: '/interviewer/tasks',
-  // Default fallbacks for other roles
   guest: '/login',
   finance: '/employee/dashboard',
   it_admin: '/employee/dashboard',
@@ -58,7 +57,19 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
   
-  // If user is logged in
+  const isDemoUser = user.id.startsWith('demo-');
+  
+  // If it's a demo user, no further auth checks are needed.
+  // Just ensure they are not stuck on the login page.
+  if (isDemoUser) {
+    if (pathname === '/login') {
+       return NextResponse.redirect(new URL(getHomePathForRole(user.role), request.url));
+    }
+    return response;
+  }
+
+  // --- Real user logic ---
+  
   // Check if user has set a password. The sign_in_count is 1 for the first magic link login.
   const { data: { session } } = await supabase.auth.getSession();
   const isFirstLogin = session?.user?.sign_in_count === 1 && session.user.app_metadata.provider === 'email';

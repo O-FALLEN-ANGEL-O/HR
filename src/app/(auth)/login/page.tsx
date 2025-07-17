@@ -21,182 +21,121 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { login, loginWithGoogle } from '@/app/auth/actions';
+import { loginWithRole } from '@/app/auth/actions';
 import { Loader2, LogIn, Building2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { useRouter } from 'next/navigation';
+import type { UserRole } from '@/lib/types';
 
-const GoogleIcon = () => (
-  <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
-    <path
-      fill="currentColor"
-      d="M21.35 11.1H12.18V13.83H18.67C18.36 17.64 15.19 19.27 12.19 19.27C8.36 19.27 5.03 16.25 5.03 12.55C5.03 8.85 8.36 5.83 12.19 5.83C13.96 5.83 15.6 6.57 16.8 7.82L19.03 5.59C17.11 3.92 14.93 3 12.19 3C6.54 3 2.02 7.58 2.02 12.55C2.02 17.52 6.54 22.1 12.19 22.1C17.45 22.1 21.57 18.25 21.57 12.92C21.57 12.23 21.48 11.66 21.35 11.1Z"
-    />
-  </svg>
-);
-
-const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email address.'),
-  password: z.string().min(1, 'Password cannot be empty.'),
+const roleSchema = z.object({
+  role: z.string().min(1, 'Please select a role.'),
 });
 
-type LoginSchema = z.infer<typeof loginSchema>;
+type RoleSchema = z.infer<typeof roleSchema>;
+
+const roleOptions: UserRole[] = [
+  'admin',
+  'super_hr',
+  'hr_manager',
+  'recruiter',
+  'interviewer',
+  'manager',
+  'team_lead',
+  'employee',
+  'intern',
+  'guest',
+  'finance',
+  'it_admin',
+  'support',
+  'auditor',
+];
 
 export default function LoginPage() {
   const { toast } = useToast();
-  const router = useRouter();
-  const [isSubmittingPassword, setIsSubmittingPassword] = React.useState(false);
-  const [isSubmittingGoogle, setIsSubmittingGoogle] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const form = useForm<LoginSchema>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
+  const form = useForm<RoleSchema>({
+    resolver: zodResolver(roleSchema),
+    defaultValues: { role: 'admin' },
   });
 
-  // --- TEMPORARY FIX FOR DEMO ---
-  // Automatically redirect to the app, bypassing login.
-  React.useEffect(() => {
-    router.push('/');
-  }, [router]);
-  // --- END TEMPORARY FIX ---
-  
-  const handlePasswordSubmit = async (values: LoginSchema) => {
-    setIsSubmittingPassword(true);
-    const result = await login(values);
+  const handleRoleSubmit = async (values: RoleSchema) => {
+    setIsSubmitting(true);
+    const result = await loginWithRole(values.role as UserRole);
     if (result?.error) {
        toast({
         title: 'Login Failed',
         description: result.error,
         variant: 'destructive',
       });
+      setIsSubmitting(false);
     }
-    setIsSubmittingPassword(false);
+    // On success, the action handles the redirect, so we don't need to do anything here.
   }
-
-  const handleGoogleLogin = async () => {
-    setIsSubmittingGoogle(true);
-    const result = await loginWithGoogle();
-    if(result?.error) {
-       toast({
-           title: 'Google Login Failed',
-           description: result.error,
-           variant: 'destructive',
-       });
-       setIsSubmittingGoogle(false);
-    }
-  }
-
-  const isLoading = isSubmittingPassword || isSubmittingGoogle;
-
-  const demoUsers = [
-    { role: 'Admin', email: 'john.admin@company.com' },
-    { role: 'Super HR', email: 'olivia.superhr@company.com' },
-    { role: 'HR Manager', email: 'sarah.hr@company.com' },
-    { role: 'Recruiter', email: 'mike.recruiter@company.com' },
-    { role: 'Manager', email: 'emily.manager@company.com' },
-    { role: 'Team Lead', email: 'david.teamlead@company.com' },
-    { role: 'Employee', email: 'lisa.employee@company.com' },
-    { role: 'Intern', email: 'tom.intern@company.com' },
-    { role: 'Finance', email: 'rachel.finance@company.com' },
-    { role: 'IT Admin', email: 'james.it@company.com' },
-    { role: 'Support', email: 'alex.support@company.com' },
-    { role: 'Interviewer', email: 'noah.interviewer@company.com' },
-    { role: 'Auditor', email: 'emma.auditor@company.com' },
-  ];
 
   return (
-    <div className="w-full min-h-screen grid grid-cols-1 lg:grid-cols-2">
-      <div className="hidden lg:flex flex-col items-center justify-center bg-gradient-to-br from-teal-700 to-teal-900 p-4 sm:p-8 relative">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="flex flex-col items-center justify-center absolute top-16"
-        >
-          <Building2 className="h-16 w-16 text-white" />
-          <h1 className="text-3xl font-bold text-white mt-2">HR+</h1>
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="w-full max-w-md my-16 lg:my-0"
-        >
-          <Card className="bg-black/20 backdrop-blur-sm border-white/20 text-white">
-            <CardHeader>
-              <CardTitle className="text-xl">Demo Accounts</CardTitle>
-              <CardDescription className="text-white/80">
-                Use these credentials to explore different roles. The password for all accounts is: <span className="font-bold text-white">password123</span>
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-72 w-full">
-                <div className="space-y-2 text-sm pr-4">
-                  {demoUsers.map(user => (
-                    <div key={user.role} className="flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-md border border-white/20 p-2">
-                      <p className="font-semibold text-white">{user.role}</p>
-                      <p className="text-white/80">{user.email}</p>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
-      <div className="flex flex-col items-center justify-center p-4 bg-background">
-        {/* Demo accounts for mobile */}
-        <div className="lg:hidden w-full max-w-md mb-8">
-            <Card>
-            <CardHeader>
-              <CardTitle className="text-xl">Demo Accounts</CardTitle>
-              <CardDescription>
-                Use these credentials to explore. The password for all accounts is: <span className="font-bold">password123</span>
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-48 w-full">
-                <div className="space-y-2 text-sm pr-4">
-                  {demoUsers.map(user => (
-                    <div key={user.role} className="flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-md border p-2">
-                      <p className="font-semibold">{user.role}</p>
-                      <p className="text-muted-foreground">{user.email}</p>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-md"
-        >
-          <Card className="w-full">
-            <CardHeader className="text-center">
-              <div className="flex justify-center mb-2">
-                <Building2 className="h-10 w-10 text-primary" />
-              </div>
-              <CardTitle className="text-2xl">Welcome!</CardTitle>
-              <CardDescription>Sign in to access your HR+ Pro dashboard.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                 {/* --- TEMPORARY FIX FOR DEMO --- */}
-                 <div className="flex items-center justify-center p-4 text-center">
-                    <Loader2 className="mr-2 animate-spin" />
-                    <p className="text-muted-foreground">Redirecting to demo...</p>
-                 </div>
-                 {/* --- END TEMPORARY FIX --- */}
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
+    <div className="w-full min-h-screen flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md"
+      >
+        <Card className="w-full">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-2">
+              <Building2 className="h-10 w-10 text-primary" />
+            </div>
+            <CardTitle className="text-2xl">HR+ Demo Login</CardTitle>
+            <CardDescription>Select a role to explore the application.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleRoleSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Select Role</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a role to impersonate" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {roleOptions.map((role) => (
+                            <SelectItem key={role} value={role} className="capitalize">
+                              {role.replace(/_/g, ' ')}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" disabled={isSubmitting} className="w-full">
+                  {isSubmitting ? (
+                    <Loader2 className="animate-spin mr-2" />
+                  ) : (
+                    <LogIn className="mr-2" />
+                  )}
+                  Login as Selected Role
+                </Button>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   );
 }
