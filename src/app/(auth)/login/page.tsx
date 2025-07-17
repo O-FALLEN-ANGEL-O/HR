@@ -100,112 +100,136 @@ export default function LoginPage() {
 
   return (
     <div className="w-full min-h-screen grid grid-cols-1 lg:grid-cols-2">
-        <div className="flex flex-col items-center justify-center bg-gradient-to-br from-primary to-emerald-800 p-4 sm:p-8 text-white relative">
-             <div className="absolute top-8 left-8 flex items-center gap-2">
-                 <Building2 className="h-8 w-8" />
-                 <span className="text-2xl font-bold">HR+ Pro</span>
-            </div>
-             <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-                className="w-full max-w-md my-16 lg:my-0"
-            >
-                <Card className="bg-transparent border-primary-foreground/20 text-primary-foreground shadow-none">
-                    <CardHeader>
-                        <CardTitle className="text-xl text-primary-foreground">Demo Accounts</CardTitle>
-                        <CardDescription className="text-primary-foreground/80">
-                            Use these credentials to explore different roles. The password for all accounts is: <span className="font-bold text-white">password123</span>
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <ScrollArea className="h-72 w-full">
-                            <div className="space-y-2 text-sm pr-4">
-                                {demoUsers.map(user => (
-                                    <div key={user.role} className="flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-md border border-primary-foreground/20 p-2">
-                                        <p className="font-semibold text-white">{user.role}</p>
-                                        <p className="text-primary-foreground/80">{user.email}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </ScrollArea>
-                    </CardContent>
-                </Card>
-            </motion.div>
+      <div className="hidden lg:flex flex-col items-center justify-center bg-muted/50 p-4 sm:p-8 relative">
+        <div className="absolute top-8 left-8 flex items-center gap-2 text-foreground">
+          <Building2 className="h-8 w-8" />
+          <span className="text-2xl font-bold">HR+ Pro</span>
         </div>
-        <div className="flex flex-col items-center justify-center p-4">
-            <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
-                className="w-full max-w-md"
-            >
-                <Card className="w-full">
-                <CardHeader className="text-center">
-                    <div className="flex justify-center mb-2 lg:hidden">
-                        <Building2 className="h-10 w-10 text-primary"/>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="w-full max-w-md my-16 lg:my-0"
+        >
+          <Card className="bg-background/80 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="text-xl">Demo Accounts</CardTitle>
+              <CardDescription className="text-foreground/80">
+                Use these credentials to explore different roles. The password for all accounts is: <span className="font-bold text-foreground">password123</span>
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-72 w-full">
+                <div className="space-y-2 text-sm pr-4">
+                  {demoUsers.map(user => (
+                    <div key={user.role} className="flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-md border p-2">
+                      <p className="font-semibold text-black dark:text-white">{user.role}</p>
+                      <p className="text-black/80 dark:text-white/80">{user.email}</p>
                     </div>
-                    <CardTitle className="text-2xl">Welcome!</CardTitle>
-                    <CardDescription>Sign in to access your HR+ Pro dashboard.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(handlePasswordSubmit)} className="space-y-4">
-                            <FormField
-                                control={form.control}
-                                name="email"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Email</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="your.email@example.com" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="password"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Password</FormLabel>
-                                        <FormControl>
-                                            <Input type="password" placeholder="••••••••" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <Button type="submit" disabled={isLoading} className="w-full">
-                                {isSubmittingPassword ? <Loader2 className="animate-spin mr-2" /> : <LogIn className="mr-2" />}
-                                Sign in with Password
-                            </Button>
-                        </form>
-                    </Form>
-                    <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t" />
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+      <div className="flex flex-col items-center justify-center p-4">
+        {/* Demo accounts for mobile */}
+        <div className="lg:hidden w-full max-w-md mb-8">
+            <Card className="bg-background/80 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="text-xl">Demo Accounts</CardTitle>
+              <CardDescription className="text-foreground/80">
+                Use these credentials to explore. The password for all accounts is: <span className="font-bold text-foreground">password123</span>
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-48 w-full">
+                <div className="space-y-2 text-sm pr-4">
+                  {demoUsers.map(user => (
+                    <div key={user.role} className="flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-md border p-2">
+                      <p className="font-semibold text-black dark:text-white">{user.role}</p>
+                      <p className="text-black/80 dark:text-white/80">{user.email}</p>
                     </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">
-                        Or continue with
-                        </span>
-                    </div>
-                    </div>
-                    <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={handleGoogleLogin}
-                    disabled={isLoading}
-                    >
-                    {isSubmittingGoogle ? <Loader2 className="animate-spin mr-2" /> : <GoogleIcon />}
-                    Sign in with Google
-                    </Button>
-                </CardContent>
-                </Card>
-            </motion.div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
         </div>
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md"
+        >
+          <Card className="w-full">
+            <CardHeader className="text-center">
+              <div className="flex justify-center mb-2 lg:hidden">
+                <Building2 className="h-10 w-10 text-primary" />
+              </div>
+              <CardTitle className="text-2xl">Welcome!</CardTitle>
+              <CardDescription>Sign in to access your HR+ Pro dashboard.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handlePasswordSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input placeholder="your.email@example.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="••••••••" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="submit" disabled={isLoading} className="w-full">
+                    {isSubmittingPassword ? <Loader2 className="animate-spin mr-2" /> : <LogIn className="mr-2" />}
+                    Sign in with Password
+                  </Button>
+                </form>
+              </Form>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    Or continue with
+                  </span>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={handleGoogleLogin}
+                disabled={isLoading}
+              >
+                {isSubmittingGoogle ? <Loader2 className="animate-spin mr-2" /> : <GoogleIcon />}
+                Sign in with Google
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
     </div>
   );
 }
