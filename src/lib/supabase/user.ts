@@ -21,60 +21,13 @@ const DEMO_USER_DATA: Record<UserRole, Omit<UserProfile, 'id' | 'created_at' | '
 };
 
 export async function getUser(cookieStore: ReadonlyRequestCookies): Promise<UserProfile | null> {
-  const demoRole = cookieStore.get('demo_role')?.value as UserRole | undefined;
-
-  if (demoRole && DEMO_USER_DATA[demoRole]) {
-    const userData = DEMO_USER_DATA[demoRole];
+    // --- Temporary "No Login" Mode ---
+    // Always return the admin user to bypass authentication for the demo.
+    const adminData = DEMO_USER_DATA['admin'];
     return {
-        id: `demo-${demoRole}-user`,
-        role: demoRole,
+        id: 'demo-admin-user',
+        role: 'admin',
         created_at: new Date().toISOString(),
-        ...userData
+        ...adminData
     };
-  }
-
-  // --- Real Auth Logic (currently bypassed by demo mode) ---
-  const supabase = createClient(cookieStore);
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  if (!user) return null;
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-    
-  if (!profile) {
-    return {
-      id: user.id,
-      full_name: user.user_metadata.full_name || user.email,
-      email: user.email,
-      avatar_url: user.user_metadata.avatar_url,
-      role: user.user_metadata.role || 'guest',
-      department: user.user_metadata.department,
-      created_at: user.created_at,
-      profile_setup_complete: false,
-    };
-  }
-
-
-  const userProfile: UserProfile = {
-    id: user.id,
-    email: user.email,
-    created_at: user.created_at,
-    full_name: profile.full_name,
-    avatar_url: profile.avatar_url,
-    role: profile.role,
-    department: profile.department,
-    phone: profile.phone,
-    profile_setup_complete: profile.profile_setup_complete,
-    job_title: profile.job_title,
-    dob: profile.dob,
-    gender: profile.gender,
-    blood_group: profile.blood_group,
-    manager_id: profile.manager_id,
-  };
-
-  return userProfile;
 }

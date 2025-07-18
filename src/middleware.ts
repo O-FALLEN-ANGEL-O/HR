@@ -1,100 +1,11 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
-import type { UserRole } from './lib/types';
 
-const publicRoutes = [
-  '/login',
-  '/signup',
-  '/auth/callback',
-  '/register',
-  '/403',
-  '/portal',
-  '/typing-test',
-  '/aptitude-test',
-  '/comprehensive-test',
-  '/english-grammar-test',
-  '/customer-service-test',
-  '/auth/update-password',
-  '/start-test'
-];
-
-const roleHomePaths: Record<UserRole, string> = {
-  admin: '/admin/dashboard',
-  super_hr: '/super_hr/dashboard',
-  hr_manager: '/hr/dashboard',
-  recruiter: '/recruiter/dashboard',
-  manager: '/manager/dashboard',
-  team_lead: '/team_lead/dashboard',
-  employee: '/employee/dashboard',
-  intern: '/intern/dashboard',
-  interviewer: '/interviewer/tasks',
-  guest: '/login',
-  finance: '/employee/dashboard',
-  it_admin: '/employee/dashboard',
-  support: '/helpdesk',
-  auditor: '/employee/dashboard',
-};
-
-function getHomePathForRole(role?: UserRole | null): string {
-    if (!role) return '/login';
-    return roleHomePaths[role] || '/employee/dashboard';
-}
-
+// Since login is bypassed, the middleware's main job is to simply update the session
+// and allow access to all pages. The complex redirect logic is no longer needed for the demo.
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  const { response, user, supabase } = await updateSession(request);
-
-  const isPublic = publicRoutes.some(route => pathname.startsWith(route));
-
-  // If no user is logged in
-  if (!user) {
-    // Allow access to public routes, otherwise redirect to login
-    if (isPublic) {
-      return response;
-    }
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-  
-  const isDemoUser = user.id.startsWith('demo-');
-  
-  // If it's a demo user, no further auth checks are needed.
-  // Just ensure they are not stuck on the login page.
-  if (isDemoUser) {
-    if (pathname === '/login') {
-       return NextResponse.redirect(new URL(getHomePathForRole(user.role), request.url));
-    }
-    return response;
-  }
-
-  // --- Real user logic ---
-  
-  // Check if user has set a password. The sign_in_count is 1 for the first magic link login.
-  const { data: { session } } = await supabase.auth.getSession();
-  const isFirstLogin = session?.user?.sign_in_count === 1 && session.user.app_metadata.provider === 'email';
-  
-  if (isFirstLogin && pathname !== '/auth/update-password') {
-    return NextResponse.redirect(new URL('/auth/update-password', request.url));
-  }
-  
-  // Check if profile setup is complete
-  if (!user.profile_setup_complete && !isFirstLogin) {
-    if (pathname !== '/onboarding') {
-      return NextResponse.redirect(new URL('/onboarding', request.url));
-    }
-  }
-
-  // If onboarding is complete, prevent access to onboarding page
-  if (user.profile_setup_complete && pathname === '/onboarding') {
-    return NextResponse.redirect(new URL(getHomePathForRole(user.role), request.url));
-  }
-
-  // If user is logged in, prevent access to login page
-  if (pathname === '/login' || (pathname === '/' && user.profile_setup_complete)) {
-      return NextResponse.redirect(new URL(getHomePathForRole(user.role), request.url));
-  }
-
+  const { response } = await updateSession(request);
   return response;
 }
 
