@@ -181,6 +181,7 @@ async function seed() {
 async function seedJobs() {
   const jobCount = 15;
   const jobs = Array.from({ length: jobCount }, () => ({
+    id: faker.string.uuid(),
     title: faker.person.jobTitle(),
     department: faker.person.jobArea(),
     description: faker.lorem.paragraphs(3),
