@@ -39,6 +39,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, FileUp, UserPlus, Camera, Zap, ImageUp } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { Job, College } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 const FormSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters.'),
@@ -115,20 +116,31 @@ export default function RegisterPage() {
     if (showCamera) {
       const getCameraPermission = async () => {
         try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+          // Prefer the back camera for scanning documents
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } });
           setHasCameraPermission(true);
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
           }
         } catch (error) {
-          console.error('Error accessing camera:', error);
-          setHasCameraPermission(false);
-          setShowCamera(false);
-          toast({
-            variant: 'destructive',
-            title: 'Camera Access Denied',
-            description: 'Please enable camera permissions in your browser settings.',
-          });
+          console.error('Error accessing back camera, trying front:', error);
+           try {
+              // Fallback to any available camera if the back one fails
+              const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+              setHasCameraPermission(true);
+              if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+              }
+           } catch (fallbackError) {
+              console.error('Error accessing any camera:', fallbackError);
+              setHasCameraPermission(false);
+              setShowCamera(false);
+              toast({
+                variant: 'destructive',
+                title: 'Camera Access Denied',
+                description: 'Please enable camera permissions in your browser settings.',
+              });
+           }
         }
       };
       getCameraPermission();
@@ -322,8 +334,11 @@ export default function RegisterPage() {
               </div>
 
               {showCamera ? (
-                <div className="space-y-2">
-                  <video ref={videoRef} className="w-full aspect-video rounded-md bg-black" autoPlay muted playsInline />
+                <div className="relative space-y-2">
+                  <video ref={videoRef} className="w-full aspect-video rounded-md bg-black object-cover" autoPlay muted playsInline />
+                  <div className="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
+                    <div className="w-full h-full border-4 border-dashed border-white/50 rounded-lg" />
+                  </div>
                   {hasCameraPermission === false && (
                     <Alert variant="destructive">
                       <AlertTitle>Camera Access Required</AlertTitle>
@@ -369,7 +384,7 @@ export default function RegisterPage() {
                     )}
                   />
                   <Button variant="outline" onClick={() => setShowCamera(true)} className="w-full h-12">
-                    <Camera className="mr-2" /> Use Webcam
+                    <Camera className="mr-2" /> Scan Resume
                   </Button>
                 </div>
               )}
