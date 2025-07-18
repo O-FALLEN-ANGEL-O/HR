@@ -5,6 +5,7 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -59,6 +60,7 @@ const roleOptions: UserRole[] = [
 
 export default function LoginPage() {
   const { toast } = useToast();
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const form = useForm<RoleSchema>({
@@ -69,15 +71,18 @@ export default function LoginPage() {
   const handleRoleSubmit = async (values: RoleSchema) => {
     setIsSubmitting(true);
     const result = await loginWithRole(values.role as UserRole);
-    if (result?.error) {
+    
+    if (result?.success && result.redirectTo) {
+      // Client-side redirect after the server action completes
+      router.push(result.redirectTo);
+    } else {
        toast({
         title: 'Login Failed',
-        description: result.error,
+        description: 'Could not log you in. Please try again.',
         variant: 'destructive',
       });
       setIsSubmitting(false);
     }
-    // On success, the action handles the redirect, so we don't need to do anything here.
   }
 
   return (

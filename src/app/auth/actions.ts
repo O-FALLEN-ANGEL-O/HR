@@ -27,7 +27,10 @@ export async function loginWithRole(role: UserRole) {
     auditor: '/employee/dashboard',
   };
   
-  redirect(roleHomePaths[role] || '/');
+  // Instead of redirecting from the server action,
+  // we will return the path to the client, which will handle the redirect.
+  // This is more robust and avoids the "stuck loading" issue.
+  return { success: true, redirectTo: roleHomePaths[role] || '/' };
 }
 
 
