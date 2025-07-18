@@ -9,28 +9,8 @@ import type { UserRole } from '@/lib/types';
 export async function loginWithRole(role: UserRole) {
   const cookieStore = cookies();
   cookieStore.set('demo_role', role, { path: '/', maxAge: 60 * 60 * 24 }); // Expires in 1 day
-  
-  const roleHomePaths: Record<UserRole, string> = {
-    admin: '/admin/dashboard',
-    super_hr: '/super_hr/dashboard',
-    hr_manager: '/hr/dashboard',
-    recruiter: '/recruiter/dashboard',
-    manager: '/manager/dashboard',
-    team_lead: '/team_lead/dashboard',
-    employee: '/employee/dashboard',
-    intern: '/intern/dashboard',
-    interviewer: '/interviewer/tasks',
-    guest: '/login',
-    finance: '/employee/dashboard',
-    it_admin: '/employee/dashboard',
-    support: '/helpdesk',
-    auditor: '/employee/dashboard',
-  };
-  
-  // Instead of redirecting from the server action,
-  // we will return the path to the client, which will handle the redirect.
-  // This is more robust and avoids the "stuck loading" issue.
-  return { success: true, redirectTo: roleHomePaths[role] || '/' };
+  // The client-side will now handle the redirect.
+  // This action's only job is to set the cookie.
 }
 
 

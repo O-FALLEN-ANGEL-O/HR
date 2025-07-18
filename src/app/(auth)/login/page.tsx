@@ -70,12 +70,11 @@ export default function LoginPage() {
 
   const handleRoleSubmit = async (values: RoleSchema) => {
     setIsSubmitting(true);
-    const result = await loginWithRole(values.role as UserRole);
-    
-    if (result?.success && result.redirectTo) {
-      // Client-side redirect after the server action completes
-      router.push(result.redirectTo);
-    } else {
+    try {
+        await loginWithRole(values.role as UserRole);
+        // The middleware will handle redirecting to the correct dashboard from the root.
+        router.push('/');
+    } catch(error) {
        toast({
         title: 'Login Failed',
         description: 'Could not log you in. Please try again.',
