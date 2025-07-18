@@ -21,13 +21,17 @@ const DEMO_USER_DATA: Record<UserRole, Omit<UserProfile, 'id' | 'created_at' | '
 };
 
 export async function getUser(cookieStore: ReadonlyRequestCookies): Promise<UserProfile | null> {
-    // --- Temporary "No Login" Mode ---
-    // Always return the admin user to bypass authentication for the demo.
-    const adminData = DEMO_USER_DATA['admin'];
+    const role = cookieStore.get('demo_role')?.value as UserRole | undefined;
+
+    if (!role || !DEMO_USER_DATA[role]) {
+        return null;
+    }
+
+    const userData = DEMO_USER_DATA[role];
     return {
-        id: 'demo-admin-user',
-        role: 'admin',
+        id: `demo-${role}-user`,
+        role: role,
         created_at: new Date().toISOString(),
-        ...adminData
+        ...userData
     };
 }

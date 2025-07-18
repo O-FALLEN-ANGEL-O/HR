@@ -80,7 +80,8 @@ export default function LoginPage() {
         description: 'Could not log you in. Please try again.',
         variant: 'destructive',
       });
-      setIsSubmitting(false);
+    } finally {
+        setIsSubmitting(false);
     }
   }
 
