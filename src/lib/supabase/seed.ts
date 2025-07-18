@@ -7,11 +7,12 @@ import { createClient } from '@supabase/supabase-js';
 import { faker } from '@faker-js/faker';
 import type { UserProfile, ApplicantStage, UserRole } from '../types';
 
-const supabaseUrl = process.env.SUPABASE_URL;
+// Use the public URL, but the service role key for admin privileges
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseServiceRoleKey) {
-  throw new Error('Supabase URL or Service Role Key is missing from environment variables.');
+  throw new Error('Could not find NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in environment variables. Please ensure they are set in your .env.local file.');
 }
 
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
