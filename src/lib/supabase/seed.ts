@@ -198,6 +198,7 @@ async function seedJobs() {
 async function seedColleges() {
     const collegeCount = 10;
     const colleges = Array.from({ length: collegeCount }, () => ({
+        id: faker.string.uuid(),
         name: `${faker.location.city()} University`,
         status: faker.helpers.arrayElement(['Invited', 'Confirmed', 'Attended', 'Declined']),
         resumes_received: faker.number.int({ min: 20, max: 200 }),
@@ -257,7 +258,8 @@ async function seedApplicantNotes(applicants: {id: string}[], users: UserProfile
         })
     );
     if (notes.length > 0) {
-        await supabaseAdmin.from('applicant_notes').insert(notes);
+        const { error } = await supabaseAdmin.from('applicant_notes').insert(notes);
+        if (error) throw new Error(`Failed to seed applicant notes: ${error.message}`);
         console.log(`✅ Seeded ${notes.length} applicant notes.`);
     }
 }
@@ -280,7 +282,8 @@ async function seedInterviews(applicants: {id: string, name: string}[], intervie
             job_title: faker.person.jobTitle(),
         };
     });
-    await supabaseAdmin.from('interviews').insert(interviews);
+    const { error } = await supabaseAdmin.from('interviews').insert(interviews);
+    if (error) throw new Error(`Failed to seed interviews: ${error.message}`);
     console.log(`✅ Seeded ${interviews.length} interviews.`);
 }
 
@@ -293,7 +296,8 @@ async function seedLeaveBalancesAndLeave(users: UserProfile[], managers: UserPro
         earned_leave: 10,
         unpaid_leave: faker.number.int({ min: 0, max: 5 }),
     }));
-    await supabaseAdmin.from('leave_balances').insert(balances);
+    const { error: balanceError } = await supabaseAdmin.from('leave_balances').insert(balances);
+    if (balanceError) throw new Error(`Failed to seed leave balances: ${balanceError.message}`);
     console.log(`✅ Seeded ${balances.length} leave balances.`);
     
     if (!managers?.length) {
@@ -316,7 +320,8 @@ async function seedLeaveBalancesAndLeave(users: UserProfile[], managers: UserPro
             };
         })
     );
-    await supabaseAdmin.from('leaves').insert(leaves);
+    const { error: leaveError } = await supabaseAdmin.from('leaves').insert(leaves);
+    if (leaveError) throw new Error(`Failed to seed leaves: ${leaveError.message}`);
     console.log(`✅ Seeded ${leaves.length} leave records.`);
 }
 
@@ -339,7 +344,8 @@ async function seedOnboarding(employees: UserProfile[], managers: UserProfile[])
         };
     });
     if (workflows.length > 0) {
-        await supabaseAdmin.from('onboarding_workflows').insert(workflows);
+        const { error } = await supabaseAdmin.from('onboarding_workflows').insert(workflows);
+        if (error) throw new Error(`Failed to seed onboarding workflows: ${error.message}`);
         console.log(`✅ Seeded ${workflows.length} onboarding workflows.`);
     }
 }
@@ -352,7 +358,8 @@ async function seedPerformanceReviews(employees: UserProfile[]) {
         status: faker.helpers.arrayElement(['Pending', 'In Progress', 'Completed']),
         job_title: employee.department
     }));
-    await supabaseAdmin.from('performance_reviews').insert(reviews);
+    const { error } = await supabaseAdmin.from('performance_reviews').insert(reviews);
+    if (error) throw new Error(`Failed to seed performance reviews: ${error.message}`);
     console.log(`✅ Seeded ${reviews.length} performance reviews.`);
 }
 
@@ -363,7 +370,8 @@ async function seedOkrs(users: UserProfile[]) {
         title: faker.company.catchPhrase(),
         quarter: `Q${faker.number.int({min: 1, max: 4})} ${new Date().getFullYear()}`,
     }));
-    const { data: insertedObjectives } = await supabaseAdmin.from('objectives').insert(objectives).select();
+    const { data: insertedObjectives, error: objError } = await supabaseAdmin.from('objectives').insert(objectives).select();
+    if(objError) throw new Error(`Failed to seed objectives: ${objError.message}`);
 
     if (insertedObjectives) {
         const keyResults = insertedObjectives.flatMap(obj => 
@@ -374,7 +382,8 @@ async function seedOkrs(users: UserProfile[]) {
                 status: faker.helpers.arrayElement(['on_track', 'at_risk', 'off_track']),
             }))
         );
-        await supabaseAdmin.from('key_results').insert(keyResults);
+        const { error: krError } = await supabaseAdmin.from('key_results').insert(keyResults);
+        if(krError) throw new Error(`Failed to seed key results: ${krError.message}`);
         console.log(`✅ Seeded ${objectives.length} OKRs and their key results.`);
     }
 }
@@ -386,7 +395,8 @@ async function seedCompanyFeed(users: UserProfile[]) {
         content: faker.lorem.paragraph(),
         image_url: faker.datatype.boolean() ? faker.image.urlLoremFlickr({ category: 'business', width: 600, height: 400 }) : null,
     }));
-    const { data: insertedPosts } = await supabaseAdmin.from('company_posts').insert(posts).select();
+    const { data: insertedPosts, error: postError } = await supabaseAdmin.from('company_posts').insert(posts).select();
+    if(postError) throw new Error(`Failed to seed company posts: ${postError.message}`);
 
     if (insertedPosts) {
         const comments = insertedPosts.flatMap(post => 
@@ -397,7 +407,8 @@ async function seedCompanyFeed(users: UserProfile[]) {
             }))
         );
         if (comments.length > 0) {
-            await supabaseAdmin.from('post_comments').insert(comments);
+            const { error: commentError } = await supabaseAdmin.from('post_comments').insert(comments);
+            if(commentError) throw new Error(`Failed to seed post comments: ${commentError.message}`);
         }
     }
     console.log(`✅ Seeded ${posts.length} company posts and comments.`);
@@ -415,18 +426,20 @@ async function seedKudos(users: UserProfile[]) {
             message: faker.lorem.sentence(),
         };
     });
-    await supabaseAdmin.from('kudos').insert(kudos);
+    const { error } = await supabaseAdmin.from('kudos').insert(kudos);
+    if(error) throw new Error(`Failed to seed kudos: ${error.message}`);
     console.log(`✅ Seeded ${kudos.length} kudos.`);
 }
 
 async function seedWeeklyAward(managers: UserProfile[], employees: UserProfile[]) {
     if (managers.length > 0 && employees.length > 0) {
-        await supabaseAdmin.from('weekly_awards').insert({
+        const { error } = await supabaseAdmin.from('weekly_awards').insert({
             awarded_user_id: faker.helpers.arrayElement(employees).id,
             awarded_by_user_id: faker.helpers.arrayElement(managers).id,
             reason: 'For outstanding performance and dedication this week.',
             week_of: new Date().toISOString().split('T')[0],
         });
+        if(error) throw new Error(`Failed to seed weekly award: ${error.message}`);
         console.log(`✅ Seeded 1 weekly award.`);
     }
 }
@@ -446,7 +459,8 @@ async function seedPayslips(employees: UserProfile[]) {
             };
         })
     );
-    await supabaseAdmin.from('payslips').insert(payslips);
+    const { error } = await supabaseAdmin.from('payslips').insert(payslips);
+    if(error) throw new Error(`Failed to seed payslips: ${error.message}`);
     console.log(`✅ Seeded ${payslips.length} payslips.`);
 }
 
@@ -456,7 +470,8 @@ async function seedCompanyDocs() {
         { title: 'IT Security Policy', description: 'Guidelines for using company IT assets.', category: 'IT', last_updated: new Date(), download_url: '#' },
         { title: 'Expense Claim Policy', description: 'How to claim expenses.', category: 'Finance', last_updated: new Date(), download_url: '#' },
     ];
-    await supabaseAdmin.from('company_documents').insert(docs);
+    const { error } = await supabaseAdmin.from('company_documents').insert(docs);
+    if(error) throw new Error(`Failed to seed company docs: ${error.message}`);
     console.log(`✅ Seeded ${docs.length} company documents.`);
 }
 
@@ -469,7 +484,8 @@ async function seedExpenses(users: UserProfile[]) {
         status: faker.helpers.arrayElement(['draft', 'submitted', 'approved', 'rejected', 'reimbursed']),
         submitted_at: faker.date.recent({ days: 40 }),
     }));
-    const { data: insertedReports } = await supabaseAdmin.from('expense_reports').insert(reports).select();
+    const { data: insertedReports, error: reportError } = await supabaseAdmin.from('expense_reports').insert(reports).select();
+    if(reportError) throw new Error(`Failed to seed expense reports: ${reportError.message}`);
     
     if (insertedReports) {
         const items = insertedReports.map(report => ({
@@ -479,7 +495,8 @@ async function seedExpenses(users: UserProfile[]) {
             amount: report.total_amount,
             description: faker.lorem.sentence(),
         }));
-        await supabaseAdmin.from('expense_items').insert(items);
+        const { error: itemError } = await supabaseAdmin.from('expense_items').insert(items);
+        if(itemError) throw new Error(`Failed to seed expense items: ${itemError.message}`);
         console.log(`✅ Seeded ${reports.length} expense reports and items.`);
     }
 }
@@ -496,7 +513,8 @@ async function seedHelpdesk(users: UserProfile[]) {
         priority: faker.helpers.arrayElement(['Low', 'Medium', 'High', 'Urgent']),
         resolver_id: supportStaff.length > 0 ? faker.helpers.arrayElement(supportStaff).id : null,
     }));
-    const { data: insertedTickets } = await supabaseAdmin.from('helpdesk_tickets').insert(tickets).select();
+    const { data: insertedTickets, error: ticketError } = await supabaseAdmin.from('helpdesk_tickets').insert(tickets).select();
+    if(ticketError) throw new Error(`Failed to seed helpdesk tickets: ${ticketError.message}`);
 
     if (insertedTickets) {
         const comments = insertedTickets.flatMap(ticket => 
@@ -507,7 +525,8 @@ async function seedHelpdesk(users: UserProfile[]) {
             }))
         );
         if (comments.length > 0) {
-            await supabaseAdmin.from('ticket_comments').insert(comments);
+            const { error: commentError } = await supabaseAdmin.from('ticket_comments').insert(comments);
+            if(commentError) throw new Error(`Failed to seed ticket comments: ${commentError.message}`);
             console.log(`✅ Seeded ${tickets.length} helpdesk tickets and comments.`);
         }
     }
