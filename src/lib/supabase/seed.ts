@@ -81,6 +81,11 @@ async function createAndSeedUser({ email, fullName, role, department }: typeof C
             role: role,
             department: department,
             avatar_url: user.user_metadata.avatar_url,
+            phone: faker.phone.number(),
+            job_title: faker.person.jobTitle(),
+            dob: faker.date.birthdate().toISOString().split('T')[0],
+            gender: faker.person.gender(),
+            blood_group: faker.helpers.arrayElement(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']),
             profile_setup_complete: true,
         })
         .select()
@@ -235,6 +240,9 @@ async function seedApplicants(jobs: {id: string}[], colleges: {id: string}[]) {
             wpm: faker.number.int({ min: 40, max: 120 }),
             accuracy: faker.number.int({ min: 80, max: 99 }),
             aptitude_score: faker.number.int({ min: 60, max: 98 }),
+            comprehensive_score: faker.number.int({ min: 60, max: 98 }),
+            english_grammar_score: faker.number.int({ min: 60, max: 98 }),
+            customer_service_score: faker.number.int({ min: 60, max: 98 }),
         };
     });
     const { data, error } = await supabaseAdmin.from('applicants').insert(applicants).select('id, name, email');
@@ -249,6 +257,7 @@ async function seedApplicantNotes(applicants: {id: string}[], users: UserProfile
         Array.from({ length: faker.number.int({ min: 0, max: 4 }) }, () => {
             const author = faker.helpers.arrayElement(users);
             return {
+                id: faker.string.uuid(),
                 applicant_id: applicant.id,
                 user_id: author.id,
                 author_name: author.full_name,
@@ -269,6 +278,7 @@ async function seedInterviews(applicants: {id: string, name: string}[], intervie
     const interviews = applicants.map(applicant => {
         const interviewer = faker.helpers.arrayElement(interviewers);
         return {
+            id: faker.string.uuid(),
             applicant_id: applicant.id,
             interviewer_id: interviewer.id,
             date: faker.date.future({ years: 0.1 }),
@@ -290,6 +300,7 @@ async function seedInterviews(applicants: {id: string, name: string}[], intervie
 async function seedLeaveBalancesAndLeave(users: UserProfile[], managers: UserProfile[]) {
     if (!users?.length) return;
     const balances = users.map(user => ({
+        id: faker.string.uuid(),
         user_id: user.id,
         sick_leave: 12,
         casual_leave: 15,
@@ -309,6 +320,7 @@ async function seedLeaveBalancesAndLeave(users: UserProfile[], managers: UserPro
             const startDate = faker.date.past({ years: 1 });
             const endDate = new Date(startDate.getTime() + faker.number.int({ min: 1, max: 5 }) * 24 * 60 * 60 * 1000);
             return {
+                id: faker.string.uuid(),
                 user_id: user.id,
                 leave_type: faker.helpers.arrayElement(['sick', 'casual', 'earned']),
                 start_date: startDate.toISOString().split('T')[0],
@@ -330,6 +342,7 @@ async function seedOnboarding(employees: UserProfile[], managers: UserProfile[])
     const workflows = employees.slice(0, 5).map(employee => {
         const buddy = faker.helpers.arrayElement(employees.filter(e => e.id !== employee.id));
         return {
+            id: faker.string.uuid(),
             user_id: employee.id,
             manager_id: faker.helpers.arrayElement(managers).id,
             buddy_id: buddy ? buddy.id : null,
@@ -353,6 +366,7 @@ async function seedOnboarding(employees: UserProfile[], managers: UserProfile[])
 async function seedPerformanceReviews(employees: UserProfile[]) {
     if (!employees?.length) return;
     const reviews = employees.map(employee => ({
+        id: faker.string.uuid(),
         user_id: employee.id,
         review_date: faker.date.past({ years: 1 }),
         status: faker.helpers.arrayElement(['Pending', 'In Progress', 'Completed']),
@@ -366,6 +380,7 @@ async function seedPerformanceReviews(employees: UserProfile[]) {
 async function seedOkrs(users: UserProfile[]) {
     if (!users?.length) return;
     const objectives = Array.from({ length: 5 }, () => ({
+        id: faker.string.uuid(),
         owner_id: faker.helpers.arrayElement(users).id,
         title: faker.company.catchPhrase(),
         quarter: `Q${faker.number.int({min: 1, max: 4})} ${new Date().getFullYear()}`,
@@ -376,6 +391,7 @@ async function seedOkrs(users: UserProfile[]) {
     if (insertedObjectives) {
         const keyResults = insertedObjectives.flatMap(obj => 
             Array.from({ length: 3 }, () => ({
+                id: faker.string.uuid(),
                 objective_id: obj.id,
                 description: faker.lorem.sentence(),
                 progress: faker.number.int({ min: 0, max: 100 }),
@@ -391,9 +407,10 @@ async function seedOkrs(users: UserProfile[]) {
 async function seedCompanyFeed(users: UserProfile[]) {
      if (!users?.length) return;
     const posts = Array.from({ length: 10 }, () => ({
+        id: faker.string.uuid(),
         user_id: faker.helpers.arrayElement(users).id,
         content: faker.lorem.paragraph(),
-        image_url: faker.datatype.boolean() ? faker.image.urlLoremFlickr({ category: 'business', width: 600, height: 400 }) : null,
+        image_url: faker.datatype.boolean() ? 'https://placehold.co/600x400.png' : null,
     }));
     const { data: insertedPosts, error: postError } = await supabaseAdmin.from('company_posts').insert(posts).select();
     if(postError) throw new Error(`Failed to seed company posts: ${postError.message}`);
@@ -401,6 +418,7 @@ async function seedCompanyFeed(users: UserProfile[]) {
     if (insertedPosts) {
         const comments = insertedPosts.flatMap(post => 
             Array.from({ length: faker.number.int({ min: 0, max: 8})}, () => ({
+                id: faker.string.uuid(),
                 post_id: post.id,
                 user_id: faker.helpers.arrayElement(users).id,
                 comment: faker.lorem.sentence(),
@@ -420,6 +438,7 @@ async function seedKudos(users: UserProfile[]) {
         const fromUser = faker.helpers.arrayElement(users);
         const toUser = faker.helpers.arrayElement(users.filter(u => u.id !== fromUser.id));
         return {
+            id: faker.string.uuid(),
             from_user_id: fromUser.id,
             to_user_id: toUser.id,
             value: faker.helpers.arrayElement(['Team Player', 'Innovation', 'Customer First', 'Ownership']),
@@ -434,6 +453,7 @@ async function seedKudos(users: UserProfile[]) {
 async function seedWeeklyAward(managers: UserProfile[], employees: UserProfile[]) {
     if (managers.length > 0 && employees.length > 0) {
         const { error } = await supabaseAdmin.from('weekly_awards').insert({
+            id: faker.string.uuid(),
             awarded_user_id: faker.helpers.arrayElement(employees).id,
             awarded_by_user_id: faker.helpers.arrayElement(managers).id,
             reason: 'For outstanding performance and dedication this week.',
@@ -450,6 +470,7 @@ async function seedPayslips(employees: UserProfile[]) {
         Array.from({ length: 3 }, () => {
             const gross = faker.number.int({ min: 50000, max: 150000 });
             return {
+                id: faker.string.uuid(),
                 user_id: emp.id,
                 month: faker.date.month(),
                 year: new Date().getFullYear(),
@@ -466,9 +487,9 @@ async function seedPayslips(employees: UserProfile[]) {
 
 async function seedCompanyDocs() {
     const docs = [
-        { title: 'Employee Handbook', description: 'Company policies and procedures.', category: 'HR', last_updated: new Date(), download_url: '#' },
-        { title: 'IT Security Policy', description: 'Guidelines for using company IT assets.', category: 'IT', last_updated: new Date(), download_url: '#' },
-        { title: 'Expense Claim Policy', description: 'How to claim expenses.', category: 'Finance', last_updated: new Date(), download_url: '#' },
+        { id: faker.string.uuid(), title: 'Employee Handbook', description: 'Company policies and procedures.', category: 'HR', last_updated: new Date(), download_url: '#' },
+        { id: faker.string.uuid(), title: 'IT Security Policy', description: 'Guidelines for using company IT assets.', category: 'IT', last_updated: new Date(), download_url: '#' },
+        { id: faker.string.uuid(), title: 'Expense Claim Policy', description: 'How to claim expenses.', category: 'Finance', last_updated: new Date(), download_url: '#' },
     ];
     const { error } = await supabaseAdmin.from('company_documents').insert(docs);
     if(error) throw new Error(`Failed to seed company docs: ${error.message}`);
@@ -478,6 +499,7 @@ async function seedCompanyDocs() {
 async function seedExpenses(users: UserProfile[]) {
      if (!users?.length) return;
     const reports = users.map(user => ({
+        id: faker.string.uuid(),
         user_id: user.id,
         title: `Expenses for ${faker.commerce.department()}`,
         total_amount: faker.finance.amount(),
@@ -489,6 +511,7 @@ async function seedExpenses(users: UserProfile[]) {
     
     if (insertedReports) {
         const items = insertedReports.map(report => ({
+            id: faker.string.uuid(),
             expense_report_id: report.id,
             date: faker.date.recent({ days: 5 }),
             category: faker.helpers.arrayElement(['Travel', 'Meals', 'Software']),
@@ -505,6 +528,7 @@ async function seedHelpdesk(users: UserProfile[]) {
     if (!users?.length) return;
     const supportStaff = users.filter(u => u.role === 'it_admin' || u.role === 'support');
     const tickets = Array.from({ length: 15 }, () => ({
+        id: faker.string.uuid(),
         user_id: faker.helpers.arrayElement(users).id,
         subject: faker.hacker.phrase(),
         description: faker.lorem.paragraph(),
@@ -519,6 +543,7 @@ async function seedHelpdesk(users: UserProfile[]) {
     if (insertedTickets) {
         const comments = insertedTickets.flatMap(ticket => 
             Array.from({ length: faker.number.int({ min: 0, max: 5})}, () => ({
+                id: faker.string.uuid(),
                 ticket_id: ticket.id,
                 user_id: faker.helpers.arrayElement(users).id,
                 comment: faker.lorem.sentence(),
