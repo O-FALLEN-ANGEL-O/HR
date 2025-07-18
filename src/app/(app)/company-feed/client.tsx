@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -17,22 +18,22 @@ type CompanyFeedClientProps = {
 export default function CompanyFeedClient({ user, initialPosts }: CompanyFeedClientProps) {
   const [posts, setPosts] = React.useState(initialPosts);
   const { toast } = useToast();
+  const supabase = createClient();
   const canPost = user?.role === 'admin' || user?.role === 'hr_manager' || user?.role === 'super_hr';
+
+  const fetchPosts = React.useCallback(async () => {
+    const { data } = await supabase
+      .from('company_posts')
+      .select('*, users (full_name, avatar_url, role, department), post_comments(*, users(full_name, avatar_url))')
+      .order('created_at', { ascending: false });
+    setPosts(data || []);
+  }, [supabase]);
 
   React.useEffect(() => {
     setPosts(initialPosts);
   }, [initialPosts]);
 
   React.useEffect(() => {
-    const supabase = createClient();
-    const fetchPosts = async () => {
-      const { data } = await supabase
-        .from('company_posts')
-        .select('*, users (full_name, avatar_url, role, department), post_comments(*, users(full_name, avatar_url))')
-        .order('created_at', { ascending: false });
-      setPosts(data || []);
-    };
-    
     const postsChannel = supabase
       .channel('realtime-company-posts')
       .on(
@@ -62,7 +63,7 @@ export default function CompanyFeedClient({ user, initialPosts }: CompanyFeedCli
       supabase.removeChannel(postsChannel);
       supabase.removeChannel(commentsChannel);
     };
-  }, [toast, supabase]);
+  }, [toast, supabase, fetchPosts]);
 
   return (
     <div className="space-y-6">
