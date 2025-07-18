@@ -30,26 +30,17 @@ export async function loginWithRole(role: UserRole) {
       throw new Error(`No demo user found for role: ${role}`);
   }
 
-  const { data: { users }, error: userError } = await supabaseAdmin.auth.admin.listUsers({ email });
+  // Since the user might not exist, we can't just list them. We need their ID.
+  // The most reliable way in a seeded environment is to get them by email.
+  const { data: { user }, error: userError } = await supabaseAdmin.auth.admin.getUserByEmail(email);
 
-  if (userError || users.length === 0) {
-      console.error(`Could not find user ${email} in auth. Did you run the seed script?`);
+  if (userError || !user) {
+      console.error(`Could not find user ${email} in auth. Did you run the seed script? Error: ${userError?.message}`);
       throw new Error(`Could not find demo user for role ${role}. Please ensure the database is seeded.`);
   }
-
-  const user = users[0];
   
   const cookieStore = cookies();
   const supabase = createClient(cookieStore);
-
-  // This will create a session for the user and set the auth cookie
-  const { error: sessionError } = await supabase.auth.setSession({
-      access_token: 'dummy_access_token_for_ssr', // This will be replaced by the middleware
-      refresh_token: 'dummy_refresh_token_for_ssr',
-  });
-   if (sessionError) {
-       console.error("Session set error:", sessionError);
-   }
 
   // We need to generate a real session on the server side using the admin client
   const { data: sessionData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
@@ -65,13 +56,24 @@ export async function loginWithRole(role: UserRole) {
   // The session is created by this call, but we handle it via the middleware
   // We just need to make sure we're telling the browser who we are now.
   // The middleware will handle the actual token exchange.
-  cookies().set('demo_role', role, { path: '/' });
+  
+  // To make Supabase SSR client aware of the user on the next request,
+  // we can manually set the session. This is a bit of a workaround for the demo environment.
+  // In a real app, you'd redirect to the magic link.
+  const { data: { session }, error: sessionError } = await supabase.auth.signInWithPassword({
+      email,
+      password: 'password123'
+  });
+
+   if (sessionError || !session) {
+       console.error("Session set error:", sessionError);
+       throw new Error('Could not create a session for the demo user.');
+   }
 }
 
 export async function logout() {
   const cookieStore = cookies();
   const supabase = createClient(cookieStore);
   await supabase.auth.signOut();
-  cookieStore.delete('demo_role');
   redirect('/login');
 }
