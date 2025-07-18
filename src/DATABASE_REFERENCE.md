@@ -77,6 +77,11 @@ Stores public profile information for all users, synced from `auth.users`.
 | `phone`                 | `text`                    | User's phone number.                                |
 | `profile_setup_complete`| `boolean` (Default: `false`) | Flag for first-time login setup.                 |
 | `created_at`            | `timestamptz`             | Timestamp of user creation.                         |
+| `job_title`             | `text`                    | User's job title.                                   |
+| `dob`                   | `date`                    | User's date of birth.                               |
+| `gender`                | `text`                    | User's gender.                                      |
+| `blood_group`           | `text`                    | User's blood group.                                 |
+| `manager_id`            | `uuid` (Nullable)         | Foreign key to `users.id` (user's manager).       |
 
 ### 2. `jobs`
 Stores job postings created by the HR/recruiter team.
@@ -113,8 +118,8 @@ Stores information about job applicants.
 | `name`                   | `text`               | Applicant's full name.                            |
 | `email`                  | `text`               | Applicant's email.                                |
 | `phone`                  | `text`               | Applicant's phone number.                         |
-| `job_id`                 | `uuid`               | Foreign key to `jobs.id`.                         |
-| `college_id`             | `uuid`               | Foreign key to `colleges.id`.                     |
+| `job_id`                 | `uuid` (Nullable)    | Foreign key to `jobs.id`.                         |
+| `college_id`             | `uuid` (Nullable)    | Foreign key to `colleges.id`.                     |
 | `stage`                  | `applicant_stage`    | Current stage in the hiring process.              |
 | `applied_date`           | `timestamptz`        | Date of application.                              |
 | `avatar`                 | `text`               | URL for the applicant's photo.                    |
@@ -128,6 +133,8 @@ Stores information about job applicants.
 | `comprehensive_score`    | `integer`            | Score from the comprehensive test.                |
 | `english_grammar_score`  | `integer`            | Score from the grammar test.                      |
 | `customer_service_score` | `integer`            | Score from the customer service test.             |
+| `rejection_reason`       | `text` (Nullable)    | Reason for disqualification during a test.        |
+| `rejection_notes`        | `text` (Nullable)    | Internal notes related to rejection.              |
 
 ### 5. `applicant_notes`
 Stores internal notes for an applicant.
@@ -155,7 +162,9 @@ Stores scheduled interviews for applicants.
 | `type`             | `text`               | `Video`, `Phone`, or `In-person`.       |
 | `status`           | `text`               | `Scheduled`, `Completed`, `Canceled`.   |
 | `candidate_name`   | `text`               | Cached name of the candidate.           |
+| `candidate_avatar` | `text`               | Cached avatar of the candidate.         |
 | `interviewer_name` | `text`               | Cached name of the interviewer.         |
+| `interviewer_avatar`| `text`              | Cached avatar of the interviewer.       |
 | `job_title`        | `text`               | Cached title of the job applied for.    |
 
 ### 7. `leave_balances`
@@ -164,7 +173,7 @@ Tracks available leave days for each user.
 | Column         | Type                 | Description                          |
 | -------------- | -------------------- | ------------------------------------ |
 | `id`           | `uuid` (Primary Key) | Unique identifier.                   |
-| `user_id`      | `uuid`               | Foreign key to `users.id`.           |
+| `user_id`      | `uuid` (Unique)      | Foreign key to `users.id`.           |
 | `sick_leave`   | `integer`            | Number of sick leave days remaining. |
 | `casual_leave` | `integer`            | Number of casual leave days remaining. |
 | `earned_leave` | `integer`            | Number of earned leave days remaining. |
@@ -182,7 +191,7 @@ Stores all leave requests made by users.
 | `end_date`  | `date`               | The last day of leave.                         |
 | `reason`    | `text`               | Reason for the leave request.                  |
 | `status`    | `text`               | `pending`, `approved`, `rejected`.             |
-| `approver_id`| `uuid`              | Foreign key to `users.id` of the approver.     |
+| `approver_id`| `uuid` (Nullable)   | Foreign key to `users.id` of the approver.     |
 | `total_days`| `integer`            | The total number of days for the leave.        |
 | `created_at`| `timestamptz`        | Timestamp of leave request creation.           |
 
@@ -192,13 +201,14 @@ Tracks onboarding progress for new hires.
 | Column          | Type                 | Description                                  |
 | --------------- | -------------------- | -------------------------------------------- |
 | `id`            | `uuid` (Primary Key) | Unique identifier for the workflow.          |
-| `user_id`       | `uuid`               | Foreign key to `users.id` (new hire).        |
+| `user_id`       | `uuid` (Unique)      | Foreign key to `users.id` (new hire).        |
 | `manager_id`    | `uuid`               | Foreign key to `users.id` (manager).         |
-| `buddy_id`      | `uuid`               | Foreign key to `users.id` (buddy).           |
+| `buddy_id`      | `uuid` (Nullable)    | Foreign key to `users.id` (buddy).           |
 | `employee_name` | `text`               | Cached name of the new hire.                 |
+| `employee_avatar`| `text`              | Cached avatar of the new hire.               |
 | `job_title`     | `text`               | Cached job title of the new hire.            |
 | `manager_name`  | `text`               | Cached name of the manager.                  |
-| `buddy_name`    | `text`               | Cached name of the buddy.                    |
+| `buddy_name`    | `text` (Nullable)    | Cached name of the buddy.                    |
 | `progress`      | `integer`            | Onboarding progress percentage.              |
 | `current_step`  | `text`               | Current task in the onboarding process.      |
 | `start_date`    | `date`               | Start date of the onboarding process.        |
@@ -243,7 +253,7 @@ Stores posts for the company-wide social feed.
 | `id`         | `uuid` (Primary Key) | Unique identifier for the post.              |
 | `user_id`    | `uuid`               | Foreign key to `users.id` (author).          |
 | `content`    | `text`               | The text content of the post.                |
-| `image_url`  | `text`               | Optional URL for an image in the post.       |
+| `image_url`  | `text` (Nullable)    | Optional URL for an image in the post.       |
 | `created_at` | `timestamptz`        | Timestamp of post creation.                  |
 
 ### 14. `post_comments`
@@ -343,7 +353,7 @@ Stores support tickets raised by employees.
 | `priority`   | `text`               | `Low`, `Medium`, `High`, `Urgent`.         |
 | `created_at` | `timestamptz`        | Timestamp of ticket creation.              |
 | `updated_at` | `timestamptz`        | Timestamp of the last update.              |
-| `resolver_id`| `uuid`               | Foreign key to `users.id` (resolver).      |
+| `resolver_id`| `uuid` (Nullable)    | Foreign key to `users.id` (resolver).      |
 
 ### 22. `ticket_comments`
 Stores comments on a helpdesk ticket.
