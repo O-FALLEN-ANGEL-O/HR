@@ -1,23 +1,21 @@
 
 import { Header } from '@/components/header';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Clock, Users, FileText, Award, LifeBuoy, Handshake, Newspaper, Calendar as CalendarIcon, Sun } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { getUser } from '@/lib/supabase/user';
-import type { UserProfile, LeaveBalance, CompanyPost } from '@/lib/types';
+import type { UserProfile, CompanyPost } from '@/lib/types';
 import CompanyFeedClient from '@/app/(app)/company-feed/client';
-import { Button } from '@/components/ui/button';
-import { LeaveDialog } from '@/components/leave-dialog';
 import { DashboardCard } from './dashboard-card';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
+import { LeaveBalanceCard } from './leave-balance-card';
 
 async function getDashboardData(user: UserProfile | null) {
     if (!user) {
         return {
-            balance: null,
             posts: [],
             teamMembers: [],
         };
@@ -25,12 +23,6 @@ async function getDashboardData(user: UserProfile | null) {
     const cookieStore = cookies();
     const supabase = createClient(cookieStore);
 
-    const balanceQuery = supabase
-        .from('leave_balances')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-    
     const postsQuery = supabase
         .from('company_posts')
         .select('*, users (full_name, avatar_url, role, department), post_comments(*, users(full_name, avatar_url))')
@@ -44,10 +36,9 @@ async function getDashboardData(user: UserProfile | null) {
         .neq('id', user.id)
         .limit(4) : Promise.resolve({ data: [], error: null });
 
-    const [balanceRes, postsRes, teamRes] = await Promise.all([balanceQuery, postsQuery, teamMembersQuery]);
+    const [postsRes, teamRes] = await Promise.all([postsQuery, teamMembersQuery]);
 
     return {
-        balance: balanceRes.data as LeaveBalance | null,
         posts: (postsRes.data as CompanyPost[]) || [],
         teamMembers: (teamRes.data as Pick<UserProfile, 'full_name' | 'avatar_url' | 'email'>[]) || [],
     }
@@ -64,7 +55,7 @@ const upcomingHolidays = [
 export default async function EmployeeDashboardPage() {
   const cookieStore = cookies();
   const user = await getUser(cookieStore);
-  const { balance, posts, teamMembers } = await getDashboardData(user);
+  const { posts, teamMembers } = await getDashboardData(user);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -158,21 +149,7 @@ export default async function EmployeeDashboardPage() {
           {/* Right Column */}
           <div className="lg:col-span-1 space-y-6">
             <DashboardCard delay={0.3}>
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-lg">My Leave Balance</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                        <div className="flex justify-between items-center"><span className="text-sm">Casual Leave</span><span className="font-bold">{balance?.casual_leave ?? 'N/A'}</span></div>
-                        <div className="flex justify-between items-center"><span className="text-sm">Sick Leave</span><span className="font-bold">{balance?.sick_leave ?? 'N/A'}</span></div>
-                        <div className="flex justify-between items-center"><span className="text-sm">Earned Leave</span><span className="font-bold">{balance?.earned_leave ?? 'N/A'}</span></div>
-                    </CardContent>
-                    <CardFooter>
-                         <LeaveDialog user={user} balance={balance} onLeaveApplied={() => {}}>
-                            <Button className="w-full">Apply for Leave</Button>
-                        </LeaveDialog>
-                    </CardFooter>
-                </Card>
+                <LeaveBalanceCard user={user} />
             </DashboardCard>
              <DashboardCard delay={0.4}>
                 <Card>
