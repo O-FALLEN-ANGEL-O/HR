@@ -3,7 +3,9 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import type { UserRole } from './lib/types';
 
-const roleToDashboardPath: Record<string, string> = {
+// This map defines which role gets which specific dashboard.
+// If a role is not in this map, it will default to the general employee dashboard.
+const roleToDashboardPath: Partial<Record<UserRole, string>> = {
     admin: '/admin/dashboard',
     super_hr: '/super_hr/dashboard',
     hr_manager: '/hr/dashboard',

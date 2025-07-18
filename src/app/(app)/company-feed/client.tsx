@@ -9,6 +9,7 @@ import type { CompanyPost, UserProfile } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { NewPostDialog } from '@/components/new-post-dialog';
 import FeedPostCard from '@/components/feed-post-card';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 type CompanyFeedClientProps = {
   user: UserProfile | null;
@@ -84,11 +85,13 @@ export default function CompanyFeedClient({ user, initialPosts }: CompanyFeedCli
                 </CardContent>
             </Card>
         )}
-        <div className="space-y-6">
-          {posts.map((post) => (
-            <FeedPostCard key={post.id} post={post} currentUser={user} />
-          ))}
-        </div>
+        <ScrollArea className="h-[calc(100vh-20rem)]">
+          <div className="space-y-6 pr-4">
+            {posts.map((post) => (
+              <FeedPostCard key={post.id} post={post} currentUser={user} />
+            ))}
+          </div>
+        </ScrollArea>
     </div>
   );
 }

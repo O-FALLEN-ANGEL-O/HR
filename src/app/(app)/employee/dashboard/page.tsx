@@ -88,7 +88,7 @@ export default async function EmployeeDashboardPage() {
     <div className="flex flex-1 flex-col">
       <Header title={`${greeting}, ${user?.full_name?.split(' ')[0] || 'User'}!`} />
       <main className="flex-1 p-4 md:p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           
           {/* Left Column */}
           <div className="lg:col-span-1 space-y-6">
@@ -110,7 +110,7 @@ export default async function EmployeeDashboardPage() {
           </div>
 
           {/* Center Column (Main Content) */}
-          <div className="lg:col-span-1 space-y-6">
+          <div className="lg:col-span-2 space-y-6">
             <DashboardCard delay={0.2} className="h-full">
                  <div className="h-full">
                     <CompanyFeedClient user={user} initialPosts={posts} />
