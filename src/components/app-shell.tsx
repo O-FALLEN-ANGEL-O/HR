@@ -49,7 +49,7 @@ import {
 } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
-import { loginWithRole } from '@/app/auth/actions';
+import { loginWithRole, logout } from '@/app/auth/actions';
 import type { UserProfile, UserRole } from '@/lib/types';
 import {
   DropdownMenu,
@@ -154,6 +154,11 @@ export default function AppShell({
     await loginWithRole(newRole);
     window.location.href = '/'; // Force a full reload to apply new role everywhere
   };
+  
+  const handleLogout = async () => {
+    await logout();
+    window.location.href = '/';
+  }
 
   return (
     <SidebarProvider>
@@ -218,7 +223,7 @@ export default function AppShell({
                     </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => {}}>
+                <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2" />
                   Log out
                 </DropdownMenuItem>
