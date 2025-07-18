@@ -66,6 +66,16 @@ export default function JobsClient({ initialJobs }: JobsClientProps) {
   const router = useRouter();
   const { toast } = useToast();
 
+  const refetchJobs = React.useCallback(async () => {
+    const supabase = createClient();
+    const { data, error } = await supabase.from('jobs').select('*').order('posted_date', { ascending: false });
+    if(error) {
+        toast({ title: 'Error', description: 'Could not refetch jobs.', variant: 'destructive'});
+    } else {
+        setJobs(data || []);
+    }
+  }, [toast]);
+
   React.useEffect(() => {
     setIsClient(true);
   }, []);
@@ -86,17 +96,7 @@ export default function JobsClient({ initialJobs }: JobsClientProps) {
             title: 'Job Postings Updated',
             description: 'The list of jobs has been updated.',
           });
-           if (payload.eventType === 'INSERT') {
-            setJobs((prev) => [payload.new as Job, ...prev].sort((a,b) => new Date(b.posted_date).getTime() - new Date(a.posted_date).getTime()));
-          } else if (payload.eventType === 'UPDATE') {
-            setJobs((prev) =>
-              prev.map((job) =>
-                job.id === payload.new.id ? { ...job, ...(payload.new as Job) } : job
-              )
-            );
-          } else if (payload.eventType === 'DELETE') {
-            setJobs((prev) => prev.filter((job) => job.id !== (payload.old as Job).id));
-          }
+          refetchJobs();
         }
       )
       .subscribe();
@@ -104,7 +104,7 @@ export default function JobsClient({ initialJobs }: JobsClientProps) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [toast]);
+  }, [toast, refetchJobs]);
 
   const filteredJobs = React.useMemo(() => {
     return jobs
@@ -135,7 +135,7 @@ export default function JobsClient({ initialJobs }: JobsClientProps) {
   return (
     <>
       <Header title="Job Postings Management">
-        <JobDialog onJobAddedOrUpdated={() => {}}>
+        <JobDialog onJobAddedOrUpdated={refetchJobs}>
           <Button size="sm">
             <PlusCircle className="mr-2 h-4 w-4" />
             Create Job
@@ -179,7 +179,7 @@ export default function JobsClient({ initialJobs }: JobsClientProps) {
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <JobDialog job={job} onJobAddedOrUpdated={() => {}}>
+                        <JobDialog job={job} onJobAddedOrUpdated={refetchJobs}>
                         <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                             <Edit className="mr-2 h-4 w-4" /> Edit Job
                         </DropdownMenuItem>

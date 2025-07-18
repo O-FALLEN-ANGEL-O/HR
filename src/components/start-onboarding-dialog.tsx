@@ -52,6 +52,7 @@ export function StartOnboardingDialog({ children, onWorkflowAdded, users }: Star
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
+    defaultValues: { user_id: '', manager_id: '', buddy_id: '' }
   });
 
   const onSubmit: SubmitHandler<z.infer<typeof FormSchema>> = async (formData) => {

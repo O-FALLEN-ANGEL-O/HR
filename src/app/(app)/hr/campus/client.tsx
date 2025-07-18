@@ -32,6 +32,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { NewCollegeDialog } from '@/components/new-college-dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const statusColors: { [key: string]: string } = {
   Invited: 'bg-yellow-100 text-yellow-800',
@@ -53,6 +54,24 @@ export default function CollegeDriveClient({ initialColleges }: CollegeDriveClie
   React.useEffect(() => {
     setIsClient(true);
   }, []);
+
+  const refetchColleges = React.useCallback(async () => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+        .from('colleges')
+        .select('*, applicants(count)')
+        .order('last_contacted', { ascending: false });
+
+    if (error) {
+        toast({ title: 'Error', description: 'Could not refetch college data.', variant: 'destructive'});
+    } else {
+        const updatedColleges = data.map(c => ({
+            ...c,
+            resumes_received: c.applicants[0]?.count || 0,
+        }));
+        setColleges(updatedColleges);
+    }
+  }, [toast]);
   
   React.useEffect(() => {
     setColleges(initialColleges);
@@ -65,23 +84,12 @@ export default function CollegeDriveClient({ initialColleges }: CollegeDriveClie
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'colleges' },
-        async () => {
+        () => {
           toast({
             title: 'College Data Updated',
             description: 'The list of colleges has been updated.',
           });
-          const { data } = await supabase
-            .from('colleges')
-            .select('*, applicants(count)')
-            .order('last_contacted', { ascending: false });
-          
-          if(data) {
-             const updatedColleges = data.map(c => ({
-              ...c,
-              resumes_received: c.applicants[0]?.count || 0,
-            }));
-            setColleges(updatedColleges);
-          }
+          refetchColleges();
         }
       )
       .subscribe();
@@ -89,83 +97,86 @@ export default function CollegeDriveClient({ initialColleges }: CollegeDriveClie
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [toast]);
+  }, [toast, refetchColleges]);
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+    <>
       <Header title="College Drives &amp; Internships">
-        <NewCollegeDialog onCollegeAdded={() => window.location.reload()}>
+        <NewCollegeDialog onCollegeAdded={refetchColleges}>
           <Button size="sm">
             <PlusCircle className="mr-2 h-4 w-4" />
             Invite College
           </Button>
         </NewCollegeDialog>
       </Header>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Partner Colleges</CardTitle>
-          <CardDescription>
-            Manage campus recruitment drives and track correspondence.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>College Name</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Resumes Received</TableHead>
-                <TableHead>Last Contacted</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {colleges.map((college) => (
-                <TableRow key={college.id}>
-                  <TableCell>
-                    <div className="font-medium">{college.name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {college.contact_email}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" className={statusColors[college.status]}>
-                      {college.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="font-medium">{college.resumes_received}</div>
-                  </TableCell>
-                  <TableCell>
-                    {isClient ? format(new Date(college.last_contacted), 'PPP') : ''}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Send className="mr-2 h-4 w-4" />
-                          Send Reminder
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => router.push('/hr/applicants')}>
-                          <Users className="mr-2 h-4 w-4" />
-                          View Applicants
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
+      <main className="flex-1 p-4 md:p-6">
+        <Card>
+            <CardHeader>
+            <CardTitle>Partner Colleges</CardTitle>
+            <CardDescription>
+                Manage campus recruitment drives and track correspondence.
+            </CardDescription>
+            </CardHeader>
+            <CardContent>
+            <ScrollArea className="h-[65vh] w-full">
+                <Table>
+                <TableHeader>
+                    <TableRow>
+                    <TableHead>College Name</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Resumes Received</TableHead>
+                    <TableHead>Last Contacted</TableHead>
+                    <TableHead>Actions</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {colleges.map((college) => (
+                    <TableRow key={college.id}>
+                        <TableCell>
+                        <div className="font-medium">{college.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                            {college.contact_email}
+                        </div>
+                        </TableCell>
+                        <TableCell>
+                        <Badge variant="secondary" className={statusColors[college.status]}>
+                            {college.status}
+                        </Badge>
+                        </TableCell>
+                        <TableCell>
+                        <div className="font-medium">{college.resumes_received}</div>
+                        </TableCell>
+                        <TableCell>
+                        {isClient ? format(new Date(college.last_contacted), 'PPP') : ''}
+                        </TableCell>
+                        <TableCell>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                            <DropdownMenuItem>
+                                <Send className="mr-2 h-4 w-4" />
+                                Send Reminder
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => router.push('/hr/applicants')}>
+                                <Users className="mr-2 h-4 w-4" />
+                                View Applicants
+                            </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        </TableCell>
+                    </TableRow>
+                    ))}
+                </TableBody>
+                </Table>
+            </ScrollArea>
+            </CardContent>
+        </Card>
+      </main>
+    </>
   );
 }

@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -89,9 +88,13 @@ export default function ApplicantList({
 
   const fetchApplicants = React.useCallback(async () => {
     const supabase = createClient();
-    const { data } = await supabase.from('applicants').select('*, jobs(title)').order('applied_date', { ascending: false });
-    setApplicants(data || []);
-  }, []);
+    const { data, error } = await supabase.from('applicants').select('*, jobs(title)').order('applied_date', { ascending: false });
+    if(error) {
+        toast({ title: 'Error', description: 'Could not fetch applicants.', variant: 'destructive'});
+    } else {
+        setApplicants(data || []);
+    }
+  }, [toast]);
 
   React.useEffect(() => {
     setApplicants(initialApplicants);
@@ -167,10 +170,10 @@ export default function ApplicantList({
   };
   
   const handleAssignTest = (applicantId: string) => {
-    const url = `${window.location.origin}/typing-test?id=${applicantId}`;
+    const url = `${window.location.origin}/start-test?id=${applicantId}`;
     navigator.clipboard.writeText(url);
     toast({
-      title: 'Typing Test Link Copied!',
+      title: 'Assessment Portal Link Copied!',
       description: 'The link has been copied to your clipboard.',
     });
   };
@@ -276,7 +279,7 @@ export default function ApplicantList({
                         <div>
                           <div className="font-medium whitespace-nowrap">{applicant.name}</div>
                           <div className="text-sm text-muted-foreground">
-                            #{applicant.application_id}
+                            {applicant.email}
                           </div>
                         </div>
                       </div>
@@ -336,7 +339,7 @@ export default function ApplicantList({
                             onClick={() => handleAssignTest(applicant.id)}
                           >
                             <Keyboard className="mr-2 h-4 w-4" />
-                            Assign Typing Test
+                            Assign Assessments
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

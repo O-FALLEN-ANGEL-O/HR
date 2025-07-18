@@ -8,7 +8,7 @@ import { redirect } from 'next/navigation';
 import { applicantMatchScoring } from '@/ai/flows/applicant-match-scoring';
 import { createClient } from '@/lib/supabase/server';
 import { getUser } from '@/lib/supabase/user';
-import type { LeaveBalance, UserProfile, HelpdeskTicket, College, Onboarding, Job } from '@/lib/types';
+import type { LeaveBalance, UserProfile, HelpdeskTicket, Onboarding, Job } from '@/lib/types';
 import { createCalendarEvent } from '@/services/google-calendar';
 
 export async function addEmployee(formData: FormData) {
@@ -68,8 +68,6 @@ export async function addJob(formData: FormData) {
   if (error) {
     throw new Error(`Failed to add job: ${error.message}`);
   }
-
-  revalidatePath('/recruiter/jobs');
 }
 
 export async function updateJob(jobId: string, formData: FormData) {
@@ -98,8 +96,6 @@ export async function updateJob(jobId: string, formData: FormData) {
   if (error) {
     throw new Error(`Failed to update job: ${error.message}`);
   }
-
-  revalidatePath('/recruiter/jobs');
 }
 
 
@@ -130,8 +126,6 @@ export async function addCollege(formData: FormData) {
   if (error) {
     throw new Error(`Failed to add college: ${error.message}`);
   }
-
-  revalidatePath('/hr/campus');
 }
 
 export async function addExpenseReport(formData: FormData) {
@@ -207,8 +201,6 @@ export async function startOnboardingWorkflow(formData: FormData) {
   if (error) {
     throw new Error(`Could not start onboarding: ${error.message}`);
   }
-
-  revalidatePath('/hr/onboarding');
 }
 
 export async function applyForLeave(formData: FormData) {
@@ -256,8 +248,6 @@ export async function applyForLeave(formData: FormData) {
     if (insertError) {
         throw new Error(`Could not submit leave request: ${insertError.message}`);
     }
-
-    revalidatePath('/leaves');
 }
 
 export async function updateLeaveStatus(leaveId: string, status: 'approved' | 'rejected') {
@@ -274,7 +264,6 @@ export async function updateLeaveStatus(leaveId: string, status: 'approved' | 'r
         throw new Error('Leave request not found.');
     }
 
-    // Start a transaction
     const { data: balance, error: balanceError } = await supabase
         .from('leave_balances')
         .select('*')
@@ -300,15 +289,11 @@ export async function updateLeaveStatus(leaveId: string, status: 'approved' | 'r
             
             if (updateBalanceError) throw new Error('Could not update leave balance during approval.');
         }
-    } else if (status === 'rejected' && leave.status === 'pending') {
-        // No balance change on rejection, as it wasn't deducted on application
     }
 
     const { error: updateLeaveError } = await supabase.from('leaves').update({ status, approver_id: approver.id }).eq('id', leaveId);
 
     if (updateLeaveError) {
-        // If updating the leave fails, we should ideally rollback the balance change.
-        // This is complex without true transactions. For now, we'll log the error.
         console.error("CRITICAL: Failed to update leave status after balance change. Manual correction needed for user:", leave.user_id);
         throw new Error(`Failed to update leave status: ${updateLeaveError.message}`);
     }
@@ -344,8 +329,6 @@ export async function addApplicantNote(formData: FormData) {
     console.error('Error adding note:', error);
     throw new Error('Could not add note. You may not have the required permissions.');
   }
-
-  revalidatePath(`/hr/applicants/${applicant_id}`);
 }
 
 
@@ -394,8 +377,6 @@ export async function generateAiMatchScore(applicantId: string) {
         console.error("Error updating applicant with AI score:", updateError);
         throw new Error("Could not save AI score to the database.");
     }
-    
-    revalidatePath(`/hr/applicants/${applicantId}`);
 }
 
 
@@ -462,8 +443,6 @@ export async function scheduleInterview(formData: FormData) {
   } catch(calendarError) {
       console.warn("Could not create calendar event, but interview was scheduled in the database.", calendarError);
   }
-
-  revalidatePath('/interviewer/tasks');
 }
 
 
@@ -481,8 +460,6 @@ export async function updateInterviewStatus(interviewId: string, status: 'Comple
     if (error) {
         throw new Error(`Failed to update interview status: ${error.message}`);
     }
-    
-    revalidatePath('/interviewer/tasks');
 }
 
 export async function addCompanyPost(formData: FormData) {
@@ -554,8 +531,6 @@ export async function addPostComment(formData: FormData) {
     if (error) {
         throw new Error(`Failed to add comment: ${error.message}`);
     }
-
-    revalidatePath('/company-feed');
 }
 
 export async function addKudo(formData: FormData) {
@@ -634,8 +609,6 @@ export async function createHelpdeskTicket(data: Omit<HelpdeskTicket, 'id' | 'us
     if (error) {
         throw new Error(`Failed to create ticket: ${error.message}`);
     }
-
-    revalidatePath('/helpdesk');
 }
 
 export async function addTicketComment(ticketId: string, comment: string) {

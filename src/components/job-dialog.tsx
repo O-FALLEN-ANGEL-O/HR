@@ -31,9 +31,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { createClient } from '@/lib/supabase/client';
 import type { Job } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
+import { addJob, updateJob } from '@/app/actions';
 
 const FormSchema = z.object({
   title: z.string().min(3, 'Job title must be at least 3 characters.'),
@@ -50,7 +50,6 @@ type JobDialogProps = {
 
 export function JobDialog({ children, onJobAddedOrUpdated, job }: JobDialogProps) {
   const [open, setOpen] = React.useState(false);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const { toast } = useToast();
   const isEditMode = !!job;
 
@@ -83,25 +82,23 @@ export function JobDialog({ children, onJobAddedOrUpdated, job }: JobDialogProps
   }, [job, open, form]);
 
   const onSubmit: SubmitHandler<z.infer<typeof FormSchema>> = async (formData) => {
-    setIsSubmitting(true);
-    const supabase = createClient();
+    const serverFormData = new FormData();
+    Object.entries(formData).forEach(([key, value]) => {
+        serverFormData.append(key, value);
+    });
+
     try {
-      let error;
-      if (isEditMode) {
-        ({ error } = await supabase.from('jobs').update(formData).eq('id', job.id));
-      } else {
-        ({ error } = await supabase.from('jobs').insert([{ ...formData, posted_date: new Date().toISOString(), applicants: 0 }]));
-      }
-      
-      if (error) throw error;
+        if (isEditMode && job) {
+            await updateJob(job.id, serverFormData);
+        } else {
+            await addJob(serverFormData);
+        }
       
       toast({ title: `Job ${isEditMode ? 'Updated' : 'Created'}`, description: `The job posting for ${formData.title} has been saved.` });
       onJobAddedOrUpdated();
       setOpen(false);
     } catch (error: any) {
       toast({ title: 'Error', description: `Failed to save job: ${error.message}`, variant: 'destructive' });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -142,8 +139,8 @@ export function JobDialog({ children, onJobAddedOrUpdated, job }: JobDialogProps
             )}/>
             <DialogFooter>
               <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isEditMode ? 'Save Changes' : 'Create Job'}
               </Button>
             </DialogFooter>

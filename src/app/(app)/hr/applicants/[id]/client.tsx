@@ -38,6 +38,7 @@ import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
 import type { Applicant, ApplicantNote } from '@/lib/types';
 import type { ProcessResumeOutput } from '@/ai/flows/process-resume';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const stageColors: { [key: string]: string } = {
   Sourced: 'bg-gray-100 text-gray-800',
@@ -62,6 +63,16 @@ export default function ApplicantProfileClient({
   const [notes, setNotes] = React.useState(initialNotes);
   const [isGeneratingScore, setIsGeneratingScore] = React.useState(false);
   const { toast } = useToast();
+
+  const fetchNotes = React.useCallback(async () => {
+    const supabase = createClient();
+    const { data: newNotes } = await supabase
+        .from('applicant_notes')
+        .select('*')
+        .eq('applicant_id', applicant.id)
+        .order('created_at', { ascending: false });
+    setNotes(newNotes || []);
+  }, [applicant.id]);
 
   React.useEffect(() => {
     const supabase = createClient();
@@ -95,14 +106,7 @@ export default function ApplicantProfileClient({
           table: 'applicant_notes',
           filter: `applicant_id=eq.${applicant.id}`,
         },
-        async () => {
-             const { data: newNotes } = await supabase
-                .from('applicant_notes')
-                .select('*')
-                .eq('applicant_id', applicant.id)
-                .order('created_at', { ascending: false });
-            setNotes(newNotes || []);
-        }
+        () => fetchNotes()
       )
       .subscribe();
 
@@ -111,7 +115,7 @@ export default function ApplicantProfileClient({
       supabase.removeChannel(applicantChannel);
       supabase.removeChannel(notesChannel);
     };
-  }, [applicant.id, applicant.name, toast]);
+  }, [applicant.id, applicant.name, toast, fetchNotes]);
 
   const handleGenerateScore = async () => {
     setIsGeneratingScore(true);
@@ -333,11 +337,11 @@ function ResumeDetails({ resume }: { resume?: ProcessResumeOutput | null }) {
                 </div>
                 <div>
                     <h3 className="font-semibold text-lg mb-2">Full Resume Text</h3>
-                    <div className="p-4 border rounded-md bg-muted/50 max-h-96 overflow-y-auto">
+                    <ScrollArea className="p-4 border rounded-md bg-muted/50 max-h-96">
                         <pre className="text-sm whitespace-pre-wrap font-mono">
                             {resume.fullText || 'No full text extracted.'}
                         </pre>
-                    </div>
+                    </ScrollArea>
                 </div>
             </CardContent>
         </Card>
@@ -378,10 +382,10 @@ function NotesSection({ applicantId, notes }: { applicantId: string, notes: Appl
                     </Button>
                 </form>
 
-                <div className="space-y-4">
+                <ScrollArea className="space-y-4 h-96">
                     {notes.length > 0 ? (
                         notes.map(note => (
-                            <div key={note.id} className="flex items-start gap-3">
+                            <div key={note.id} className="flex items-start gap-3 p-1">
                                 <Avatar className="h-9 w-9">
                                     <AvatarImage src={note.author_avatar || undefined} />
                                     <AvatarFallback>{note.author_name.charAt(0)}</AvatarFallback>
@@ -398,7 +402,7 @@ function NotesSection({ applicantId, notes }: { applicantId: string, notes: Appl
                     ) : (
                         <p className="text-sm text-center text-muted-foreground py-4">No notes have been added yet.</p>
                     )}
-                </div>
+                </ScrollArea>
             </CardContent>
         </Card>
     )
