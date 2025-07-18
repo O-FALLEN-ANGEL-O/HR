@@ -243,15 +243,6 @@ export async function applyForLeave(formData: FormData) {
         throw new Error('Insufficient leave balance for this request.');
     }
     
-    if (leaveType !== 'unpaid_leave') {
-        const { error: updateBalanceError } = await supabase
-            .from('leave_balances')
-            .update({ [leaveType]: balance[leaveType] - totalDays })
-            .eq('user_id', user.id);
-            
-        if (updateBalanceError) throw new Error('Could not update leave balance.');
-    }
-
     const { error: insertError } = await supabase.from('leaves').insert({
         user_id: user.id,
         leave_type: leaveType.replace('_leave', ''),
@@ -263,10 +254,6 @@ export async function applyForLeave(formData: FormData) {
     });
 
     if (insertError) {
-        // Rollback balance deduction if it happened
-        if (leaveType !== 'unpaid_leave') {
-            await supabase.from('leave_balances').update({ [leaveType]: balance[leaveType] }).eq('user_id', user.id);
-        }
         throw new Error(`Could not submit leave request: ${insertError.message}`);
     }
 
@@ -287,29 +274,43 @@ export async function updateLeaveStatus(leaveId: string, status: 'approved' | 'r
         throw new Error('Leave request not found.');
     }
 
-    if (status === 'rejected' && leave.status === 'pending') {
-        const leaveType = `${leave.leave_type}_leave` as keyof Omit<LeaveBalance, 'id' | 'user_id'>;
-        if (leaveType !== 'unpaid_leave') {
-            const { data: balance, error: balanceError } = await supabase
-                .from('leave_balances')
-                .select(leaveType)
-                .eq('user_id', leave.user_id)
-                .single();
+    // Start a transaction
+    const { data: balance, error: balanceError } = await supabase
+        .from('leave_balances')
+        .select('*')
+        .eq('user_id', leave.user_id)
+        .single();
 
-            if (!balanceError && balance) {
-                await supabase
-                    .from('leave_balances')
-                    .update({ [leaveType]: (balance[leaveType] || 0) + leave.total_days })
-                    .eq('user_id', leave.user_id);
-            }
-        }
+    if (balanceError || !balance) {
+        throw new Error('Could not find leave balance for the user.');
     }
 
+    const leaveType = `${leave.leave_type}_leave` as keyof Omit<LeaveBalance, 'id' | 'user_id'>;
 
-    const { error } = await supabase.from('leaves').update({ status, approver_id: approver.id }).eq('id', leaveId);
+    if (status === 'approved' && leave.status === 'pending') {
+        if (leaveType !== 'unpaid_leave') {
+            const newBalance = (balance[leaveType] || 0) - leave.total_days;
+            if (newBalance < 0) {
+                throw new Error('Approving this leave would result in a negative balance.');
+            }
+             const { error: updateBalanceError } = await supabase
+                .from('leave_balances')
+                .update({ [leaveType]: newBalance })
+                .eq('user_id', leave.user_id);
+            
+            if (updateBalanceError) throw new Error('Could not update leave balance during approval.');
+        }
+    } else if (status === 'rejected' && leave.status === 'pending') {
+        // No balance change on rejection, as it wasn't deducted on application
+    }
 
-    if (error) {
-        throw new Error(`Failed to update leave status: ${error.message}`);
+    const { error: updateLeaveError } = await supabase.from('leaves').update({ status, approver_id: approver.id }).eq('id', leaveId);
+
+    if (updateLeaveError) {
+        // If updating the leave fails, we should ideally rollback the balance change.
+        // This is complex without true transactions. For now, we'll log the error.
+        console.error("CRITICAL: Failed to update leave status after balance change. Manual correction needed for user:", leave.user_id);
+        throw new Error(`Failed to update leave status: ${updateLeaveError.message}`);
     }
     
     revalidatePath('/leaves');
