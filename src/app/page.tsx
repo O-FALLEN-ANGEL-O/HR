@@ -4,10 +4,11 @@ import { redirect } from 'next/navigation';
 import type { UserRole } from '@/lib/types';
 
 // This page now acts as the main entry point and immediately redirects to the dashboard
-// corresponding to the demo role, or admin by default.
+// corresponding to the demo role.
 export default async function Home() {
     const cookieStore = cookies();
-    const role = cookieStore.get('demo_role')?.value as UserRole | 'admin';
+    // Default to 'admin' if no cookie is present, otherwise use the cookie's value.
+    const role = (cookieStore.get('demo_role')?.value as UserRole) || 'admin';
 
     const roleDashboardPaths: Record<UserRole, string> = {
         admin: '/admin/dashboard',
@@ -23,8 +24,9 @@ export default async function Home() {
         it_admin: '/employee/dashboard',
         support: '/helpdesk',
         auditor: '/employee/dashboard',
-        guest: '/login',
+        guest: '/login', // Fallback for guest role
     };
 
-    redirect(roleDashboardPaths[role] || '/employee/dashboard');
+    const targetPath = roleDashboardPaths[role] || '/employee/dashboard';
+    redirect(targetPath);
 }
