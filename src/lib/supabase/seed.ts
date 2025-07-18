@@ -1,7 +1,5 @@
 
 'use server';
-import { config } from 'dotenv';
-config({ path: '.env.local' });
 
 import { createClient } from '@supabase/supabase-js';
 import { faker } from '@faker-js/faker';
