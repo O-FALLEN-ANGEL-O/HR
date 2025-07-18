@@ -150,20 +150,12 @@ async function seed() {
     const managers = users.filter(u => u.role === 'manager' || u.role === 'team_lead' || u.role === 'super_hr');
     const employees = users.filter(u => u.role === 'employee' || u.role === 'intern');
     
-    await seedJobs();
-    const { data: jobs } = await supabaseAdmin.from('jobs').select('id');
+    const jobs = await seedJobs();
+    const colleges = await seedColleges();
+    const applicants = await seedApplicants(jobs, colleges);
     
-    await seedColleges();
-    const { data: colleges } = await supabaseAdmin.from('colleges').select('id');
-
-    if (jobs && colleges) {
-      await seedApplicants(jobs, colleges);
-      const { data: applicants } = await supabaseAdmin.from('applicants').select('id, name, email');
-      if (applicants) {
-         await seedApplicantNotes(applicants, users);
-         await seedInterviews(applicants, users.filter(u => u.role === 'interviewer' || u.role === 'manager'));
-      }
-    }
+    await seedApplicantNotes(applicants, users);
+    await seedInterviews(applicants, users.filter(u => u.role === 'interviewer' || u.role === 'manager'));
     
     await seedLeaveBalancesAndLeave(users, managers);
     await seedOnboarding(employees, managers);
@@ -196,8 +188,10 @@ async function seedJobs() {
     posted_date: faker.date.past({ years: 1 }),
     applicants: faker.number.int({ min: 5, max: 100 }),
   }));
-  await supabaseAdmin.from('jobs').insert(jobs);
-  console.log(`✅ Seeded ${jobCount} jobs.`);
+  const { data, error } = await supabaseAdmin.from('jobs').insert(jobs).select();
+  if (error) throw new Error(`Failed to seed jobs: ${error.message}`);
+  console.log(`✅ Seeded ${data.length} jobs.`);
+  return data;
 }
 
 async function seedColleges() {
@@ -209,11 +203,17 @@ async function seedColleges() {
         contact_email: faker.internet.email(),
         last_contacted: faker.date.recent({ days: 30 })
     }));
-    await supabaseAdmin.from('colleges').insert(colleges);
-    console.log(`✅ Seeded ${collegeCount} colleges.`);
+    const { data, error } = await supabaseAdmin.from('colleges').insert(colleges).select();
+    if (error) throw new Error(`Failed to seed colleges: ${error.message}`);
+    console.log(`✅ Seeded ${data.length} colleges.`);
+    return data;
 }
 
 async function seedApplicants(jobs: {id: string}[], colleges: {id: string}[]) {
+    if (!jobs?.length || !colleges?.length) {
+        console.warn('🟡 Skipping applicant seeding because no jobs or colleges were provided.');
+        return [];
+    }
     const applicantCount = 50;
     const stages: ApplicantStage[] = ['Sourced', 'Applied', 'Phone Screen', 'Interview', 'Offer', 'Hired', 'Rejected'];
     const applicants = Array.from({ length: applicantCount }, () => {
@@ -235,12 +235,14 @@ async function seedApplicants(jobs: {id: string}[], colleges: {id: string}[]) {
             aptitude_score: faker.number.int({ min: 60, max: 98 }),
         };
     });
-    await supabaseAdmin.from('applicants').insert(applicants);
-    console.log(`✅ Seeded ${applicantCount} applicants.`);
+    const { data, error } = await supabaseAdmin.from('applicants').insert(applicants).select('id, name, email');
+    if (error) throw new Error(`Failed to seed applicants: ${error.message}`);
+    console.log(`✅ Seeded ${data.length} applicants.`);
+    return data;
 }
 
 async function seedApplicantNotes(applicants: {id: string}[], users: UserProfile[]) {
-    if (!users || users.length === 0) return;
+    if (!users?.length || !applicants?.length) return;
     const notes = applicants.flatMap(applicant => 
         Array.from({ length: faker.number.int({ min: 0, max: 4 }) }, () => {
             const author = faker.helpers.arrayElement(users);
@@ -260,7 +262,7 @@ async function seedApplicantNotes(applicants: {id: string}[], users: UserProfile
 }
 
 async function seedInterviews(applicants: {id: string, name: string}[], interviewers: UserProfile[]) {
-    if (applicants.length === 0 || interviewers.length === 0) return;
+    if (!applicants?.length || !interviewers?.length) return;
     const interviews = applicants.map(applicant => {
         const interviewer = faker.helpers.arrayElement(interviewers);
         return {
@@ -282,7 +284,7 @@ async function seedInterviews(applicants: {id: string, name: string}[], intervie
 }
 
 async function seedLeaveBalancesAndLeave(users: UserProfile[], managers: UserProfile[]) {
-    if (users.length === 0) return;
+    if (!users?.length) return;
     const balances = users.map(user => ({
         user_id: user.id,
         sick_leave: 12,
@@ -293,7 +295,7 @@ async function seedLeaveBalancesAndLeave(users: UserProfile[], managers: UserPro
     await supabaseAdmin.from('leave_balances').insert(balances);
     console.log(`✅ Seeded ${balances.length} leave balances.`);
     
-    if (managers.length === 0) {
+    if (!managers?.length) {
         console.warn("🟡 No managers found, skipping leave request seeding.");
         return;
     };
@@ -318,7 +320,7 @@ async function seedLeaveBalancesAndLeave(users: UserProfile[], managers: UserPro
 }
 
 async function seedOnboarding(employees: UserProfile[], managers: UserProfile[]) {
-    if (employees.length === 0 || managers.length === 0) return;
+    if (!employees?.length || !managers?.length) return;
     const workflows = employees.slice(0, 5).map(employee => {
         const buddy = faker.helpers.arrayElement(employees.filter(e => e.id !== employee.id));
         return {
@@ -342,7 +344,7 @@ async function seedOnboarding(employees: UserProfile[], managers: UserProfile[])
 }
 
 async function seedPerformanceReviews(employees: UserProfile[]) {
-    if (employees.length === 0) return;
+    if (!employees?.length) return;
     const reviews = employees.map(employee => ({
         user_id: employee.id,
         review_date: faker.date.past({ years: 1 }),
@@ -354,7 +356,7 @@ async function seedPerformanceReviews(employees: UserProfile[]) {
 }
 
 async function seedOkrs(users: UserProfile[]) {
-    if (users.length === 0) return;
+    if (!users?.length) return;
     const objectives = Array.from({ length: 5 }, () => ({
         owner_id: faker.helpers.arrayElement(users).id,
         title: faker.company.catchPhrase(),
@@ -377,7 +379,7 @@ async function seedOkrs(users: UserProfile[]) {
 }
 
 async function seedCompanyFeed(users: UserProfile[]) {
-     if (users.length === 0) return;
+     if (!users?.length) return;
     const posts = Array.from({ length: 10 }, () => ({
         user_id: faker.helpers.arrayElement(users).id,
         content: faker.lorem.paragraph(),
@@ -429,7 +431,7 @@ async function seedWeeklyAward(managers: UserProfile[], employees: UserProfile[]
 }
 
 async function seedPayslips(employees: UserProfile[]) {
-     if (employees.length === 0) return;
+     if (!employees?.length) return;
     const payslips = employees.flatMap(emp => 
         Array.from({ length: 3 }, () => {
             const gross = faker.number.int({ min: 50000, max: 150000 });
@@ -458,7 +460,7 @@ async function seedCompanyDocs() {
 }
 
 async function seedExpenses(users: UserProfile[]) {
-     if (users.length === 0) return;
+     if (!users?.length) return;
     const reports = users.map(user => ({
         user_id: user.id,
         title: `Expenses for ${faker.commerce.department()}`,
@@ -482,7 +484,7 @@ async function seedExpenses(users: UserProfile[]) {
 }
 
 async function seedHelpdesk(users: UserProfile[]) {
-    if (users.length === 0) return;
+    if (!users?.length) return;
     const supportStaff = users.filter(u => u.role === 'it_admin' || u.role === 'support');
     const tickets = Array.from({ length: 15 }, () => ({
         user_id: faker.helpers.arrayElement(users).id,
