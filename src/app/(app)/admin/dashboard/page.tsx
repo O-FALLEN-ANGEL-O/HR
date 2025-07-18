@@ -1,3 +1,4 @@
+
 import { Header } from '@/components/header';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Users, ShieldCheck, History, HeartPulse, FileLock2, ScanSearch, LayoutDashboard } from 'lucide-react';
@@ -26,9 +27,9 @@ export default function AdminDashboardPage() {
               </CardHeader>
           </Card>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {features.map((feature, index) => {
+              {features.map((feature) => {
                 const card = (
-                  <Card key={index} className={`flex flex-col h-full transition-all duration-300 ${feature.enabled ? 'hover:shadow-lg hover:-translate-y-1' : 'opacity-60 cursor-not-allowed bg-card'}`}>
+                  <Card className={`flex flex-col h-full transition-all duration-300 ${feature.enabled ? 'hover:shadow-lg hover:-translate-y-1' : 'opacity-60 cursor-not-allowed bg-card'}`}>
                       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
                           <div className="space-y-1">
                             <CardTitle className="text-base font-bold">{feature.title}</CardTitle>
@@ -44,7 +45,7 @@ export default function AdminDashboardPage() {
                   </Card>
                 );
 
-                return feature.enabled ? <Link href={feature.href} className="flex">{card}</Link> : card;
+                return feature.enabled ? <Link href={feature.href} key={feature.title} className="flex">{card}</Link> : <div key={feature.title}>{card}</div>;
               })}
           </div>
         </div>
