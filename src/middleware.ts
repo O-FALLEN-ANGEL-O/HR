@@ -1,6 +1,6 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
-import { updateSession } from '@/lib/supabase/middleware';
+import { getUser } from '@/lib/supabase/user';
 import type { UserRole } from './lib/types';
 
 const roleDashboardPaths: Record<UserRole, string> = {
@@ -25,24 +25,24 @@ const protectedRoutes: {path: string, roles: UserRole[]}[] = [
     { path: '/hr', roles: ['admin', 'super_hr', 'hr_manager', 'recruiter'] },
     { path: '/recruiter', roles: ['admin', 'super_hr', 'hr_manager', 'recruiter'] },
     { path: '/interviewer', roles: ['admin', 'super_hr', 'hr_manager', 'recruiter', 'manager', 'interviewer'] },
-    // Add other protected route groups here
 ];
 
 export async function middleware(request: NextRequest) {
-  const { response, user } = await updateSession(request);
+  // Directly get the simulated user based on the 'demo_role' cookie
+  const user = await getUser(request.cookies);
   const { pathname } = request.nextUrl;
   
   const publicPaths = ['/login', '/register', '/update-password', '/portal', '/typing-test', '/aptitude-test', '/comprehensive-test', '/english-grammar-test', '/customer-service-test', '/start-test'];
 
-  // If user is not logged in and trying to access a protected route, redirect to login
+  // If user is not logged in (no demo_role cookie) and trying to access a protected route, redirect to login
   if (!user && !publicPaths.some(p => pathname.startsWith(p))) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
   
   // If user is logged in
   if (user) {
-    // If they are on a public-only page (like login), redirect them to their dashboard
-    if (publicPaths.includes(pathname)) {
+    // If they are on the login page, redirect them to their dashboard
+    if (pathname === '/login') {
         return NextResponse.redirect(new URL(roleDashboardPaths[user.role] || '/', request.url));
     }
     
@@ -58,7 +58,8 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  return response;
+  // Allow the request to proceed
+  return NextResponse.next();
 }
 
 
