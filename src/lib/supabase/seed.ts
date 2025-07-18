@@ -265,7 +265,9 @@ async function seedInterviews(applicants: {id: string, name: string}[], intervie
             type: faker.helpers.arrayElement(['Video', 'Phone', 'In-person']),
             status: 'Scheduled',
             candidate_name: applicant.name,
+            candidate_avatar: faker.image.avatar(),
             interviewer_name: interviewer.full_name,
+            interviewer_avatar: interviewer.avatar_url,
             job_title: faker.person.jobTitle(),
         };
     });
@@ -318,6 +320,7 @@ async function seedOnboarding(employees: UserProfile[], managers: UserProfile[])
             manager_id: faker.helpers.arrayElement(managers).id,
             buddy_id: buddy ? buddy.id : null,
             employee_name: employee.full_name,
+            employee_avatar: employee.avatar_url,
             job_title: faker.person.jobTitle(),
             manager_name: faker.person.fullName(),
             buddy_name: buddy ? buddy.full_name : null,
