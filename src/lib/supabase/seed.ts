@@ -56,7 +56,14 @@ async function createAndSeedUser({ email, fullName, role, department }: typeof C
     }
     
     // Now get the user ID, either from the newly created user or by fetching the existing one
-    const { data: { user } } = await supabaseAdmin.auth.admin.getUserByEmail(email);
+    const { data: { users: userList }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ email });
+
+    if (listError || !userList || userList.length === 0) {
+        console.error(`🔴 Could not find user ${email} in auth after creation/check. Error: ${listError?.message}`);
+        return null;
+    }
+    
+    const user = userList[0];
 
     if (!user) {
         console.error(`🔴 Could not find user ${email} in auth after creation/check.`);
