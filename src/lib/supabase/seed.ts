@@ -134,7 +134,7 @@ async function seed() {
   console.log(`✅ Finished seeding/verifying ${users.length} core users.`);
 
   if (users.length === 0) {
-      console.error('🔴 Could not fetch users after seeding, or no users found. Aborting rest of seed.', usersError?.message);
+      console.error('🔴 Could not fetch users after seeding, or no users found. Aborting rest of seed.');
       return;
   }
 
