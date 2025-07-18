@@ -1,8 +1,9 @@
+
 'use client';
 
 import * as React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Avatar,
   AvatarFallback,
@@ -31,6 +32,7 @@ import {
   LifeBuoy,
   Target,
   User as UserIcon,
+  ChevronsUpDown,
 } from 'lucide-react';
 
 import {
@@ -47,7 +49,7 @@ import {
 } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
-import { logout } from '@/app/auth/actions';
+import { loginWithRole } from '@/app/auth/actions';
 import type { UserProfile, UserRole } from '@/lib/types';
 import {
   DropdownMenu,
@@ -56,6 +58,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuPortal
 } from '@/components/ui/dropdown-menu';
 
 
@@ -118,6 +124,12 @@ const getNavLinks = (role: UserRole) => {
   return uniqueLinks;
 };
 
+const allRoles: UserRole[] = [
+  'admin', 'super_hr', 'hr_manager', 'recruiter', 'interviewer',
+  'manager', 'team_lead', 'employee', 'intern', 'finance',
+  'it_admin', 'support', 'auditor',
+];
+
 
 export default function AppShell({
   children,
@@ -127,6 +139,7 @@ export default function AppShell({
   user: UserProfile;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
 
   const isActive = (path: string) => {
     if (path === pathname) return true;
@@ -136,6 +149,11 @@ export default function AppShell({
   
   const role = user?.role || 'guest';
   const navLinks = getNavLinks(role);
+  
+  const handleRoleChange = async (newRole: UserRole) => {
+    await loginWithRole(newRole);
+    window.location.href = '/'; // Force a full reload to apply new role everywhere
+  };
 
   return (
     <SidebarProvider>
@@ -179,13 +197,28 @@ export default function AppShell({
                 <DropdownMenuItem asChild>
                     <Link href="/profile"><UserIcon className="mr-2"/>My Profile</Link>
                 </DropdownMenuItem>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <ChevronsUpDown className="mr-2 h-4 w-4" />
+                    <span>Switch Role</span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent>
+                      {allRoles.map((r) => (
+                        <DropdownMenuItem key={r} onClick={() => handleRoleChange(r)} className="capitalize">
+                          {r.replace(/_/g, ' ')}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
                 {(role === 'admin' || role === 'super_hr') && (
                     <DropdownMenuItem asChild>
                         <Link href="/admin/roles"><Settings className="mr-2"/>Manage Roles</Link>
                     </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => logout()}>
+                <DropdownMenuItem onClick={() => {}}>
                   <LogOut className="mr-2" />
                   Log out
                 </DropdownMenuItem>

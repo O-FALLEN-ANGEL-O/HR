@@ -1,5 +1,4 @@
 
-import { createClient } from './server';
 import { type ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension/adapters/request-cookies';
 import type { UserProfile, UserRole } from '../types';
 
@@ -21,9 +20,10 @@ const DEMO_USER_DATA: Record<UserRole, Omit<UserProfile, 'id' | 'created_at' | '
 };
 
 export async function getUser(cookieStore: ReadonlyRequestCookies): Promise<UserProfile | null> {
-    const role = cookieStore.get('demo_role')?.value as UserRole | undefined;
+    // Default to 'admin' if no cookie is set.
+    const role = cookieStore.get('demo_role')?.value as UserRole | undefined || 'admin';
 
-    if (!role || !DEMO_USER_DATA[role]) {
+    if (!DEMO_USER_DATA[role]) {
         return null;
     }
 
