@@ -276,7 +276,7 @@ export default function ApplicantList({
                         <div>
                           <div className="font-medium whitespace-nowrap">{applicant.name}</div>
                           <div className="text-sm text-muted-foreground">
-                            {applicant.email}
+                            #{applicant.application_id}
                           </div>
                         </div>
                       </div>
@@ -352,5 +352,3 @@ export default function ApplicantList({
     </>
   );
 }
-
-    
