@@ -6,7 +6,6 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { applicantMatchScoring } from '@/ai/flows/applicant-match-scoring';
-import { supabaseAdmin } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { getUser } from '@/lib/supabase/user';
 import type { LeaveBalance, UserProfile, HelpdeskTicket, College, Onboarding, Job } from '@/lib/types';
@@ -29,47 +28,16 @@ export async function addEmployee(formData: FormData) {
     throw new Error('All fields are required.');
   }
 
-  // 1. Create the user in Supabase Auth
-  const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-    email,
-    email_confirm: true, // Auto-confirm email to make magic link work immediately
-    user_metadata: {
-      full_name: fullName,
-      role: role,
-      department: department,
-    },
-  });
+  // TODO: Create the user in Supabase Auth
+  // TODO: Send onboarding email with magic link
 
-  if (authError) {
-    throw new Error(`Could not create user: ${authError.message}`);
-  }
-  if (!authData.user) {
-    throw new Error('User was not created in the authentication system.');
-  }
-  
-  // The public.users table is now populated by a trigger, so we don't need to insert here.
-  // We just need to generate the setup link.
-
-  // 2. Generate an identity verification link (magic link) for the new user
-  const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-    type: 'magiclink',
-    email: email,
-  });
-
-  if (linkError) {
-    // If link generation fails, we should probably delete the user we just created to avoid orphans.
-    await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-    throw new Error(`Could not generate setup link: ${linkError.message}`);
-  }
-
-  // NOTE: In a real application, you would now email `linkData.properties.action_link` to the new user.
-  // For this demo, we will return it so the dialog can display it.
-  console.log("Onboarding Magic Link (for demo):", linkData.properties.action_link)
+  console.log("Simulating employee creation:", { fullName, email, department, role });
   
   revalidatePath('/hr/dashboard');
   
+  // For demo, return a fake link
   return {
-    setupLink: linkData.properties.action_link,
+    setupLink: `https://example.com/onboard?token=${Math.random().toString(36).substring(2)}`,
     userName: fullName,
     userEmail: email
   };
@@ -377,7 +345,6 @@ export async function addApplicantNote(formData: FormData) {
   }
 
   revalidatePath(`/hr/applicants/${applicant_id}`);
-  revalidatePath(`/applicants/${applicant_id}`);
 }
 
 
@@ -428,7 +395,6 @@ export async function generateAiMatchScore(applicantId: string) {
     }
     
     revalidatePath(`/hr/applicants/${applicantId}`);
-    revalidatePath(`/applicants/${applicantId}`);
 }
 
 
@@ -695,84 +661,4 @@ export async function addTicketComment(ticketId: string, comment: string) {
 
 
     revalidatePath('/helpdesk');
-}
-
-export async function completeProfile(formData: FormData) {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    throw new Error('User not found');
-  }
-
-  const password = formData.get('password') as string;
-  const phone = formData.get('phone') as string;
-
-  if (password) {
-    const { error: passwordError } = await supabase.auth.updateUser({ password });
-    if (passwordError) {
-      throw new Error(`Password update failed: ${passwordError.message}`);
-    }
-  }
-
-  const { error: profileError } = await supabase
-    .from('users')
-    .update({ phone: phone, profile_setup_complete: true })
-    .eq('id', user.id);
-
-  if (profileError) {
-    throw new Error(`Profile update failed: ${profileError.message}`);
-  }
-  
-  await supabase.auth.refreshSession();
-
-  revalidatePath('/', 'layout');
-  redirect('/');
-}
-
-export async function updateUserRole(userId: string, newRole: UserRole) {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
-
-  // First, verify the current user is an admin
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    throw new Error('You must be logged in to perform this action.');
-  }
-
-  const { data: adminProfile } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'super_hr') {
-    throw new Error('You do not have permission to change user roles.');
-  }
-
-  // Use the admin client to update auth user metadata
-  const { data: { user: targetUser }, error: userError } = await supabaseAdmin.auth.admin.updateUserById(
-    userId,
-    { user_metadata: { role: newRole } }
-  );
-
-  if (userError) {
-    console.error('Error updating auth user:', userError);
-    throw new Error(`Could not update user's auth record: ${userError.message}`);
-  }
-  
-  // Also update the public 'users' table for consistency
-  const { error: publicProfileError } = await supabase
-    .from('users')
-    .update({ role: newRole })
-    .eq('id', userId);
-
-  if (publicProfileError) {
-    console.error('Error updating public user profile:', publicProfileError);
-    // Optionally, you might want to roll back the auth update here
-    throw new Error(`Could not update user's public profile: ${publicProfileError.message}`);
-  }
-
-  revalidatePath('/admin/roles');
 }

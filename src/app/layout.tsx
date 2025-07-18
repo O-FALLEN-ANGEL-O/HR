@@ -1,14 +1,14 @@
+
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter as FontSans } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 
-const inter = Inter({
+const fontSans = FontSans({
   subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
+  variable: '--font-sans',
 });
 
 export const metadata: Metadata = {
@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={cn('min-h-screen bg-background font-body antialiased', inter.variable)}
+        className={cn('min-h-screen bg-background font-sans antialiased', fontSans.variable)}
         suppressHydrationWarning={true}
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>

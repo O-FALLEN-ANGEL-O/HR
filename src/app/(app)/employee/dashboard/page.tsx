@@ -92,10 +92,7 @@ export default async function EmployeeDashboardPage() {
           
           {/* Left Column */}
           <div className="lg:col-span-1 space-y-6">
-            <DashboardCard delay={0}>
-                <LeaveBalanceCard user={user} />
-            </DashboardCard>
-             <DashboardCard delay={0.1}>
+            <DashboardCard delay={0.1}>
                  <Card>
                     <CardHeader>
                         <CardTitle className="text-lg">Team Updates</CardTitle>
@@ -120,6 +117,9 @@ export default async function EmployeeDashboardPage() {
           
           {/* Right Column */}
           <div className="lg:col-span-1 space-y-6">
+            <DashboardCard delay={0}>
+                <LeaveBalanceCard user={user} />
+            </DashboardCard>
             <DashboardCard delay={0.3}>
                  <Card>
                     <CardHeader>

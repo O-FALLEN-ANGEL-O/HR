@@ -175,7 +175,7 @@ export default function AppShell({
         <SidebarHeader className="h-14 flex-row items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <Building2 className="h-7 w-7 text-primary" />
-            <span className="text-xl font-semibold text-foreground group-data-[collapsible=icon]:hidden">Throne</span>
+            <span className="text-xl font-semibold text-foreground group-data-[collapsible=icon]:hidden">HR+</span>
           </Link>
           <SidebarClose />
         </SidebarHeader>
@@ -246,4 +246,3 @@ export default function AppShell({
     </SidebarProvider>
   );
 }
-

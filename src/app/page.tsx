@@ -1,7 +1,8 @@
 
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import type { UserRole } from './lib/types';
+import type { UserRole } from '@/lib/types';
+import { getUser } from '@/lib/supabase/user';
 
 // This map defines which role gets which specific dashboard.
 // If a role is not in this map, it will default to the general employee dashboard.
@@ -18,12 +19,15 @@ const roleToDashboardPath: Partial<Record<UserRole, string>> = {
 
 export default async function Home() {
     const cookieStore = cookies();
-    // Default to 'employee' to ensure a safe, non-privileged landing page if cookie is not set.
-    const role = cookieStore.get('demo_role')?.value as UserRole ?? 'employee'; 
+    const user = await getUser(cookieStore);
+
+    if (!user) {
+        return redirect('/login');
+    }
     
     // Look up the specific dashboard path for the role.
     // If it doesn't exist in our map, fall back to the general employee dashboard.
-    const destination = roleToDashboardPath[role] || '/employee/dashboard';
+    const destination = roleToDashboardPath[user.role] || '/employee/dashboard';
     
     redirect(destination);
 }
